@@ -58,15 +58,36 @@ def _reemplazar(db: Session, decl: Declaracion, hoja: str, filas: list[list[str]
 
 # ------------------------------------------------------------------ TC (PDF SUNAT)
 
+def _fecha_consulta_pdf(pdf: bytes) -> date | None:
+    """El PDF de SUNAT trae «Consultado el dd/mm/aaaa»: ese día es el último con datos posibles."""
+    try:
+        from io import BytesIO
+        from pypdf import PdfReader
+        texto = "\n".join(p.extract_text() or "" for p in PdfReader(BytesIO(pdf)).pages)
+    except Exception:  # noqa: BLE001
+        return None
+    m = re.search(r"Consultado el\s+(\d{2}/\d{2}/\d{4})", texto)
+    return _fecha(m.group(1)) if m else None
+
+
 def cargar_tc_pdf(db: Session, pdf: bytes) -> tuple[int, list[str], tuple[int, int]]:
     """PDF mensual de SUNAT → historial interno de tipo de cambio. El mes y el año se leen del
-    propio PDF. Devuelve (días, avisos, (año, mes))."""
+    propio PDF. No se guardan días posteriores a la fecha de consulta del PDF ni a hoy: SUNAT
+    aún no los publica, así que serían datos de otro mes/año. Devuelve (días, avisos, (año, mes))."""
     try:
         registros, meta = parsear_pdf_sunat(pdf)
     except ImportadorTCError as e:
         raise ValueError(str(e)) from None
-    n = registrar_tc_historial(db, [(r["fecha"], r["compra"], r["venta"]) for r in registros])
-    return n, [], (meta["anio_detectado"], meta["mes_detectado"])
+    limite = min(x for x in (_fecha_consulta_pdf(pdf), date.today()) if x)
+    validos = [r for r in registros if r["fecha"] <= limite]
+    avisos = []
+    if len(validos) < len(registros):
+        avisos.append(f"Se omitieron {len(registros) - len(validos)} día(s) posteriores al {_f(limite)} "
+                      "(fecha de consulta del PDF): SUNAT aún no los publica.")
+    if not validos:
+        raise ValueError(f"El PDF no tiene días publicados hasta el {_f(limite)}.")
+    n = registrar_tc_historial(db, [(r["fecha"], r["compra"], r["venta"]) for r in validos])
+    return n, avisos, (meta["anio_detectado"], meta["mes_detectado"])
 
 
 def tc_venta(decl: Declaracion, fecha: date | None) -> Decimal | None:
