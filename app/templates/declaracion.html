@@ -20,6 +20,25 @@
       {% endif %}
     </div>
   </div>
+  {% set carga = {'TC': ('tc', '.pdf', 'PDF de tipo de cambio de SUNAT', false), 'VENTAS': ('ventas', '.xml', 'XML de comprobantes emitidos', true),
+                  'COMPRAS': ('compras', '.xml', 'XML de comprobantes recibidos', true), 'DUAS_D': ('duas', '.pdf', 'PDF de la DAM (uno o varios)', true)}.get(b.clave) %}
+  {% if carga %}
+  <form method="post" action="/declaraciones/{{ decl.id }}/cargar/{{ carga[0] }}" enctype="multipart/form-data"
+        class="flex flex-wrap items-center gap-2 px-4 py-2 bg-emerald-50 border-b text-sm">
+    <span class="font-medium text-emerald-900">Cargar automático:</span>
+    <input type="file" name="archivos" accept="{{ carga[1] }}" {{ 'multiple' if carga[3] }} required class="text-xs">
+    <button class="bg-emerald-700 text-white rounded px-3 py-1">Leer {{ carga[2] }}</button>
+    {% if carga[0] in ('ventas', 'compras') %}<span class="text-xs text-slate-500">Agrega o reemplaza por tipo·serie·número; el resto de filas se conserva.</span>
+    {% elif carga[0] == 'duas' %}<span class="text-xs text-slate-500">Llena los bloques D y E de cada DAM (reemplaza la misma DUA si ya estaba).</span>
+    {% else %}<span class="text-xs text-slate-500">Reemplaza el tipo de cambio del mes.</span>{% endif %}
+  </form>
+  {% elif b.clave == 'COMPRAS_PAGO' %}
+  <div class="flex flex-wrap items-center gap-3 px-4 py-2 bg-emerald-50 border-b text-sm">
+    <span class="font-medium text-emerald-900">Cargar automático:</span>
+    <form method="post" action="/declaraciones/{{ decl.id }}/cargar/pagos"><button class="bg-emerald-700 text-white rounded px-3 py-1">Generar desde las compras</button></form>
+    <span class="text-xs text-slate-500">Completa tipo, serie, número, documento, fecha y monto S/.; conserva el medio de pago, banco y N° de operación que ya escribió.</span>
+  </div>
+  {% endif %}
   <form method="post" action="/declaraciones/{{ decl.id }}/bloque/{{ b.clave }}" onsubmit="return enviarGrilla(this)">
     <input type="hidden" name="hoja" value="{{ pestana.clave }}">
     <input type="hidden" name="datos" value="">

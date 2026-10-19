@@ -12,6 +12,12 @@ App independiente (FastAPI + Jinja2 + HTMX) para preparar y llevar el control de
 
 Las columnas y formatos de cada hoja salen de `app/hojas_cols.py` (extraído del libro). Los CSV de las hojas llevan encabezado (se omite al importar). Extensiones: `.swp`, `.ser`, `.hos`, `.t12` (EXP. DEF.), `.exp` (SIN DETALLE), `.pet` (TURISTAS).
 
+## Carga automática
+- **TC** ← PDF mensual de tipo de cambio de SUNAT.
+- **VENTAS / COMPRAS** ← XML UBL de los comprobantes (varios a la vez). Ventas = la empresa es emisor; compras = receptor. Los montos en USD de compras/ventas internas se convierten a soles con el TC venta de la hoja TC; las exportaciones quedan en USD.
+- **Forma de pago** ← se genera desde COMPRAS (fecha de operación, monto S/. con las fórmulas del libro); conserva el medio de pago, banco y N° de operación ya escritos.
+- **DUAS** ← PDF de la DAM (Registro de Aduanas): llena el bloque D y una fila del bloque E por serie. Parsers portados de Falcon Contable (`app/lectores/`).
+
 ## Pantalla
 Una declaración se ve como el libro Excel: pestañas INICIO (validación, archivos, estado), TC, COMPRAS, VENTAS, DUAS, SWAP, SERVICIOS, HOSPEDAJE, SIN DETALLE, EXP. DEF. y TURISTAS. Cada pestaña es una grilla editable con los códigos y títulos de columna del libro (importar/exportar CSV, agregar/quitar filas, guardar).
 

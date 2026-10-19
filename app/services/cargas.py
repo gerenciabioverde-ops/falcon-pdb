@@ -1,0 +1,313 @@
+"""Carga automática de las hojas del PDB desde los documentos de origen:
+
+- TC        ← PDF mensual de SUNAT
+- VENTAS    ← XML de comprobantes (UBL 2.1) emitidos por la empresa
+- COMPRAS   ← XML de comprobantes recibidos por la empresa
+- PAGOS     ← derivados de COMPRAS (replica las fórmulas del libro)
+- DUAS      ← PDF de la DAM (Registro de Aduanas)
+
+Cada carga devuelve (cantidad, avisos). Los avisos son observaciones que el usuario
+debe revisar; no detienen la carga.
+"""
+from __future__ import annotations
+import xml.etree.ElementTree as ET
+from datetime import date, datetime
+from decimal import ROUND_HALF_UP, Decimal
+
+from sqlalchemy.orm import Session
+
+from app.lectores.dam_pdf import parsear_dam_pdf
+from app.lectores.tc_pdf import ImportadorTCError, parsear_pdf_sunat
+from app.lectores.xml_cpe import NS, parsear_xml_cpe
+from app.models import Cdp, Declaracion, Dua, HojaFila
+from app.services.pdb import _dec, _fecha
+
+CERO = Decimal("0")
+
+
+def _f(d) -> str:
+    return d.strftime("%d/%m/%Y") if d else ""
+
+
+def _num(x) -> str:
+    """Importe con 2 decimales; vacío si es cero (como DarFormato con '*')."""
+    x = Decimal(x or 0)
+    return "" if x == 0 else f"{x.quantize(Decimal('0.01'), rounding=ROUND_HALF_UP):.2f}"
+
+
+def _sin_ceros(s) -> str:
+    s = (str(s) if s is not None else "").strip()
+    return s.lstrip("0") or s
+
+
+def _filas(decl: Declaracion, hoja: str) -> list[HojaFila]:
+    return [f for f in decl.filas if f.hoja == hoja]
+
+
+def _reemplazar(db: Session, decl: Declaracion, hoja: str, filas: list[list[str]]) -> None:
+    for f in _filas(decl, hoja):
+        decl.filas.remove(f)
+    db.flush()
+    for i, celdas in enumerate(filas):
+        decl.filas.append(HojaFila(hoja=hoja, orden=i, celdas=celdas))
+
+
+# ------------------------------------------------------------------ TC (PDF SUNAT)
+
+def cargar_tc_pdf(db: Session, decl: Declaracion, pdf: bytes) -> tuple[int, list[str]]:
+    try:
+        registros, meta = parsear_pdf_sunat(pdf, mes_override=decl.mes, anio_override=decl.anio)
+    except ImportadorTCError as e:
+        raise ValueError(str(e)) from None
+    filas = [[_f(r["fecha"]), f"{r['compra']:.3f}", f"{r['venta']:.3f}"] for r in registros]
+    _reemplazar(db, decl, "TC", filas)
+    return len(filas), []
+
+
+def tc_venta(decl: Declaracion, fecha: date | None) -> Decimal | None:
+    """TC venta vigente a `fecha` (última publicación ≤ fecha) según la hoja TC."""
+    if not fecha:
+        return None
+    mejor = None
+    for f in _filas(decl, "TC"):
+        try:
+            d = _fecha(f.celdas[0])
+            v = _dec(f.celdas[2])
+        except (ValueError, IndexError):
+            continue
+        if d and d <= fecha and v > 0 and (mejor is None or d > mejor[0]):
+            mejor = (d, v)
+    return mejor[1] if mejor else None
+
+
+# ------------------------------------------------------------------ XML (ventas / compras)
+
+def _referencia(raw_xml: str) -> tuple[str, str, str]:
+    """(tipo, serie, número) del documento que modifica una NC/ND, si el XML lo trae."""
+    try:
+        root = ET.fromstring(raw_xml)
+    except ET.ParseError:
+        return "", "", ""
+    ref = root.find(".//cac:BillingReference/cac:InvoiceDocumentReference", NS)
+    if ref is None:
+        return "", "", ""
+    id_ = (ref.findtext("cbc:ID", default="", namespaces=NS) or "").strip()
+    tipo = (ref.findtext("cbc:DocumentTypeCode", default="", namespaces=NS) or "").strip()
+    serie, _, num = id_.partition("-")
+    if not tipo and serie:
+        tipo = {"F": "01", "B": "03"}.get(serie[:1].upper(), "")
+    return _sin_ceros(tipo), serie, _sin_ceros(num)
+
+
+def _tipo_persona(td: str) -> str:
+    td = (td or "").strip()
+    return "2" if td == "6" else ("1" if td == "1" else "3")
+
+
+def _a_soles(decl: Declaracion, monto: Decimal, moneda: str, fecha, avisos: list[str], etiqueta: str) -> Decimal:
+    if moneda == "PEN" or not monto:
+        return monto
+    tc = tc_venta(decl, fecha)
+    if tc is None:
+        avisos.append(f"{etiqueta}: en {moneda} y no hay tipo de cambio para {_f(fecha)}; cargue primero la hoja TC.")
+        return monto
+    return monto * tc
+
+
+def _fila_venta(decl: Declaracion, c: dict, avisos: list[str]) -> list[str]:
+    es_export = c["op_exportacion"] > 0
+    usd = c["moneda"] != "PEN"
+    td = (c["tipo_doc_receptor"] or "").strip()
+    etiqueta = f"{c['serie']}-{c['numero']}"
+    if es_export:
+        base = c["op_exportacion"]                       # exportación: moneda de origen
+        igv = c["igv"]
+    else:
+        base = sum((_a_soles(decl, v, c["moneda"], c["fecha_emision"], avisos, etiqueta)
+                    for v in (c["op_gravadas"], c["op_exoneradas"], c["op_inafectas"])), CERO)
+        igv = _a_soles(decl, c["igv"], c["moneda"], c["fecha_emision"], avisos, etiqueta)
+    isc = _a_soles(decl, c["isc"], c["moneda"], c["fecha_emision"], avisos, etiqueta) if not es_export else c["isc"]
+    otros = c["icbper"] + (c["otros_cargos"] or CERO)
+    rt, rs, rn = _referencia(c.get("raw_xml", "")) if c["tipo_comprobante"] in ("07", "08") else ("", "", "")
+    return [
+        "2" if es_export else "1",                   # C1
+        _sin_ceros(c["tipo_comprobante"]) or "1",    # C2
+        _f(c["fecha_emision"]),                      # C3
+        c["serie"], _sin_ceros(c["numero"]),         # C4, C5
+        _tipo_persona(td), td or "0",                # C6, C7
+        c["ruc_receptor"], c["razon_social_receptor"],  # C8, C9
+        "", "", "", "",                              # C10-C13
+        "2" if usd else "1",                         # C14
+        "", "",                                      # C15-C16
+        _num(base), _num(isc), _num(igv), _num(otros),   # C17-C20
+        "", "", "", "",                              # C21-C24
+        rt, rs, rn, "", "", "",                      # C25-C30
+    ]
+
+
+def _fila_compra(decl: Declaracion, c: dict, avisos: list[str]) -> list[str]:
+    td = (c["tipo_doc_emisor"] or "6").strip()
+    etiqueta = f"{c['serie']}-{c['numero']}"
+    conv = lambda v: _a_soles(decl, v, c["moneda"], c["fecha_emision"], avisos, etiqueta)  # noqa: E731
+    base = conv(c["op_gravadas"]) or conv(c["op_exoneradas"] + c["op_inafectas"])
+    otros = conv(c["icbper"] + (c["otros_cargos"] or CERO))
+    rt, rs, rn = _referencia(c.get("raw_xml", "")) if c["tipo_comprobante"] in ("07", "08") else ("", "", "")
+    return [
+        "1",                                         # A1 tipo de compra
+        _sin_ceros(c["tipo_comprobante"]) or "1",    # A2
+        _f(c["fecha_emision"]),                      # A3
+        c["serie"], _sin_ceros(c["numero"]),         # A4, A5
+        _tipo_persona(td), td,                       # A6, A7
+        c["ruc_emisor"], c["razon_social_emisor"],   # A8, A9
+        "", "", "", "",                              # A10-A13
+        "2" if c["moneda"] != "PEN" else "1",        # A14
+        "", "",                                      # A15-A16
+        _num(base), _num(conv(c["isc"])), _num(conv(c["igv"])), _num(otros),   # A17-A20
+        "1" if c["tiene_detraccion"] else "",        # A21
+        "", "", "",                                  # A22-A24
+        rt, rs, rn, "", "", "",                      # A25-A30
+    ]
+
+
+def _clave_fila(celdas: list[str], i_tipo: int, i_serie: int, i_num: int) -> tuple:
+    return (_sin_ceros(celdas[i_tipo]), celdas[i_serie], _sin_ceros(celdas[i_num]))
+
+
+def _cargar_xmls(db: Session, decl: Declaracion, archivos: list[tuple[str, bytes]], hoja: str,
+                 lado: str) -> tuple[int, list[str]]:
+    """lado = 'emisor' (ventas: la empresa emite) o 'receptor' (compras: la empresa recibe)."""
+    avisos: list[str] = []
+    nuevas: dict[tuple, list[str]] = {}
+    for nombre, contenido in archivos:
+        try:
+            c = parsear_xml_cpe(contenido)
+        except ValueError as e:
+            avisos.append(f"{nombre}: {e}")
+            continue
+        ruc_empresa = c["ruc_emisor"] if lado == "emisor" else c["ruc_receptor"]
+        if ruc_empresa != decl.empresa.ruc:
+            avisos.append(f"{nombre}: el {'emisor' if lado == 'emisor' else 'receptor'} es {ruc_empresa}, "
+                          f"no la empresa {decl.empresa.ruc}; se omitió.")
+            continue
+        fe = c["fecha_emision"]
+        if fe and (fe.year, fe.month) != (decl.anio, decl.mes):
+            avisos.append(f"{c['serie']}-{c['numero']}: emitido en {_f(fe)}, fuera del período {decl.periodo}.")
+        fila = (_fila_venta if hoja == "VENTAS" else _fila_compra)(decl, c, avisos)
+        nuevas[_clave_fila(fila, 1, 3, 4)] = fila
+    if not nuevas:
+        if not avisos:
+            avisos.append("No se cargó ningún comprobante.")
+        return 0, avisos
+    existentes = {_clave_fila(f.celdas, 1, 3, 4): f.celdas for f in _filas(decl, hoja) if len(f.celdas) > 4}
+    existentes.update(nuevas)
+    ordenadas = sorted(existentes.values(), key=lambda r: (_sin_cero_fecha(r[2]), r[3], r[4]))
+    _reemplazar(db, decl, hoja, ordenadas)
+    return len(nuevas), avisos
+
+
+def _sin_cero_fecha(txt: str):
+    try:
+        return _fecha(txt) or date.min
+    except ValueError:
+        return date.min
+
+
+def cargar_ventas_xml(db, decl, archivos):
+    return _cargar_xmls(db, decl, archivos, "VENTAS", "emisor")
+
+
+def cargar_compras_xml(db, decl, archivos):
+    return _cargar_xmls(db, decl, archivos, "COMPRAS", "receptor")
+
+
+# ------------------------------------------------------------------ Forma de pago (desde compras)
+
+def generar_pagos_desde_compras(db: Session, decl: Declaracion) -> tuple[int, list[str]]:
+    """Una fila de forma de pago por cada compra. Replica las fórmulas del libro:
+    fecha de operación = fecha de emisión; monto S/. = SUM(base..otros) si es compra
+    tipo 1 (o tipo 2 con destino 5), o (IGV/0,18 + ISC+IGV+otros) × TC si no.
+    Conserva medio de pago / banco / N° de operación ya digitados."""
+    avisos: list[str] = []
+    previos = {(f.celdas[1], f.celdas[2], _sin_ceros(f.celdas[3])): f.celdas
+               for f in _filas(decl, "COMPRAS_PAGO") if len(f.celdas) > 9}
+    filas: list[list[str]] = []
+    for f in _filas(decl, "COMPRAS"):
+        a = (f.celdas + [""] * 30)[:30]
+        if not any(a):
+            continue
+        base, isc, igv, otros = (_dec(a[i]) for i in (16, 17, 18, 19))
+        if a[0] == "1" or (a[0] == "2" and a[15] == "5"):
+            monto = base + isc + igv + otros
+        else:
+            tc = Decimal("1")
+            if a[13] not in ("", "1"):
+                tc = tc_venta(decl, _sin_cero_fecha(a[2])) or CERO
+                if tc == 0:
+                    avisos.append(f"{a[3]}-{a[4]}: sin tipo de cambio para {a[2]}; monto en cero.")
+            monto = (igv / Decimal("0.18") + isc + igv + otros) * tc
+        prev = previos.get((a[1], a[3], _sin_ceros(a[4])), [])
+        prev = (prev + [""] * 12)[:12]
+        filas.append([a[0], a[1], a[3], a[4], a[5], a[6], a[7],
+                      prev[7], prev[8], prev[9], a[2], _num(monto)])
+    if not filas:
+        raise ValueError("No hay compras: cargue primero los XML de compras.")
+    _reemplazar(db, decl, "COMPRAS_PAGO", filas)
+    sin_medio = sum(1 for r in filas if not r[7])
+    if sin_medio:
+        avisos.append(f"{sin_medio} pago(s) sin medio de pago, banco ni N° de operación: complételos en la grilla.")
+    return len(filas), avisos
+
+
+# ------------------------------------------------------------------ DAM (PDF)
+
+def dam_a_filas(cab: dict, series: list[dict]) -> tuple[Dua, list[Cdp]]:
+    """Convierte lo leído de una DAM en la fila del bloque D y las filas del bloque E."""
+    partes = (cab.get("no_declaracion") or "").split("-")
+    if len(partes) < 4:
+        raise ValueError("No se pudo leer el N° de declaración de la DAM.")
+    aduana, anio, correlativo = partes[0], partes[1], partes[-1]
+    clave = f"{aduana}{anio}{correlativo}"
+    cdps = []
+    for s in series:
+        fe = s.get("fecha_factura") or cab.get("fecha_embarque")
+        fob = s.get("fob_usd") or CERO
+        cdps.append(Cdp(
+            periodo_cdp=fe.strftime("%Y%m") if fe else "",
+            tipo_comprobante=s.get("factura_tipo") or "01",
+            serie=s.get("factura_serie") or "",
+            numero=(s.get("factura_numero") or "").lstrip("0") or (s.get("factura_numero") or ""),
+            tipo_exportacion="1", dua_key=clave, fob_facturado=fob, fob_propietario=fob,
+            pct_participacion=Decimal("100"), ruc_operador="",
+        ))
+    dua = Dua(codigo_aduana=aduana, anio_dua=anio, correlativo=correlativo,
+              fecha_embarque=cab.get("fecha_embarque"), fecha_regularizacion=cab.get("fecha_regularizacion"),
+              fob_usd=sum((c.fob_facturado for c in cdps), CERO))
+    return dua, cdps
+
+
+def cargar_dam_pdf(db: Session, decl: Declaracion, archivos: list[tuple[str, bytes]]) -> tuple[int, list[str]]:
+    avisos: list[str] = []
+    n = 0
+    for nombre, contenido in archivos:
+        try:
+            cab, series = parsear_dam_pdf(contenido)
+            if not cab or not series:
+                raise ValueError("no se reconoció como PDF de DAM (Registro de Aduanas)")
+            dua, cdps = dam_a_filas(cab, series)
+        except Exception as e:  # noqa: BLE001 - el PDF puede fallar de muchas formas
+            avisos.append(f"{nombre}: {e}")
+            continue
+        for d in [d for d in decl.duas if d.clave == dua.clave]:
+            decl.duas.remove(d)
+        for c in [c for c in decl.cdps if c.dua_key == dua.clave]:
+            decl.cdps.remove(c)
+        db.flush()
+        decl.duas.append(dua)
+        decl.cdps.extend(cdps)
+        n += 1
+        fr = dua.fecha_regularizacion
+        if fr and (fr.year, fr.month) != (decl.anio, decl.mes):
+            avisos.append(f"{nombre}: la regularización ({_f(fr)}) cae fuera del período {decl.periodo}.")
+        if not cab.get("fecha_embarque"):
+            avisos.append(f"{nombre}: no se leyó la fecha de embarque.")
+    return n, avisos

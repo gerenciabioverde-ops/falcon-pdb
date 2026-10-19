@@ -15,6 +15,7 @@ from app.hojas import (ARCHIVO_BLOQUE, BLOQUES_TABULARES, COLUMNAS_TODAS, PESTAN
                        TITULOS_BLOQUE)
 from app.models import ESTADOS, Declaracion, Empresa, Usuario
 from app.services import archivos_sunat as arch
+from app.services import cargas
 from app.services import pdb as svc
 
 router = APIRouter()
@@ -156,6 +157,43 @@ async def importar_hoja(decl_id: int, db: Db, usuario: User, hoja: Annotated[str
         db.rollback()
         msg = f"Error: {e}"
     return _volver(decl_id, pestana, msg)
+
+
+PESTANA_DE_CARGA = {"tc": "tc", "ventas": "ventas", "compras": "compras", "pagos": "compras", "duas": "duas"}
+
+
+@router.post("/declaraciones/{decl_id}/cargar/{tipo}")
+async def cargar(decl_id: int, tipo: str, db: Db, usuario: User,
+                 archivos: Annotated[list[UploadFile], File()] = []):
+    """Llena una hoja desde los documentos de origen (PDF de TC, XML, PDF de DAM) o,
+    para `pagos`, desde las compras ya cargadas."""
+    decl = _decl(db, decl_id)
+    if tipo not in PESTANA_DE_CARGA:
+        raise HTTPException(404, "Tipo de carga desconocido")
+    try:
+        if tipo == "pagos":
+            n, avisos = cargas.generar_pagos_desde_compras(db, decl)
+        else:
+            subidos = [(a.filename or "archivo", await a.read()) for a in archivos if a.filename]
+            if not subidos:
+                raise ValueError("Seleccione al menos un archivo.")
+            if tipo == "tc":
+                n, avisos = cargas.cargar_tc_pdf(db, decl, subidos[0][1])
+            elif tipo == "ventas":
+                n, avisos = cargas.cargar_ventas_xml(db, decl, subidos)
+            elif tipo == "compras":
+                n, avisos = cargas.cargar_compras_xml(db, decl, subidos)
+            else:
+                n, avisos = cargas.cargar_dam_pdf(db, decl, subidos)
+        db.commit()
+        msg = f"Cargadas {n} fila(s)." + ("" if not avisos else
+              f" Avisos ({len(avisos)}): " + " · ".join(avisos[:4]) + (" …" if len(avisos) > 4 else ""))
+        if n == 0:
+            msg = "Error: " + (" · ".join(avisos[:4]) or "no se cargó nada")
+    except ValueError as e:
+        db.rollback()
+        msg = f"Error: {e}"
+    return _volver(decl_id, PESTANA_DE_CARGA[tipo], msg)
 
 
 @router.post("/declaraciones/{decl_id}/estado")
