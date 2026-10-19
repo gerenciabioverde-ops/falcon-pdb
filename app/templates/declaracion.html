@@ -81,7 +81,7 @@
 <tr class="border-t hover:bg-amber-50">
   <td class="px-2 text-slate-400 text-right select-none">{{ n if n else '' }}</td>
   {% for cod, tit, fmt in cols %}
-  <td class="p-0 border-l border-slate-100"><input value="{{ fila[loop.index0] if fila and loop.index0 < fila|length else '' }}"
+  <td class="p-0 border-l border-slate-100"><input data-cod="{{ cod }}" value="{{ fila[loop.index0] if fila and loop.index0 < fila|length else '' }}"
       class="w-full min-w-[7rem] px-2 py-1 bg-transparent focus:bg-white focus:outline focus:outline-2 focus:outline-emerald-500 {{ 'text-right' if fmt in ('0.00','0.00*','0.000') else '' }}"></td>
   {% endfor %}
   <td class="px-1"><button type="button" onclick="this.closest('tr').remove()" class="text-slate-300 hover:text-red-600" title="Quitar fila">✕</button></td>
@@ -105,6 +105,8 @@
     {% elif cuentas[p.clave] %}<span class="ml-1 text-xs {{ 'bg-emerald-600 text-white' if p.clave != pestana.clave else 'bg-white text-emerald-800' }} rounded-full px-1.5">{{ cuentas[p.clave] }}</span>{% endif %}
   </a>
   {% endfor %}
+  <label class="ml-auto self-center whitespace-nowrap pl-4 text-xs text-emerald-900 cursor-pointer">
+    <input type="checkbox" id="chk-ayuda" checked class="align-middle"> Ayuda de campos</label>
 </nav>
 
 {% if msg %}<p class="mt-3 p-3 rounded text-sm {{ 'bg-red-100 text-red-800' if msg.startswith('Error') else 'bg-green-100 text-green-800' }}">{{ msg }}</p>{% endif %}
@@ -152,7 +154,29 @@
   {% endif %}
 {% endif %}
 
+<div id="panel-ayuda" class="hidden fixed bottom-3 right-3 z-50 w-[34rem] max-w-[95vw] max-h-[45vh] overflow-auto rounded shadow-xl bg-sky-700 text-white text-xs p-3">
+  <div id="ayuda-titulo" class="font-semibold mb-1"></div>
+  <pre id="ayuda-texto" class="whitespace-pre-wrap font-mono leading-snug"></pre>
+</div>
+<script id="datos-ayuda" type="application/json">{{ ayuda|tojson }}</script>
 <script>
+const AYUDA = JSON.parse(document.getElementById('datos-ayuda').textContent);
+const chkAyuda = document.getElementById('chk-ayuda');
+try { if (localStorage.getItem('pdbAyuda') === '0' && chkAyuda) chkAyuda.checked = false; } catch (e) {}
+if (chkAyuda) chkAyuda.addEventListener('change', () => {
+  try { localStorage.setItem('pdbAyuda', chkAyuda.checked ? '1' : '0'); } catch (e) {}
+  if (!chkAyuda.checked) document.getElementById('panel-ayuda').classList.add('hidden');
+});
+document.addEventListener('focusin', e => {
+  const panel = document.getElementById('panel-ayuda');
+  const cod = e.target.dataset && e.target.dataset.cod;
+  const a = cod && AYUDA[cod];
+  if (!a || !chkAyuda || !chkAyuda.checked) { panel.classList.add('hidden'); return; }
+  document.getElementById('ayuda-titulo').textContent =
+    cod + ' · ' + a.nombre + ' · ' + a.tipo + (a.largo ? ' · máx. ' + a.largo : '');
+  document.getElementById('ayuda-texto').textContent = a.texto;
+  panel.classList.remove('hidden');
+});
 function agregarFila(btn) {
   const f = btn.closest('form');
   f.querySelector('tbody').insertAdjacentHTML('beforeend', f.querySelector('template').innerHTML);

@@ -1,5 +1,6 @@
 """Rutas HTTP de Falcon PDB: login, empresas, declaraciones por período."""
 import json
+from pathlib import Path
 from datetime import date
 from typing import Annotated
 
@@ -18,6 +19,7 @@ from app.services import archivos_sunat as arch
 from app.services import cargas
 from app.services import pdb as svc
 
+AYUDA = json.loads((Path(__file__).resolve().parent.parent / "ayuda_sunat.json").read_text(encoding="utf-8"))
 router = APIRouter()
 templates = Jinja2Templates(directory="app/templates")
 MESES = ["", "Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio",
@@ -109,7 +111,8 @@ def ver_declaracion(request: Request, decl_id: int, db: Db, usuario: User, hoja:
     return _render(request, "declaracion.html", usuario=usuario, decl=decl, msg=msg, pestana=pestana,
                    pestanas=PESTANAS, cuentas=cuentas, bloques=bloques, hallazgos=hallazgos,
                    n_errores=sum(h["nivel"] == "error" for h in hallazgos), archivos=arch.archivos(decl),
-                   archivo_bloque=ARCHIVO_BLOQUE)
+                   archivo_bloque=ARCHIVO_BLOQUE,
+                   ayuda={c[0]: AYUDA[c[0]] for b in bloques for c in b["columnas"] if c[0] in AYUDA})
 
 
 @router.post("/declaraciones/{decl_id}/bloque/{bloque}")

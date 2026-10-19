@@ -1,0 +1,956 @@
+{
+ "D1": {
+  "nombre": "Código Aduana",
+  "tipo": "Texto",
+  "largo": "3",
+  "texto": "============================================\n             CÓDIGO DE ADUANAS\n============================================\n019\tTUMBES\n028\tTALARA\n046\tPAITA\n055\tCHICLAYO\n082\tSALAVERRY\n091\tCHIMBOTE\n118\tMARÍTIMA DEL CALLAO\n127\tPISCO\n145\tMOLLENDO-MATARANI\n154\tAREQUIPA\n163\tILO\n172\tTACNA\n181\tPUNO\n190\tCUZCO\n217\tPUCALLPA\n226\tIQUITOS\n235\tAEREA DEL CALLAO\n244\tPOSTAL DE LIMA\n262\tDESAGUADERO\n271\tTARAPOTO\n280\tPUERTO MALDONADO\n299\tLA TINA\n884\tDEPENDENCIA FERROVIARIA TACNA\n893\tDEPENDENCIA POSTAL TACNA\n910\tDEPENDENCIA POSTAL AREQUIPA\n929\tCOMPLEJO FRONTERIZO SANTA ROSA-TACNA\n938\tTERMINAL TERRESTRE TACNA"
+ },
+ "D2": {
+  "nombre": "Año de la DUA",
+  "tipo": "Texto",
+  "largo": "4",
+  "texto": "Dato Obligatorio\nDebe registrar el año del periodo a declarar.\nSolo en el caso del mes de Diciembre podrá registrar el año del periodo a declarar o el año siguiente a dicho periodo."
+ },
+ "D3": {
+  "nombre": "Número correlativo",
+  "tipo": "Texto",
+  "largo": "6",
+  "texto": "Dato obligatorio\nDebe ser numérico y mayor a cero.\nLa longitud máxima es de 6 dígitos."
+ },
+ "D4": {
+  "nombre": "Fecha de embarque",
+  "tipo": "Texto",
+  "largo": "10",
+  "texto": "Dato Obligatorio\nFormato: dd/mm/aaaa\nDonde dd=día, mm=mes, aaaa=año\nLa fecha de emisión no debe ser mayor a la Fecha del sistema.\nEl año y el mes de la fecha de emisión debe ser igual al periodo."
+ },
+ "D5": {
+  "nombre": "Fecha de regularización de la DUA",
+  "tipo": "Texto",
+  "largo": "10",
+  "texto": "Dato Obligatorio.\nFormato: dd/mm/aaaa\nDonde dd=día, mm=mes, aaaa=año\nLa fecha de regularización de la DUA no debe ser mayor  a la Fecha del Sistema.\nLa fecha de regularización de la DUA debe ser mayor  o igual  a la fecha de embarque y puede ser posterior al periodo de la declaración."
+ },
+ "D6": {
+  "nombre": "Valor FOB en US$",
+  "tipo": "Numérico",
+  "largo": "10,2",
+  "texto": "Dato obligatorio, máximo 10 enteros (sin comas) y dos decimales"
+ },
+ "E1": {
+  "nombre": "Periodo del CDP",
+  "tipo": "Texto",
+  "largo": "6",
+  "texto": "Dato obligatorio\nFormato: AAAAMM, donde AAAA=año, MM=mes"
+ },
+ "E2": {
+  "nombre": "Tipo de comprobante",
+  "tipo": "Texto",
+  "largo": "2",
+  "texto": "============================================\n     TIPO DE COMPROBANTE\n============================================\n01  FACTURA\n03  BOLETA DE VENTA\n07  NOTA DE CRÉDITO\n08  NOTA DE DÉBITO\n12  TICKET O CINTA EMITIDO POR MÁQUINA REGISTRADORA\n34  DOCUMENTO DEL OPERADOR\n35  DOCUMENTO DEL PARTÍCIPE\n36  RECIBO DE DISTRIBUCIÓN DE GAS NATURAL\n37  DOCUMENTOS QUE EMITAN LOS CONCESIONARIOS DEL SERVICIO DE REVISIONES TÉCNICAS VEHICULARES."
+ },
+ "E3": {
+  "nombre": "Número de serie del comprobante de pago",
+  "tipo": "Texto",
+  "largo": "20",
+  "texto": "Dato obligatorio\n- Debe ser numérico y mayor a cero.\n- Dato obligatorio y longitud máxima de cuatro dígitos.\n- Para el Tipos de Comprobante \"Tiket\" la longitud máxima del N° de serie es hasta\nde 20 dígitos y deberá ser alfanumérico."
+ },
+ "E4": {
+  "nombre": "Número de documento del comprobante de pago",
+  "tipo": "Texto",
+  "largo": "20",
+  "texto": "Dato obligatorio\n- Debe ser numérico y mayor a cero.\n- La longitud máxima es de 20 dígitos.\n- Para el tipo de comprobante 12-Tiket, puede ser alfanumérico."
+ },
+ "E5": {
+  "nombre": "Tipo de exportación",
+  "tipo": "Texto",
+  "largo": "2",
+  "texto": "============================================\n     TIPO DE EXPORTACION\n============================================\n1  Exportacion definitiva individual\n2  Exportacion de joyas de oro con operaciones swap\n3  Exportacion a traves de terceros(comisionista)\n4  Exportacion definitiva bajo contratos de colaboracion empresarial\n5  Exportacion simplificada"
+ },
+ "E6": {
+  "nombre": "DUA",
+  "tipo": "Texto",
+  "largo": "13",
+  "texto": "La Declaración única de Aduanas está compuesta de la siguiente manera:\nFormato: CCCAAAANNNNNN\nCCC=Código de Aduana, AAAA=Año, NNNNNN=Número correlativo\nLa DUA deberá existir o estar registrada en el padrón de DUA's.\nLa fecha regularización de la DUA debe ser mayor o igual a la fecha de emisión del CDP."
+ },
+ "E7": {
+  "nombre": "Valor FOB facturado de la exportación en dólares",
+  "tipo": "Numérico",
+  "largo": "10,2",
+  "texto": "Valor FOB facturado de la exportación en dólares."
+ },
+ "E8": {
+  "nombre": "Valor FOB por la parte de la mercadería  que es propietario dólares",
+  "tipo": "Numérico",
+  "largo": "10,2",
+  "texto": "Valor FOB por la parte de la mercadería  que es propietario dólares.\nEste campo es sólo para el tipo de exportación 03 (Exportación a través de terceros)\n y 04 (Exportación  definitiva bajo contrato  de colaboración empresarial),\npara los demás tipos de exportación no registrar el valor FOB"
+ },
+ "E9": {
+  "nombre": "Porcentaje de participación",
+  "tipo": "Numérico",
+  "largo": "3,2",
+  "texto": "Deberá ser mayor a 0 y menor  o igual a 100.00\nEste campo es sólo para el tipo de exportación 04 (Exportación\ndefinitiva bajo contrato de colaboración empresarial), \npara los demás tipos de exportación no registrar el porcentaje de participación."
+ },
+ "E10": {
+  "nombre": "RUC del operador",
+  "tipo": "Numérico",
+  "largo": "11",
+  "texto": "RUC del operador\nEste campo es sólo para el tipo de exportación 04 (Exportación definitiva bajo\ncontrato de colaboración empresarial),\n para los demás tipos de exportación no rergistrar el porcentaje de participación."
+ },
+ "F1": {
+  "nombre": "Periodo del CDP",
+  "tipo": "Texto",
+  "largo": "6",
+  "texto": "Dato obligatorio\nFormato: AAAAMM, donde AAAA=año, MM=mes"
+ },
+ "F2": {
+  "nombre": "Tipo de comprobante",
+  "tipo": "Texto",
+  "largo": "2",
+  "texto": "Dato obligatorio\n01 Factura\n02 Recibo por honorarios\n03 Boleta de venta                                                                 \n04 Liquidacion de compra                                                           \n05 Boleto de companias de aviacion                                                 \n06 Carta de porte aereo                                                            \n07 Nota de credito                                                                 \n08 Nota de debito                                                                  \n09 Guia de remision\n10 Recibo por arrendamiento                                                        \n11 Póliza de la bolsa de valores                                                   \n12 Ticket de maquina registradora                                                  \n13 Documentos banca y seguros                                                      \n14 Recibos por servicios publicos                                                  \n15 Boleto emitido por el transporte urbano                                         \n16 Boleto de viaje-transporte interprovincial                                      \n17 Documentos emitidos por la iglesia                                              \n18 Documentos emitidos por las afp y eps                                           \n19 Boletos por atracciones y espectac.public.\n20 Comprobante de retencion\n21 Conocimiento de embarque                                                        \n22 Comprobante por operaciones no habituales                                       \n23 Póliza de adjudicacion por remate de bienes                                     \n24 Certificado de pago regalias-perupetro s.a.                                     \n25 Documento de atribucion                                                         \n26 Recibo por el pago de tarifa por uso de agua superficial                        \n27 Seguro complementario de trabajo de riesgo                                      \n28 Tarifa unificada de uso de aeropuerto                                           \n29 Documentos emitidos por la cofopri                                              \n30 Doc. emit. empresas adq. en los sist. de pago med. tarjetas de crédito o débito \n32 Doc. emit. emp. recaudadoras (garantia de red principal)                        \n34 Documento del operador                                                          \n35 Documento del participe                                                         \n36 Recibo de distribucion de gas natural                                           \n37 Doc. concesionarios del servicio revisiones tecnicas vehiculares                \n50 Declaracion unica de aduanas - importacion definitiva                           \n52 Despacho simplificado - importacion simplificada                                \n53 Declaracion de mensajeria o courier                                             \n54 Liquidacion de cobranza      \n55 Boleto de viaje emitido por medios electrónicos para transporte ferroviario de pasajeros (bvme)                                                   \n87 Nota de credito especial \n88 Nota de debito especial \n91 Comprobante de no domiciliado                                                   \n96 Exceso de credito fiscal por retiro de bienes                                   \n97 Nota de credito - no domiciliado                                                \n98 Nota de debito - no domiciliado                                                 \n99 Otros-consolidado de boletas de venta"
+ },
+ "F3": {
+  "nombre": "Número de serie del comprobante de pago",
+  "tipo": "Texto",
+  "largo": "20",
+  "texto": "Dato obligatorio\n- Debe ser numérico y mayor a cero.\n- Dato obligatorio y longitud máxima de cuatro dígitos.\n- Para el Tipos de Comprobante \"Tiket\" la longitud máxima del N° de serie es hasta\nde 20 dígitos y deberá ser alfanumérico."
+ },
+ "F4": {
+  "nombre": "Número de documento del comprobante de pago",
+  "tipo": "Texto",
+  "largo": "20",
+  "texto": "Dato obligatorio\n- Debe ser numérico y mayor a cero.\n- La longitud máxima es de 20 dígitos.\n- Para el tipo de comprobante 12-Tiket, puede ser alfanumérico."
+ },
+ "F5": {
+  "nombre": "Número de constancia",
+  "tipo": "Texto",
+  "largo": "8",
+  "texto": "Dato obligatorio\n- Debe ser numérico y mayor a cero.\n- La longitud máxima es de 8 dígitos."
+ },
+ "F6": {
+  "nombre": "Banco interviniente",
+  "tipo": "Texto",
+  "largo": "2",
+  "texto": "============================================\n    BANCO INTERVINIENTE\n============================================\n02  DE CREDITO DEL PERU\n03  INTERBANK\n05  LATINO\n07  CITYBANK N.A.\n08  STANDARD CHARTERED\n09  SCOTIABANK\n11  CONTINENTAL\n12  DE LIMA\n16  MERCANTIL\n18  NACION\n22  SANTANDER CENTRAL HISPANO - PERU\n23  DE COMERCIO\n25  REPUBLICA\n26  NBK BANK\n29  NANCOSUR\n35  FINANCIERO DEL PERU\n37  DEL PROGRESO\n38  INTERAMERICANO FINANZAS\n39  BANEX\n40  NUEVO MUNDO\n41  SUDAMERICANO\n42  DEL LIBERTADOR\n43  DEL TRABAJO\n44  SOLVENTA\n45  SERBANCO\n46  BANK OF BOSTON\n47  ORION\n48  DEL PAIS\n49  MI BANCO\n50  DE PARIS\n53  HSBC BANK PERU S.A.\n54  BANCO FALABELLA PERU\n55  BANCO RIPLEY\n56  BANCO SANTANDER PERU S.A.\n58  BANCO AZTECA DEL PERU\n99  BANCOS DEL EXTERIOR\na0  CAJA MUNICIPAL DE CREDITO POPULAR DE LIMA\na1  CAJA MUNICIPAL DE AHORRO Y CRED AREQUIPA\na2  CAJA MUNICIPAL AHORRO Y CREDITO DE TRUJILLO S.A\na3  CMAC PIURA S.A.C.\na4  CAJA MUNICIPAL AHORRO Y CREDITO SULLANA S. A.\na5  CAJA MUNICIPAL DE AHORRO Y CREDITO DE PAITA S.A.\na6  CAJA MUNICIPAL DE AHORRO Y CREDITO CUSCO S.A.\na7  CAJA MUNICIPAL DE AHORRO CREDITO ICA SA\na8  CAJA MUNICIPAL AHORRO Y CREDITO PISCO SA\na9  CAJA MUNICIPAL DE AHORR. Y CRED. DE TACNA S.A.\nb0  CAJA MUNICIPAL DE AHORRO Y CRED MAYNAS SA\nb1  CMAC - HUANCAYO S.A.\nb2  CAJA MUNICIPAL AHORRO Y CREDIT DEL SANTA SA\nb3  PRODUCTOS Y MERCADOS AGRICOLAS DE HUARAL CAJA RURAL DE AHORROS Y CRE\nb4  CAJA RURAL DE AHORRO Y CREDITO QUILLABAMBA\nb5  CAJA RURAL DE AHORRO Y CREDITO LOS LIBERTADORES\nb6  CAJA RURAL DE AHORRO Y CREDITO SENOR DE LUREN\nb7  CAJA RURAL DE AHORRO Y CREDITO CHAVIN SA\nb8  CAJA RURAL DE AHORRO Y CREDITO CAJAMARCA S.A.A.\nb9  CAJA RURAL DE AHORRO Y CREDITO SIPAN S.A\nc0  CAJA RURAL DE AHORRO Y CREDITO LOS ANDES\nc1  CAJASUR\nc2  CAJA RURAL DE AHORRO Y CREDITO NOR PERU\nc3  CAJA RURAL DE AHORRO Y CREDITO REG. SAN MARTIN\nc4  CRAC PROMOTORA DE FINANZAS S.A.A.\nc5  ENT.DES.PEQ.Y MICROEMP.EDPYME EDYFICAR\nc6  EDPYMES PROEMPRESA S.A.\nc7  EDPYME RAIZ S.A.\nc8  ENT.DES.DE LA PQNA Y MICROEM.CREDIVISION\nc9  EDPYME CREDITOS AREQUIPA S.A.\nd0  EDPYME NUEVA VISION S.A.\nd1  EDPYME CRED. DE ALCANCE REG.TRUJILLO SA.\nd2  E.D.P.Y.M.DEL FOMENTO COMERC.Y PROD.S.A\nd3  EDPYME ALTERNATIVA\nd4  EDPYME SOLIDARIDAD S.A.A.\nd5  EDPYME EFECTIVA S.A.\nd6  EDPYME CREDITOS DE ALCANCE REG.TACNA S.A\nd7  EDPYME CONFIANZA S.A.\nd8  EDPYME MICASITA SOCIEDAD ANONIMA (EDPYME MICASITA S.A )"
+ },
+ "F7": {
+  "nombre": "Fecha de ejecución SWAP",
+  "tipo": "Texto",
+  "largo": "10",
+  "texto": "Dato obligatorio\nFormato: dd/mm/aaaa\nDonde: dd=dia, mm=mes y aaaa=año.\nLa fecha de ejecución SWAP no debe ser mayor al periodo de la declaración.\nLa fecha de ejecución SWAP no debe ser menor a la fecha de emisión del CDP."
+ },
+ "F8": {
+  "nombre": "Cantidad de metal",
+  "tipo": "Texto",
+  "largo": "15",
+  "texto": "Dato obligatorio\nDebe ser numérico y mayor a cero."
+ },
+ "F9": {
+  "nombre": "Unidad de metal",
+  "tipo": "Texto",
+  "largo": "2",
+  "texto": "Dato obligatorio\nCódigos de unidad de metal:\n01 Kilogramos\n02 Libras\n03 Toneladas largas\n04 Toneladas metricas\n05 Toneladas cortas\n06 Gramos\n07 Onzas"
+ },
+ "F10": {
+  "nombre": "RUC del responsable de la exportación",
+  "tipo": "Numérico",
+  "largo": "11",
+  "texto": "Dato Obligatorio."
+ },
+ "G1": {
+  "nombre": "Periodo del CDP",
+  "tipo": "Texto",
+  "largo": "6",
+  "texto": "Dato obligatorio\nFormato: AAAAMM, donde AAAA=año, MM=mes"
+ },
+ "G2": {
+  "nombre": "Tipo de comprobante",
+  "tipo": "Texto",
+  "largo": "2",
+  "texto": "Dato obligatorio\n01 Factura\n02 Recibo por honorarios\n03 Boleta de venta                                                                 \n04 Liquidacion de compra                                                           \n05 Boleto de companias de aviacion                                                 \n06 Carta de porte aereo                                                            \n07 Nota de credito                                                                 \n08 Nota de debito                                                                  \n09 Guia de remision\n10 Recibo por arrendamiento                                                        \n11 Póliza de la bolsa de valores                                                   \n12 Ticket de maquina registradora                                                  \n13 Documentos banca y seguros                                                      \n14 Recibos por servicios publicos                                                  \n15 Boleto emitido por el transporte urbano                                         \n16 Boleto de viaje-transporte interprovincial                                      \n17 Documentos emitidos por la iglesia                                              \n18 Documentos emitidos por las afp y eps                                           \n19 Boletos por atracciones y espectac.public.\n20 Comprobante de retencion\n21 Conocimiento de embarque                                                        \n22 Comprobante por operaciones no habituales                                       \n23 Póliza de adjudicacion por remate de bienes                                     \n24 Certificado de pago regalias-perupetro s.a.                                     \n25 Documento de atribucion                                                         \n26 Recibo por el pago de tarifa por uso de agua superficial                        \n27 Seguro complementario de trabajo de riesgo                                      \n28 Tarifa unificada de uso de aeropuerto                                           \n29 Documentos emitidos por la cofopri                                              \n30 Doc. emit. empresas adq. en los sist. de pago med. tarjetas de crédito o débito \n32 Doc. emit. emp. recaudadoras (garantia de red principal)                        \n34 Documento del operador                                                          \n35 Documento del participe                                                         \n36 Recibo de distribucion de gas natural                                           \n37 Doc. concesionarios del servicio revisiones tecnicas vehiculares                \n50 Declaracion unica de aduanas - importacion definitiva                           \n52 Despacho simplificado - importacion simplificada                                \n53 Declaracion de mensajeria o courier                                             \n54 Liquidacion de cobranza      \n55 Boleto de viaje emitido por medios electrónicos para transporte ferroviario de pasajeros (bvme)                                                   \n87 Nota de credito especial \n88 Nota de debito especial \n91 Comprobante de no domiciliado                                                   \n96 Exceso de credito fiscal por retiro de bienes                                   \n97 Nota de credito - no domiciliado                                                \n98 Nota de debito - no domiciliado                                                 \n99 Otros-consolidado de boletas de venta"
+ },
+ "G3": {
+  "nombre": "Número de serie del comprobante de pago",
+  "tipo": "Texto",
+  "largo": "20",
+  "texto": "Dato obligatorio\n- Debe ser numérico y mayor a cero.\n- Dato obligatorio y longitud máxima de cuatro dígitos.\n- Para el Tipos de Comprobante \"Tiket\" la longitud máxima del N° de serie es hasta\nde 20 dígitos y deberá ser alfanumérico."
+ },
+ "G4": {
+  "nombre": "Número de documento del comprobante de pago",
+  "tipo": "Texto",
+  "largo": "20",
+  "texto": "Dato obligatorio\n- Debe ser numérico y mayor a cero.\n- La longitud máxima es de 20 dígitos.\n- Para el tipo de comprobante 12-Tiket, puede ser alfanumérico."
+ },
+ "G5": {
+  "nombre": "Tipo de exportación",
+  "tipo": "Texto",
+  "largo": "2",
+  "texto": "Solo se acepta el tipo de exportación 07"
+ },
+ "G6": {
+  "nombre": "Detalle servicio exportador",
+  "tipo": "Texto",
+  "largo": "2",
+  "texto": "=======================================================================\n                           DETALLE SERVICIO EXPORTADOR\n=======================================================================\n01  SERVICIOS REALIZADOS EN EL PAÍS (5TO PÁRRAFO ART. 33 LIGV)\n02  SERVICIOS DE HOSPEDAJE NO DOMICILIADOS (NUM. 4 ART. 33 LIGV)\n03  TRANSPORTE DE NAVES Y AERONAVES (NUM. 6 ART. 33 LIGV)\n04  SERVICIO REPARAC. MANTENIMIENTO NAVES Y AERONAVES (NUM. 7 ART. 33 LIGV)\n05  SERVICIOS QUE CONFORMAN UN PAQUETE TURÍSTICO (NUM. 9 ART. 33 LIGV)\n06  SERVICIOS COMPLEMENTARIOS DE TRANSPORTE DE CARGA (NUM. 10 ART. 33 LIGV)\n07  SUMINISTRO DE ENERGÍA ELÉCTRICA A FAVOR DE SUJETOS DOMICILIADOS EN ZED (NUM. 11 ART. 33 LIGV)\n08  SERVICIOS REALIZADOS PARTE EN EL PERÚ Y PARTE EN EL EXTRANJERO (NUM. 12 ART. 33 LIGV)"
+ },
+ "G7": {
+  "nombre": "País",
+  "tipo": "Texto",
+  "largo": "2",
+  "texto": "=======================================================================\n                           CÓDIGO DE PAÍS\n=======================================================================\n1A\tCHECOSLOVAQUIA\n1G\tESCOCIA\n1H\tURSS\n1I\tVIETNAM (DEL NORTE)\n1J\tCOMUNIDAD ECONOMICA EUROPEA\n1K\tCOSTA DE MARFIL\n1M\tALEMANIA ORIENTAL\n1P\tHONDURAS BRITANICAS\n1Q\tJONSTON, ISLAS\n1R\tMACEDONIA\n1T\tPACIFICO, ISLAS DEL\n1U\tREPUBLICA ARABE UNIDA\n1V\tWAKE, ISLA\n1W\tPALESTINA\nAD\tANDORRA\nAE\tEMIRATOS ARABES UNIDOS\nAF\tAFGANISTÁN\nAG\tANTIGUA Y BARBUDA\nAI\tANGUILLA\nAL\tALBANIA\nAM\tARMENIA\nAN\tANTILLAS HOLANDESAS\nAO\tANGOLA\nAQ\tTERRITORIO ANTARTICO BRITANICO\nAR\tARGENTINA\nAS\tSAMOA NORTEAMERICANA\nAT\tAUSTRIA\nAU\tAUSTRALIA\nAW\tARUBA\nAZ\tAZERBAIJAN\nBA\tBOSNIA-HERZEGOVINA\nBB\tBARBADOS\nBD\tBANGLADESH\nBE\tBELGICA\nBF\tBURKINA FASO\nBG\tBULGARIA\nBH\tBAHREIN\nBI\tBURUNDI\nBJ\tBENIN\nBM\tBERMUDAS\nBN\tBRUNEI DARUSSALAM\nBO\tBOLIVIA\nBR\tBRASIL\nBS\tBAHAMAS\nBT\tBUTAN\nBV\tBOUVET ISLAND\nBW\tBOTSWANA\nBY\tBELARUS\nBZ\tBELICE\nCA\tCANADA\nCC\tCOCOS (KEELING),ISLAS\nCF\tREPUBLICA CENTROAFRICANA\nCG\tCONGO\nCH\tSUIZA\nCK\tCOOK, ISLAS\nCL\tCHILE\nCM\tCAMERUN, REPUBLICA UNIDA DEL\nCN\tCHINA\nCO\tCOLOMBIA\nCR\tCOSTA RICA\nCU\tCUBA\nCV\tCABO VERDE\nCX\tNAVIDAD (CHRISTMAS), ISLA\nCY\tCHIPRE\nCZ\tREPUBLICA CHECA\nDE\tALEMANIA\nDJ\tDJIBOUTI\nDK\tDINAMARCA\nDM\tDOMINICA\nDO\tREPUBLICA DOMINICANA\nDZ\tARGELIA\nEC\tECUADOR\nEE\tESTONIA\nEG\tEGIPTO\nEH\tSAHARA OCCIDENTAL\nER\tERITREA\nES\tESPAÑA\nET\tETIOPIA\nFI\tFINLANDIA\nFJ\tFIJI\nFK\tFALKLAND ISLANDS (MALVINAS)\nFM\tMICRONESIA, ESTADOS FEDERADOS DE\nFO\tFEROE, ISLAS\nFR\tFRANCIA\nGA\tGABON\nGB\tREINO UNIDO\nGD\tGRANADA\nGE\tGEORGIA\nGF\tGUAYANA FRANCESA\nGH\tGHANA\nGL\tGROENLANDIA\nGM\tGAMBIA\nGN\tGUINEA\nGP\tGUADALUPE\nGQ\tGUINEA ECUATORIAL\nGR\tGRECIA\nGS\tSOUTH GEORGIA AND THE SOUTH SANDWICH ISLANDS\nGT\tGUATEMALA\nGU\tGUAM\nGW\tGUINEA-BISSAU\nGY\tGUYANA\nHK\tHONG KONG\nHM\tHEARD AND MC DONALD ISLANDS\nHN\tHONDURAS\nHR\tCROACIA\nHT\tHAITI\nHU\tHUNGRIA\nID\tINDONESIA\nIE\tIRLANDA (EIRE)\nIL\tISRAEL\nIN\tINDIA\nIO\tTERRITORIO BRITANICO DEL OCEANO INDICO\nIQ\tIRAK\nIR\tIRAN, REPUBLICA ISLAMICA DEL\nIS\tISLANDIA\nIT\tITALIA\nJM\tJAMAICA\nJO\tJORDANIA\nJP\tJAPON\nKE\tKENIA\nKG\tKIRGUIZISTAN\nKH\tCAMBOYA\nKI\tKIRIBATI\nKM\tCOMORAS\nKN\tSAN CRISTOBAL Y NIEVES\nKP\tCOREA (NORTE), REPUBLICA POPULAR DEMOCRATICA DE\nKR\tCOREA (SUR), REPUBLICA DE\nKW\tKUWAIT\nKY\tCAIMAN,ISLAS\nKZ\tKAZAJSTAN\nLA\tLAOS, REPUBLICA POPULAR DEMOCRATICA DE\nLB\tLIBANO\nLC\tSANTA LUCIA\nLI\tLIECHTENSTEIN\nLK\tSRI LANKA\nLR\tLIBERIA\nLS\tLESOTHO\nLT\tLITUANIA\nLU\tLUXEMBURGO\nLV\tLETONIA\nLY\tLIBIA\nMA\tMARRUECOS\nMC\tMONACO\nMD\tMOLDAVIA\nMG\tMADAGASCAR\nMH\tMARSHALL, ISLAS\nML\tMALI\nMM\tMYANMAR\nMN\tMONGOLIA\nMO\tMACAO\nMP\tMARIANAS DEL NORTE, ISLAS\nMQ\tMARTINICA\nMR\tMAURITANIA\nMS\tMONTSERRAT, ISLA\nMT\tMALTA\nMU\tMAURICIO\nMV\tMALDIVAS\nMW\tMALAWI\nMX\tMEXICO\nMY\tMALAYSIA\nMZ\tMOZAMBIQUE\nNA\tNAMIBIA\nNC\tNUEVA CALEDONIA\nNE\tNIGER\nNF\tNORFOLK, ISLA\nNG\tNIGERIA\nNI\tNICARAGUA\nNL\tPAISES BAJOS\nNO\tNORUEGA\nNP\tNEPAL\nNR\tNAURU\nNU\tNIUE, ISLA\nNZ\tNUEVA ZELANDA\nOM\tOMAN\nPA\tPANAMA\nPF\tPOLINESIA FRANCESA\nPG\tPAPUASIA NUEVA GUINEA\nPH\tFILIPINAS\nPK\tPAKISTAN\nPL\tPOLONIA\nPM\tSAN PEDRO Y MIQUELON\nPN\tPITCAIRN, ISLA\nPR\tPUERTO RICO\nPT\tPORTUGAL\nPW\tPALAU, ISLAS\nPY\tPARAGUAY\nQA\tQATAR\nRO\tRUMANIA\nRU\tRUSIA\nRW\tRUANDA\nSA\tARABIA SAUDITA\nSB\tSALOMON, ISLAS\nSC\tSEYCHELLES\nSD\tSUDAN\nSE\tSUECIA\nSG\tSINGAPUR\nSH\tSANTA ELENA\nSI\tESLOVENIA\nSJ\tSVALBARD AND JAN MAYEN ISLANDS\nSK\tESLOVAQUIA\nSL\tSIERRA LEONA\nSM\tSAN MARINO\nSN\tSENEGAL\nSO\tSOMALIA\nSR\tSURINAM\nST\tSANTO TOME Y PRINCIPE\nSV\tEL SALVADOR\nSY\tSIRIA, REPUBLICA ARABE DE\nSZ\tSAWSILANDIA\nTC\tTURCAS Y CAICOS, ISLAS\nTD\tCHAD\nTG\tTOGO\nTH\tTAILANDIA\nTJ\tTADJIKISTAN\nTK\tTOKELAU\nTM\tTURKMENISTAN\nTN\tTUNICIA\nTO\tTONGA\nTP\tTIMOR DEL ESTE\nTR\tTURQUIA\nTT\tTRINIDAD Y TOBAGO\nTV\tTUVALU\nTW\tTAIWAN (FORMOSA)\nTZ\tTANZANIA, REPUBLICA UNIDA DE\nUA\tUCRANIA\nUG\tUGANDA\nUM\tUNITED STATES MINOR OUTLYING ISLANDS\nUS\tESTADOS UNIDOS\nUY\tURUGUAY\nUZ\tUZBEKISTAN\nVA\tSANTA SEDE\nVC\tSAN VICENTE Y LAS GRANADINAS\nVE\tVENEZUELA\nVG\tVIRGENES, ISLAS (BRITANICAS)\nVI\tVIRGENES, ISLAS (NORTEAMERICANAS)\nVN\tVIET NAM\nVU\tVANUATU\nWF\tWALLIS Y FORTUNA, ISLAS\nWS\tSAMOA\nYE\tYEMEN\nYT\tMAYOTTE\nYU\tYUGOSLAVIA\nZA\tSUDAFRICA, REPUBLICA DE\nZM\tZAMBIA\nZR\tZAIRE\nZW\tZIMBABWE"
+ },
+ "G8": {
+  "nombre": "Nombre del Sujeto no Domiciliado",
+  "tipo": "Texto",
+  "largo": "100",
+  "texto": "Campo obligatorio\nLa longitud máxima es de 100 caracteres, pudiendo ser alfanuméricos"
+ },
+ "G9": {
+  "nombre": "Forma de pago",
+  "tipo": "Texto",
+  "largo": "3",
+  "texto": "=========================================\n          MEDIOS DE PAGO\n=========================================\n001  DEP. EN CUENTA\t\n002  GIRO\t\n003  TRANSF. DE FONDOS\t\n004  ORDEN DE PAGO\t\n005  TARJETA DE DEBITO\t\n006  TARJETA DE CREDITO\t\n007  CHEQUES\t\n009  EFECTIVO\t\n010  MEDIOS DE PAGO DE COM. EXTERIOR\t\n011  LETRAS DE CAMBIO\t\n012  DOCUMENTOS EMITIDOS POR LAS EDPYMES Y LAS COOPERATIVAS DE AHORRO Y CRÉDITO NO AUTORIZADAS A CAPTAR DEPÓSITOS DEL PÚBLICO\n013  TARJETA DE CRÉDITO EMITIDA EN EL PAÍS O EN EL EXTERIOR POR UNA EMPRESA NO PERTENECIENTE AL SISTEMA FINANCIERO, CUYO OBJETO PRINCIPAL SEA LA EMISIÓN Y ADMINISTRACIÓN DE TARJETAS DE CRÉDITO\t\n014  TARJETAS DE CRÉDITO EMITIDAS EN EL EXTERIOR POR EMPRESAS BANCARIAS O FINANCIERAS NO DOMICILIADAS.\n098  PENDIENTE DE PAGO"
+ },
+ "G10": {
+  "nombre": "Fecha de pago",
+  "tipo": "Texto",
+  "largo": "10",
+  "texto": "Dato obligatorio\nFormato: AAAAMMDD, donde AAAA=año, MM=mes, DD=día"
+ },
+ "G11": {
+  "nombre": "Monto Pagado",
+  "tipo": "Decimal",
+  "largo": "10,2",
+  "texto": "Dato obligatorio\nMáximo 10 enteros y dos decimales"
+ },
+ "G12": {
+  "nombre": "Número de operación bancaria",
+  "tipo": "Texto",
+  "largo": "30",
+  "texto": "Dato obligatorio\nLa longitud máxima es de 30 caracteres, pudiendo ser solo numéricos."
+ },
+ "G13": {
+  "nombre": "Banco",
+  "tipo": "Texto",
+  "largo": "2",
+  "texto": "============================================\n             CÓDIGO DE BANCOS y ENTIDADES\n============================================\n02   DE CREDITO DEL PERU                                                  \n03   INTERBANK                                                            \n05   LATINO                                                               \n07   CITYBANK N.A.                                                        \n08   STANDARD CHARTERED                                                   \n09   SCOTIABANK                                                           \n11   CONTINENTAL                                                          \n12   DE LIMA                                                              \n16   MERCANTIL                                                            \n18   NACION                                                               \n22   SANTANDER CENTRAL HISPANO - PERU                                     \n23   DE COMERCIO                                                          \n25   REPUBLICA                                                            \n26   NBK BANK                                                             \n29   BANCOSUR                                                             \n35   FINANCIERO DEL PERU                                                  \n37   DEL PROGRESO                                                         \n38   INTERAMERICANO FINANZAS                                              \n39   BANEX                                                                \n40   NUEVO MUNDO                                                          \n41   SUDAMERICANO                                                         \n42   DEL LIBERTADOR                                                       \n43   DEL TRABAJO                                                          \n44   SOLVENTA                                                             \n45   SERBANCO                                                             \n46   BANK OF BOSTON                                                       \n47   ORION                                                                \n48   DEL PAIS                                                             \n49   MI BANCO                                                             \n50   DE PARIS                                                             \n53   HSBC BANK PERU S.A. \n54      BANCO FALABELLA PERU   \n55      BANCO RIPLEY           \n56      BANCO SANTANDER PERU S.A.   \n58      BANCO AZTECA DEL PERU       \n99   BANCOS DEL EXTERIOR \nA0   CAJA MUNICIPAL DE CREDITO POPULAR DE LIMA                            \nA1   CAJA MUNICIPAL DE AHORRO Y CRED AREQUIPA                             \nA2   CAJA MUNICIPAL AHORRO Y CREDITO DE TRUJILLO S.A                      \nA3   CMAC PIURA S.A.C.                                                    \nA4   CAJA MUNICIPAL AHORRO Y CREDITO SULLANA S. A.                        \nA5   CAJA MUNICIPAL DE AHORRO Y CREDITO DE PAITA S.A.                     \nA6   CAJA MUNICIPAL DE AHORRO Y CREDITO CUSCO S.A.                        \nA7   CAJA MUNICIPAL DE AHORRO CREDITO ICA SA                              \nA8   CAJA MUNICIPAL AHORRO Y CREDITO PISCO SA                             \nA9   CAJA MUNICIPAL DE AHORR. Y CRED. DE TACNA S.A.                       \nB0   CAJA MUNICIPAL DE AHORRO Y CRED MAYNAS SA                            \nB1   CMAC - HUANCAYO S.A.                                                 \nB2   CAJA MUNICIPAL AHORRO Y CREDIT DEL SANTA SA                          \nB3   PRODUCTOS Y MERCADOS AGRICOLAS DE HUARAL CAJA RURAL DE AHORROS Y CRE \nB4   CAJA RURAL DE AHORRO Y CREDITO QUILLABAMBA                           \nB5   CAJA RURAL DE AHORRO Y CREDITO LOS LIBERTADORES                      \nB6   CAJA RURAL DE AHORRO Y CREDITO SENOR DE LUREN                        \nB7   CAJA RURAL DE AHORRO Y CREDITO CHAVIN SA                             \nB8   CAJA RURAL DE AHORRO Y CREDITO CAJAMARCA S.A.A.                      \nB9   CAJA RURAL DE AHORRO Y CREDITO SIPAN S.A                             \nC0   CAJA RURAL DE AHORRO Y CREDITO LOS ANDES                             \nC1   CAJASUR                                                              \nC2   CAJA RURAL DE AHORRO Y CREDITO NOR PERU                              \nC3   CAJA RURAL DE AHORRO Y CREDITO REG. SAN MARTIN                      \nC4   CRAC PROMOTORA DE FINANZAS S.A.A.                                   \nC5   ENT.DES.PEQ.Y MICROEMP.EDPYME EDYFICAR                              \nC6   EDPYMES PROEMPRESA S.A.                                              \nC7   EDPYME RAIZ S.A.                                                     \nC8   ENT.DES.DE LA PQNA Y MICROEM.CREDIVISION                             \nC9   EDPYME CREDITOS AREQUIPA S.A.                                        \nD0   EDPYME NUEVA VISION S.A.                                             \nD1   EDPYME CRED. DE ALCANCE REG.TRUJILLO SA.                             \nD2   E.D.P.Y.M.DEL FOMENTO COMERC.Y PROD.S.A                              \nD3   EDPYME ALTERNATIVA                                                   \nD4   EDPYME SOLIDARIDAD S.A.A.                                            \nD5   EDPYME EFECTIVA S.A.                                                 \nD6   EDPYME CREDITOS DE ALCANCE REG.TACNA S.A                             \nD7   EDPYME CONFIANZA S.A.                                                \nD8   EDPYME MICASITA SOCIEDAD ANONIMA (EDPYME MICASITA S.A )"
+ },
+ "H1": {
+  "nombre": "Periodo del CDP",
+  "tipo": "Texto",
+  "largo": "6",
+  "texto": "Dato obligatorio\nFormato: AAAAMM, donde AAAA=año, MM=mes"
+ },
+ "H2": {
+  "nombre": "Tipo de comprobante",
+  "tipo": "Texto",
+  "largo": "2",
+  "texto": "Tipos de Comprobante:\n01 Factura\n02 Recibo por honorarios\n03 Boleta de venta                                                                 \n04 Liquidacion de compra                                                           \n05 Boleto de companias de aviacion                                                 \n06 Carta de porte aereo                                                            \n07 Nota de credito                                                                 \n08 Nota de debito                                                                  \n09 Guia de remision\n10 Recibo por arrendamiento                                                        \n11 Póliza de la bolsa de valores                                                   \n12 Ticket de maquina registradora                                                  \n13 Documentos banca y seguros                                                      \n14 Recibos por servicios publicos                                                  \n15 Boleto emitido por el transporte urbano                                         \n16 Boleto de viaje-transporte interprovincial                                      \n17 Documentos emitidos por la iglesia                                              \n18 Documentos emitidos por las afp y eps                                           \n19 Boletos por atracciones y espectac.public.\n20 Comprobante de retencion\n21 Conocimiento de embarque                                                        \n22 Comprobante por operaciones no habituales                                       \n23 Póliza de adjudicacion por remate de bienes                                     \n24 Certificado de pago regalias-perupetro s.a.                                     \n25 Documento de atribucion                                                         \n26 Recibo por el pago de tarifa por uso de agua superficial                        \n27 Seguro complementario de trabajo de riesgo                                      \n28 Tarifa unificada de uso de aeropuerto                                           \n29 Documentos emitidos por la cofopri                                              \n30 Doc. emit. empresas adq. en los sist. de pago med. tarjetas de crédito o débito \n32 Doc. emit. emp. recaudadoras (garantia de red principal)                        \n34 Documento del operador                                                          \n35 documento del participe                                                         \n36 Recibo de distribucion de gas natural                                           \n37 Doc. concesionarios del servicio revisiones tecnicas vehiculares                \n50 Declaracion unica de aduanas - importacion definitiva                           \n52 Despacho simplificado - importacion simplificada                                \n53 Declaracion de mensajeria o courier                                             \n54 Liquidacion de cobranza      \n55 Boleto de viaje emitido por medios electrónicos para transporte ferroviario de pasajeros (bvme)                                                   \n87 Nota de credito especial \n88 Nota de debito especial \n91 Comprobante de no domiciliado                                                   \n96 Exceso de credito fiscal por retiro de bienes                                   \n97 Nota de credito - no domiciliado                                                \n98 Nota de debito - no domiciliado                                                 \n99 Otros-consolidado de boletas de venta"
+ },
+ "H3": {
+  "nombre": "Número de serie del comprobante de pago",
+  "tipo": "Texto",
+  "largo": "20",
+  "texto": "- Debe ser numérico y mayor a cero.\n- Dato obligatorio y longitud máxima de cuatro dígitos.\n- Para el Tipos de Comprobante \"Tiket\" la longitud máxima del N° de serie es hasta\nde 20 dígitos y deberá ser alfanumérico."
+ },
+ "H4": {
+  "nombre": "Número de documento del comprobante de pago",
+  "tipo": "Texto",
+  "largo": "20",
+  "texto": "- Debe ser numérico y mayor a cero.\n- La longitud máxima es de 20 dígitos.\n- Para el tipo de comprobante 12-Tiket, puede ser alfanumérico."
+ },
+ "H5": {
+  "nombre": "Indicador de Agencia de Viajes",
+  "tipo": "Texto",
+  "largo": "1",
+  "texto": "¿Interviene la agencia de viajes en el registro de turistas?\n1=SI\n0=NO"
+ },
+ "H6": {
+  "nombre": "Número de RUC de la agencia de viajes",
+  "tipo": "Numérico",
+  "largo": "11",
+  "texto": "N° de RUC de la agencia de viajes\nEste campo se habilitará sólo si en el campo 5(Indicador de Agencia de viajes) marcó 1=SI\nEste campo debe ser llenado sólo en caso de que en la operación haya intervenido una Agencia de Viajes\nSólo acepta un número de 11 dígitos."
+ },
+ "H7": {
+  "nombre": "Nombre de la agencia de viajes",
+  "tipo": "Texto",
+  "largo": "40",
+  "texto": "Denominación de la agencia de viajes\nEste campo se habilitará sólo si en el campo 5 (Indicador de Agencia de viajes) marcó 1=SI\nEste campo debe ser llenado sólo en caso de que en la operación haya intervenido una Agencia de viajes\nEste campo debe aceptar todos los caracteres legibles existentes a excepción de /, \""
+ },
+ "H8": {
+  "nombre": "N° de pasaporte / Otros doc.",
+  "tipo": "Texto",
+  "largo": "15",
+  "texto": "N° de pasaporte del sujeto no domiciliado\nCampo de llenado obligatorio\nEste campo debe contener números del 0 al 9 y/o caracteres de la A a la Z\nEn esta columna también se podrá registrar el número de los siguientes documentos ,el que corresponda:\nSalvoconducto o Documento Nacional de Identidad, que de conformidad con los tratados internacionales celebrados por el Perú sea válido para ingresar al país.\nDocumento de Identidad Nacional, el cuál hace referencia el artículo 21° de la Ley N° 27688 - Ley de Zona Franca y Zona Comercial de Tacna."
+ },
+ "H9": {
+  "nombre": "Apellido Paterno",
+  "tipo": "Texto",
+  "largo": "20",
+  "texto": "Apellido Paterno del sujeto no domiciliado\nCampo de llenado obligatorio\nEste campo debe contener números del 0 al 9 y/o caracteres de la A a la Z\nEste campo debe aceptar todos los caracteres legibles existentes a excepción de /, \""
+ },
+ "H10": {
+  "nombre": "Apellido Materno",
+  "tipo": "Texto",
+  "largo": "20",
+  "texto": "Apellido Materno del sujeto no domiciliado\nCampo de llenado opcional, normalmente los extranjeros tienen un solo apellido\nEste campo debe aceptar todos los caracteres legibles existentes a excepción de /, \""
+ },
+ "H11": {
+  "nombre": "Primer nombre",
+  "tipo": "Texto",
+  "largo": "20",
+  "texto": "Primer nombre del sujeto no domiciliado\nCampo de llenado obligatorio\nEste campo debe aceptar todos los caracteres legibles existentes a excepción de /, \""
+ },
+ "H12": {
+  "nombre": "Segundo nombre",
+  "tipo": "Texto",
+  "largo": "20",
+  "texto": "Segundo nombre del sujeto no domiciliado\nCampo de llenado obligatorio\nEste campo debe aceptar todos los caracteres legibles existentes a excepción de /, \""
+ },
+ "H13": {
+  "nombre": "País de residencia",
+  "tipo": "Texto",
+  "largo": "2",
+  "texto": ""
+ },
+ "H14": {
+  "nombre": "País de emisión de pasaporte",
+  "tipo": "Texto",
+  "largo": "2",
+  "texto": ""
+ },
+ "H15": {
+  "nombre": "Fecha de ingreso al aís según pasaporte",
+  "tipo": "Texto",
+  "largo": "8",
+  "texto": "Fecha de ingreso al país  según pasaporte del sujeto no domiciliado\nFORMATO DD/MM/AAAA, donde:\nAAAA=año, MM=Mes, dd=día\nCampo de llenado obligatorio\nEste campo debe contener una fecha anterior a la fecha de presentación del archivo plano a la SUNAT."
+ },
+ "H16": {
+  "nombre": "Fecha de ingreso",
+  "tipo": "Texto",
+  "largo": "8",
+  "texto": "Fecha de ingreso del sujeto no domiciliado al establecimiento de hospedaje\nFORMATO DD/MM/AAAA, donde:\nAAAA=año, MM=Mes, dd=día\nCampo de llenado obligatorio\nEste campo debe contener una fecha anterior a la fecha de presentación del archivo plano a la SUNAT."
+ },
+ "H17": {
+  "nombre": "Fecha de salida",
+  "tipo": "Texto",
+  "largo": "8",
+  "texto": "Fecha de salida del sujeto no domiciliado del establecimiento de hospedaje.\nFORMATO DD/MM/AAAA, donde:\nAAAA=Año, MM=Mes, dd=día\nCampo de llenado obligatorio\nEste campo debe contener una fecha mayor o igual a la fecha de ingreso  del sujeto no domiciliado al establecimiento."
+ },
+ "J1": {
+  "nombre": "Periodo del CDP",
+  "tipo": "Texto",
+  "largo": "6",
+  "texto": "Dato obligatorio\nFormato: AAAAMM, donde AAAA=año, MM=mes"
+ },
+ "J2": {
+  "nombre": "Tipo de comprobante",
+  "tipo": "Texto",
+  "largo": "2",
+  "texto": "Dato obligatorio\n01 Factura\n02 Recibo por honorarios\n03 Boleta de venta                                                                 \n04 Liquidacion de compra                                                           \n05 Boleto de companias de aviacion                                                 \n06 Carta de porte aereo                                                            \n07 Nota de credito                                                                 \n08 Nota de debito                                                                  \n09 Guia de remision\n10 Recibo por arrendamiento                                                        \n11 Póliza de la bolsa de valores                                                   \n12 Ticket de maquina registradora                                                  \n13 Documentos banca y seguros                                                      \n14 Recibos por servicios publicos                                                  \n15 Boleto emitido por el transporte urbano                                         \n16 Boleto de viaje-transporte interprovincial                                      \n17 Documentos emitidos por la iglesia                                              \n18 Documentos emitidos por las afp y eps                                           \n19 Boletos por atracciones y espectac.public.\n20 Comprobante de retencion\n21 Conocimiento de embarque                                                        \n22 Comprobante por operaciones no habituales                                       \n23 Póliza de adjudicacion por remate de bienes                                     \n24 Certificado de pago regalias-perupetro s.a.                                     \n25 Documento de atribucion                                                         \n26 Recibo por el pago de tarifa por uso de agua superficial                        \n27 Seguro complementario de trabajo de riesgo                                      \n28 Tarifa unificada de uso de aeropuerto                                           \n29 Documentos emitidos por la cofopri                                              \n30 Doc. emit. empresas adq. en los sist. de pago med. tarjetas de crédito o débito \n32 Doc. emit. emp. recaudadoras (garantia de red principal)                        \n34 Documento del operador                                                          \n35 Documento del participe                                                         \n36 Recibo de distribucion de gas natural                                           \n37 Doc. concesionarios del servicio revisiones tecnicas vehiculares                \n50 Declaracion unica de aduanas - importacion definitiva                           \n52 Despacho simplificado - importacion simplificada                                \n53 Declaracion de mensajeria o courier                                             \n54 Liquidacion de cobranza      \n55 Boleto de viaje emitido por medios electrónicos para transporte ferroviario de pasajeros (bvme)                                                   \n87 Nota de credito especial \n88 Nota de debito especial \n91 Comprobante de no domiciliado                                                   \n96 Exceso de credito fiscal por retiro de bienes                                   \n97 Nota de credito - no domiciliado                                                \n98 Nota de debito - no domiciliado                                                 \n99 Otros-consolidado de boletas de venta"
+ },
+ "J3": {
+  "nombre": "Número de serie del comprobante de pago",
+  "tipo": "Texto",
+  "largo": "20",
+  "texto": "Dato Obligatorio\n- Debe ser numérico y mayor a cero.\n- Dato obligatorio y longitud máxima de cuatro dígitos.\n- Para el Tipos de Comprobante \"Tiket\" la longitud máxima del N° de serie es hasta\nde 20 dígitos y deberá ser alfanumérico."
+ },
+ "J4": {
+  "nombre": "Número de documento del comprobante de pago",
+  "tipo": "Texto",
+  "largo": "20",
+  "texto": "Dato Obligatorio\n'- Debe ser numérico y mayor a cero.\n- La longitud máxima es de 20 dígitos.\n- Para el tipo de comprobante 12-Tiket, puede ser alfanumérico."
+ },
+ "J5": {
+  "nombre": "DUA Definitiva",
+  "tipo": "Texto",
+  "largo": "13",
+  "texto": "Dato Obligatorio\nLa Declaración única de Aduanas está compuesta de la siguiente manera:\nFormato: CCCAAAANNNNNN\nCCC=Código de Aduana, AAAA=Año, NNNNNN=Número correlativo"
+ },
+ "J6": {
+  "nombre": "Valor FOB facturado de la exportación en dólares",
+  "tipo": "Numérico",
+  "largo": "10,2",
+  "texto": "Dato Obligatorio\nValor FOB facturado de la exportación en dólares."
+ },
+ "J7": {
+  "nombre": "Fecha de embarque de la DUA definitiva",
+  "tipo": "Texto",
+  "largo": "10",
+  "texto": "Dato Obligatorio\nFormato dd/mm/aaaa\nDonde: dd=día, mm=mes y aaaa=año\nLa fecha de embarque no debe ser mayor a la fecha del sistema."
+ },
+ "J8": {
+  "nombre": "Fecha de regularización de la DUA definitiva",
+  "tipo": "Texto",
+  "largo": "10",
+  "texto": "Dato Obligatorio\nFormato dd/mm/aaaa\nDonde: dd=día, mm=mes y aaaa=año\nLa fecha de embarque debe pertenecer al periodo de la declaración que está declarando.\nLa fecha de regularización no debe ser mayor a la fecha del sistema."
+ },
+ "J9": {
+  "nombre": "DUA Temporal",
+  "tipo": "Texto",
+  "largo": "13",
+  "texto": "Dato Obligatorio\nLa Declaración única de Aduanas está compuesta de la siguiente manera:\nFormato: CCCAAAANNNNNN\nCCC=Código de Aduana, AAAA=Año, NNNNNN=Número correlativo"
+ },
+ "J10": {
+  "nombre": "Fecha de regularización de la DUA Temporal",
+  "tipo": "Texto",
+  "largo": "10",
+  "texto": "Dato Obligatorio\nFormato dd/mm/aaaa\nDonde: dd=día, mm=mes y aaaa=año\nLa fecha de regularización no debe ser mayor a la fecha del sistema."
+ },
+ "I1": {
+  "nombre": "Periodo del CDP",
+  "tipo": "Texto",
+  "largo": "6",
+  "texto": "Periodo del Comprobante de pago\nAAAAMM, donde:\nAAAA=Año, MM=mes"
+ },
+ "I2": {
+  "nombre": "Tipo de comprobante",
+  "tipo": "Texto",
+  "largo": "2",
+  "texto": "Ver los tipos de Comprobante:\n01 Factura\n02 Recibo por honorarios\n03 Boleta de venta                                                                 \n04 Liquidacion de compra                                                           \n05 Boleto de Companias de Aviacion                                                 \n06 Carta de porte aereo                                                            \n07 Nota de credito                                                                 \n08 Nota de debito                                                                  \n09 Guia de remision\n10 Recibo por arrendamiento                                                        \n11 Póliza de la bolsa de valores                                                   \n12 Ticket de maquina registradora                                                  \n13 Documentos banca y seguros                                                      \n14 Recibos por servicios publicos                                                  \n15 Boleto emitido por el transporte urbano                                         \n16 Boleto de viaje-transporte interprovincial                                      \n17 Documentos emitidos por la iglesia                                              \n18 Documentos emitidos por las afp y eps                                           \n19 Boletos por atracciones y espectac.public.\n20 Comprobante de retencion\n21 Conocimiento de embarque                                                        \n22 Comprobante por operaciones no habituales                                       \n23 Póliza de adjudicacion por remate de bienes                                     \n24 Certificado de pago regalias-perupetro s.a.                                     \n25 Documento de atribucion                                                         \n26 Recibo por el pago de tarifa por uso de agua superficial                        \n27 Seguro complementario de trabajo de riesgo                                      \n28 Tarifa unificada de uso de aeropuerto                                           \n29 Documentos emitidos por la cofopri                                              \n30 Doc. emit. empresas adq. en los sist. de pago med. tarjetas de crédito o débito \n32 Doc. emit. emp. recaudadoras (garantia de red principal)                        \n34 Documento del operador                                                          \n35 Documento del participe                                                         \n36 Recibo de distribucion de gas natural                                           \n37 Doc. concesionarios del servicio revisiones tecnicas vehiculares                \n50 Declaracion unica de aduanas - importacion definitiva                           \n52 Despacho simplificado - importacion simplificada                                \n53 Declaracion de mensajeria o courier                                             \n54 Liquidacion de cobranza      \n55 Boleto de viaje emitido por medios electrónicos para transporte ferroviario de pasajeros (bvme)                                                   \n87 Nota de credito especial \n88 Nota de debito especial \n91 Comprobante de no domiciliado                                                   \n96 Exceso de credito fiscal por retiro de bienes                                   \n97 Nota de credito - no domiciliado                                                \n98 Nota de debito - no domiciliado                                                 \n99 Otros-consolidado de boletas de venta"
+ },
+ "I3": {
+  "nombre": "Número de serie del comprobante de pago",
+  "tipo": "Texto",
+  "largo": "20",
+  "texto": "- Debe ser numérico y mayor a cero.\n- Dato obligatorio y longitud máxima de cuatro dígitos.\n- Para el Tipos de Comprobante \"Tiket\" la longitud máxima del N° de serie es hasta\nde 20 dígitos y deberá ser alfanumérico."
+ },
+ "I4": {
+  "nombre": "Número de documento del comprobante de pago",
+  "tipo": "Texto",
+  "largo": "20",
+  "texto": "- Debe ser numérico y mayor a cero.\n- La longitud máxima es de 20 dígitos.\n- Para el tipo de comprobante 12-Tiket, puede ser alfanumérico."
+ },
+ "I5": {
+  "nombre": "Tipo de exportación",
+  "tipo": "Texto",
+  "largo": "2",
+  "texto": "============================================\n             TIPO DE EXPORTACIÓN\n============================================\n09  VTA.BIEN NACIONAL. O NACIONALIZ. A ESTAB.UBIC.EN LA Z.INT. DE PUERT. O AEROP.\n10  ZONA INTERNACIONAL DE LOS AEROPUERTOS DE LA REPUB. VTA. DE BIENES DUTY FREE\n11  ORO - BOLSA DE PRODUCTOS"
+ },
+ "K1": {
+  "nombre": "Número de pasaporte",
+  "tipo": "Texto",
+  "largo": "15",
+  "texto": "N° de pasaporte del turista.\nCampo de llenado obligatorio.\nEste campo debe contener números del 0 al 9 y/o caracteres de la A a la Z."
+ },
+ "K2": {
+  "nombre": "Apellido paterno",
+  "tipo": "Texto",
+  "largo": "20",
+  "texto": "Apellido paterno del turista\nCampo de llenado  obligatorio\nEste campo debe contener números del 0 al 9 y/o caracteres de la A a la Z\nEste campo debe aceptar todos los caracteres legibles existente a excepción de /, \""
+ },
+ "K3": {
+  "nombre": "Apellido materno",
+  "tipo": "Texto",
+  "largo": "20",
+  "texto": "Apellido materno del turista\nCampo de llenado obligatorio\nEste campo debe contener números del 0 al 9 y/o caracteres de la A a la Z.\nEste campo debe aceptar todos los caracteres legibles existentes a excepción de /, \""
+ },
+ "K4": {
+  "nombre": "Primer nombre",
+  "tipo": "Texto",
+  "largo": "20",
+  "texto": "Primer nombre del turista\nCampo de llenado obligatorio\nEste campo debe contener números del 0 al 9 y/o caracteres de la A a la Z.\nEste campo debe aceptar todos los caracteres legibles existentes a excepción de /, \""
+ },
+ "K5": {
+  "nombre": "Segundo nombre",
+  "tipo": "Texto",
+  "largo": "20",
+  "texto": "Segundo nombre del turista\nCampo de llenado obligatorio\nEste campo debe contener números del 0 al 9 y/o caracteres de la A a la Z.\nEste campo debe aceptar todos los caracteres legibles existentes a excepción de /, \""
+ },
+ "K6": {
+  "nombre": "País de residencia",
+  "tipo": "Texto",
+  "largo": "2",
+  "texto": ""
+ },
+ "K7": {
+  "nombre": "Fecha de ingreso al país",
+  "tipo": "Texto",
+  "largo": "8",
+  "texto": "Fecha de ingreso al país según pasaporte del turista.\nFORMATO AAAAMMDD, donde:\nAAAA=Año, MM=Mes, dd=día\nCampo de llenado obligatorio."
+ },
+ "K8": {
+  "nombre": "Fecha inicio del paquete",
+  "tipo": "Texto",
+  "largo": "8",
+  "texto": "Fecha de inicio del paquete de turistas\nFORMATO AAAAMMDD, donde:\nAAAA=Año, MM=Mes, dd=día\nCampo de llenado obligatorio."
+ },
+ "K9": {
+  "nombre": "Fecha fin de paquete",
+  "tipo": "Texto",
+  "largo": "8",
+  "texto": "Fecha de fin del paquete de turistas\nFORMATO AAAAMMDD, donde:\nAAAA=Año, MM=Mes, dd=día\nCampo de llenado obligatorio."
+ },
+ "K10": {
+  "nombre": "Precio unitario (S/.)",
+  "tipo": "Número",
+  "largo": "10",
+  "texto": "Monto numérico que representa el precio unitario del turista en soles. \nEl campo podrá contener un punto decimal y dos decimales.\nEEEEEE.DD donde:\nEEEEEE= parte entera\n. = punto de separación enteros y decimales\nDD = dos dígitos decimales\nCampo de llenado obligatorio"
+ },
+ "K11": {
+  "nombre": "Número de serie de  FR",
+  "tipo": "Número",
+  "largo": "20",
+  "texto": "Número de serie del comprobante de pago.\n- Debe ser numérico  y mayor a cero.\n- Dato obligatorio y longitud máxima de cuatro dígitos\nCampo de llenado obligatorio"
+ },
+ "K12": {
+  "nombre": "Correlativo de la FR",
+  "tipo": "Número",
+  "largo": "20",
+  "texto": "Número de correlativo del comprobante de pago\n- Debe ser numérico y mayor a cero.\n- Dato obligatorio y longitud máxima de cuatro dígitos.\nCampo de llenado obligatorio."
+ },
+ "A1": {
+  "nombre": "Tipo de compra",
+  "tipo": "Texto",
+  "largo": "2",
+  "texto": "==================================================================\n                    TIPO DE COMPRA\n==================================================================\n01    COMPRA INTERNA\n02    COMPRA EXTERNA"
+ },
+ "A2": {
+  "nombre": "Tipo de comprobante",
+  "tipo": "Texto",
+  "largo": "2",
+  "texto": "==================================================================\n                    TIPO DE COMPROBANTE\n==================================================================\n**** COMPRA INTERNA ****\n01  FACTURA\n03  BOLETA DE VENTA\n04  LIQUIDACION DE COMPRA\n05  BOLETO DE COMPANIAS DE AVIACION\n06  CARTA DE PORTE AEREO\n07  NOTA DE CREDITO\n08  NOTA DE DEBITO\n10  RECIBO POR ARRENDAMIENTO\n11  POLIZA DE LA BOLSA DE VALORES\n12  TICKET DE MAQUINA REGISTRADORA\n13  DOCUMENTOS BANCA Y SEGUROS\n14  RECIBOS POR SERVICIOS PUBLICOS\n15  BOLETO EMITIDO POR EL TRANSPORTE URBANO\n16  BOLETO DE VIAJE-TRANSPORTE INTERPROVINCIAL\n17  DOCUMENTOS EMITIDOS POR LA IGLESIA\n18  DOCUMENTOS EMITIDOS POR LAS AFP Y EPS\n21  CONOCIMIENTO DE EMBARQUE\n22  COMPROBANTE POR OPERACIONES NO HABITUALES\n23  POLIZA DE ADJUDICACION POR REMATE DE BIENES\n24  CERTIFICADO DE PAGO REGALIAS-PERUPETRO S.A.\n25  DOCUMENTO DE ATRIBUCION\n26  RECIBO POR EL PAGO DE TARIFA POR USO DE AGUA SUPERFICIAL\n27  SEGURO COMPLEMENTARIO DE TRABAJO DE RIESGO\n28  TARIFA UNIFICADA DE USO DE AEROPUERTO\n29  DOCUMENTOS EMITIDOS POR LA COFOPRI\n30  DOC. EMIT. EMPRESAS ADQ. EN LOS SIST. DE PAGO MED. TARJETAS DE CRÉDITO O DÉBITO\n32  DOC. EMIT. EMP. RECAUDADORAS (GARANTIA DE RED PRINCIPAL)\n34  DOCUMENTO DEL OPERADOR\n35  DOCUMENTO DEL PARTICIPE\n36  RECIBO DE DISTRIBUCION DE GAS NATURAL\n37  DOC. CONCESIONARIOS DEL SERVICIO REVISIONES TECNICAS VEHICULARES\n55  BOLETO DE VIAJE EMITIDO POR MEDIOS ELECTRÓNICOS PARA TRANSPORTE FERROVIARIO DE PASAJEROS (BVME)\n87  NOTA DE CREDITO ESPECIAL\n88  NOTA DE DEBITO ESPECIAL\n\n**** COMPRA EXTERNA ****\n50  DECLARACION UNICA DE ADUANAS - IMPORTACION DEFINITIVA\n52  DESPACHO SIMPLIFICADO - IMPORTACION SIMPLIFICADA\n53  DECLARACION DE MENSAJERIA O COURIER\n54  LIQUIDACION DE COBRANZA\n91  COMPROBANTE DE NO DOMICILIADO\n97  NOTA DE CREDITO - NO DOMICILIADO\n98  NOTA DE DEBITO - NO DOMICILIADO"
+ },
+ "A3": {
+  "nombre": "Fecha de emisión/Pago",
+  "tipo": "Texto",
+  "largo": "10",
+  "texto": "Formato: dd/mm/aaaa\nDonde dd=día, mm=mes, aaaa=año\nLa fecha de emisión no debe ser mayor a la fecha del Sistema\nEl año y el mes de la fecha de emisión no debe ser mayor al periodo."
+ },
+ "A4": {
+  "nombre": "Serie del comprobante de pago",
+  "tipo": "Numérico",
+  "largo": "10",
+  "texto": "-Dato obligatorio y longitud máxima de cuatro dígitos para los siguientes tipo de comprobantes: 01, 03, 04, 07, 08, 55\n-Para el tipo de comprobante 10 y 12, no se debe incorporar la serie.\n-Para los comprobantes 50, 52, 53 y 54 debe registrar el código de Aduana con el siguiente formato: CCCAAAANNNNNN\nCCC= Código de Aduana\nAAAA= Año\nNNNNNN= Número correlativo\nCompra externa: Tipo de comprobante 91 y 98 deberá consignar los formularios: 1062, 1262 y 1662.\n-Para los demás tipos de comprobante de longitud máxima del N° de serie es hasta de 10 dígitos."
+ },
+ "A5": {
+  "nombre": "Número de comprobante",
+  "tipo": "Texto",
+  "largo": "20",
+  "texto": "Debe ser numérico y mayor a cero.\nLa longitud máxima es de 20 dígitos\nPara el tipo de comprobante 12-Tiket, deberá ser alfanumérico.\nCompra externa: Tipo de comprobante 91 y 98 deberá consignar el número de orden de los siguientes formularios: 1062, 1262 y 1662.\n-Para los comprobantes 50, 52, 53 y 54 esta columna debe estar vacío (blanco)"
+ },
+ "A6": {
+  "nombre": "Tipo de persona",
+  "tipo": "Texto",
+  "largo": "2",
+  "texto": "==================================================================\n                    TIPO DE PERSONA\n==================================================================\n  01    PER NAT,SOC CONY, SUC IND,SOC HECHO,OTROS ENTES COLECT.\n  02    PERSONA JURIDICA\n  03    SUJETOS NO DOMICILIADOS"
+ },
+ "A7": {
+  "nombre": "Tipo de documento",
+  "tipo": "Texto",
+  "largo": "1",
+  "texto": "El tipo de persona 01-Persona Natural, consta de los siguientes Tipos de Documento.\n- = Sin documento\n1 = Libreta electoral - DNI\n2 = Carnet de Fuerzas Policiales\n3 = Carnet de Fuerzas armadas\n4 = Carnet de extranjería\n6 = RUC\n7 = Pasaporte\nEl tipo de persona 02-Persona Jurídica, consta del siguiente Tipo de documento\n6 = RUC\nEl tipo de persona 03-Sujetos no domicilados, consta de los siguientes tipos de documento.\n- = Sin documento\n7 = Pasaporte"
+ },
+ "A8": {
+  "nombre": "Número de documento",
+  "tipo": "Texto",
+  "largo": "15",
+  "texto": "Dato obligatorio.\nDebe ser numérico, longitud máxima hasta 12 dígitos de acuerdo al Tipo de ocumento."
+ },
+ "A9": {
+  "nombre": "Nombre o razón social",
+  "tipo": "Texto",
+  "largo": "40",
+  "texto": "Obligatorio para los siguientes Tipos de persona:\n02 = Persona jurídica\n03 = Sujetos no domiciliados"
+ },
+ "A10": {
+  "nombre": "Apellido paterno",
+  "tipo": "Texto",
+  "largo": "20",
+  "texto": "Obligatorio para el siguiente tipo de persona:\n01 = Persona Natural"
+ },
+ "A11": {
+  "nombre": "Apellido materno",
+  "tipo": "Texto",
+  "largo": "20",
+  "texto": "Dato opcional para el siguiente Tipo de Persona:\n01 = Persona natural, caso contrario no consignar valor alguno."
+ },
+ "A12": {
+  "nombre": "Nombre 1",
+  "tipo": "Texto",
+  "largo": "20",
+  "texto": "Obligatorio para el siguiente tipo de persona:\n01 = Persona Natural"
+ },
+ "A13": {
+  "nombre": "Nombre 2",
+  "tipo": "Texto",
+  "largo": "20",
+  "texto": "Dato opcional para el siguiente Tipo de Persona:\n01 = Persona natural, caso contrario no consignar valor alguno."
+ },
+ "A14": {
+  "nombre": "Tipo de moneda",
+  "tipo": "Texto",
+  "largo": "1",
+  "texto": "===========================\n    TIPO DE MONEDA\n===========================\n   1    Nuevos soles\n   2    Dólares americanos\n   9    Otra moneda"
+ },
+ "A15": {
+  "nombre": "Código de destino",
+  "tipo": "Texto",
+  "largo": "1",
+  "texto": "===========================\n    CODIGO DE DESTINO\n===========================\n1 = Adquisiciones gravadas destinadas a operaciones gravadas y/o exportaciones\n2 = Adquisiciones gravadas destinadas conjuntamente a operaciones gravadas y no gravadas.\n3 = Adquisiciones gravadas destinadas a operaciones no gravadas\n4 = Adquisiciones no gravadas\n5 = Adquisición con más de un destino."
+ },
+ "A16": {
+  "nombre": "Número de destino",
+  "tipo": "Texto",
+  "largo": "1",
+  "texto": "Por defecto 1 para los código de destino del 1 al 4\nPara el código de destino igual a 5, será un correlativo que comenzará en 1 y terminará en 4."
+ },
+ "A17": {
+  "nombre": "Base imponible",
+  "tipo": "Numérico",
+  "largo": "10,2",
+  "texto": "Llenar esta casilla solo en estas condiciones:\nSi se trata de una COMPRA INTERNA.\nSi se trata de una COMPRA EXTERNA y el destino sea: ADQUISICIONES CON MAS DE UN DESTINO.\n****PARA EL RESTO DE CASOS DEJAR EN BLANCO****"
+ },
+ "A18": {
+  "nombre": "Monto ISC",
+  "tipo": "Numérico",
+  "largo": "10,2",
+  "texto": "Dato opcional, máximo 10 enteros y dos decimales"
+ },
+ "A19": {
+  "nombre": "Monto IGV",
+  "tipo": "Numérico",
+  "largo": "10,2",
+  "texto": "Dato obligatorio, máximo 10 enteros y dos decimales"
+ },
+ "A20": {
+  "nombre": "Monto Otros",
+  "tipo": "Numérico",
+  "largo": "10,2",
+  "texto": "Dato opcional, máximo 10 enteros y dos decimales"
+ },
+ "A21": {
+  "nombre": "Indicador de detracciones",
+  "tipo": "Texto",
+  "largo": "1",
+  "texto": "1 = El comprobante de pago está sujeto a detracciones\n0 = El comprobante de pago NO está sujeto a detracciones"
+ },
+ "A22": {
+  "nombre": "Código de la tasa de detracciones",
+  "tipo": "Texto",
+  "largo": "5",
+  "texto": "===========================\n   CODIGO DETRACCIONES\n===========================\n**** Obligatorio si el campo N° 21 está en 1, en caso contrario dejar en blanco**** \n00101   10% Azucar\n00102    9%  Azucar\n00201   10%  Arroz\n00301   10% Alcohol Etilico\n00302    9% Alcohol Etilico\n00401    9% Recursos Hidrobiologicos\n00402   15% Recursos Hidrobiologicos\n00403    4% Recursos Hidrobiologicos\n00404   10% Recursos Hidrobiologicos\n00501    7% Maiz Amarillo Duro\n00502   10% Maiz Amarillo Duro\n00503    9% Maiz Amarillo Duro\n00504    4& Maiz Amarillo Duro\n00601   10% Algodón\n00602   11% Algodón\n00603   15% Algodón\n00604   12% Algodón\n00605    9% Algodón\n00701   10% Caña De Azucar\n00702   12% Caña De Azucar\n00703    9% Caña De Azucar\n00801    9% Madera\n00802    4% Madera\n00901   10% Arena Y Piedra\n00902   12% Arena Y Piedra\n00903   12% Arena Y Piedra\n00904   10% Arena Y Piedra\n01001   10% Residuos-Desperdicios Y Derivadas\n01002   14% Residuos-Desperdicios Y Derivadas\n01101   Bienes Con Renuncia A Exoneracion De Igv            \n01102    9% Bienes Gravados Con El Igv, Por Renuncia A La Exoneración\n01201   12% Servicios De Intermediación Laboral Grav Con El Igv Y Terceriz.\n01202   14% Servicios De Intermediación Laboral Grav Con El Igv Y Terceriz.\n01203   10% Servicios De Intermediación Laboral Grav Con El Igv Y Terceriz.\n01301    4%  Animales Vivos\n01302   10% Animales Vivos\n01401    4% Carnes Y Despojos Comestibles\n01402   10% Carnes Y Despojos Comestibles\n01501    4% Abonos-Cueros Y Pieles De Origen Animal\n01502   10% Abonos-Cueros Y Pieles De Origen Animal\n01601    9% Aceite De Pescado\n01701    9% Harina - Polvo Y Pellets De Pescado - Crust. Molus Y Demas Inv. Ac.\n01702    4% Harina - Polvo Y Pellets De Pescado - Crust. Molus Y Demas Inv. Ac.\n01801    9% Embarcaciones Pesqueras\n01901    9% Arrendamiento De Bienes Muebles\n01902   12% Arrendamiento De Bienes Muebles\n01903   10% Arrendamiento De Bienes Muebles\n02001    9% Mantenimiento Y Reparación De Bienes Muebles\n02002   12% Mantenimiento Y Reparación De Bienes Muebles\n02003   10% Mantenimiento Y Reparación De Bienes Muebles\n02101   12% Movimiento De Carga\n02102   14% Movimiento De Carga\n02103   10% Movimiento De Carga\n02201   12% Otros Servicios Empresariales\n02202   14% Otros Servicios Empresariales\n02203   10% Otros Servicios Empresariales\n02301    4% Leche\n02401   12% Comisión Mercantil\n02402   10% Comisión Mercantil\n02501   12% Fabricacion De Bienes Por Encargo\n02502   10% Fabricacion De Bienes Por Encargo\n02601   12% Servicio De Transporte De Personas\n02602   10% Servicio De Transporte De Personas\n02701    8% Servicio De Transporte De Bienes\n02702    4% Servicio De Transporte De Bienes\n02901    9% Algodón En Rama Sin Desmotar\n03001    5% Contratos De Construccion\n03002    4% Contratos De Construccion\n03201   12% Paprika Y Otros Frutos Capsicum\n03202    9% Paprika Y Otros Frutos Capsicum\n03301   12% Esparragos\n03302    9% Esparragos\n03401   12% Minerales Metalicos No Auriferos\n03402   10% Minerales Metalicos No Auriferos\n01101   10% Bienes Con Renuncia A Exoneración De Igv\n03101   12% Oro Gravado Con El Igv\n03102   10% Oro Gravado Con El Igv\n03501   1.5% Bienes Exonerados Del Igv\n03601    5% Oro Y Minerales Metálicos Exonerados Igv\n03602    4% Oro Y Minerales Metálicos Exonerados Igv\n03603   1.5% Oro Y Minerales Metálicos Exonerados Igv\n03701    9% Demás Servicios Gravados Con El Igv\n03702   12% Demás Servicios Gravados Con El Igv\n03703   10% Demás Servicios Gravados Con El Igv\n03801    9% Espectáculos Públicos No Deportivos\n03802    4% Espectáculos Públicos No Deportivos\n03901    6% Minerales No Metálicos\n03902   12% Minerales No Metálicos\n03903   10% Minerales No Metálicos\n04101   15% Plomo Refinado Y Aleacion De Plomo\n01003   15% Residuos-Desperdicios Y Derivadas"
+ },
+ "A23": {
+  "nombre": "Número de constancia de la Detracción",
+  "tipo": "Texto",
+  "largo": "15",
+  "texto": "Obligatorio si el campo N° 21 está en 1, en caso contrario dejar en blanco"
+ },
+ "A24": {
+  "nombre": "Indicador de retenciones",
+  "tipo": "Texto",
+  "largo": "1",
+  "texto": "1 = El comprobante de pago está sujeto a retenciones\n0 = El comprobante de pago NO está sujeto a retenciones"
+ },
+ "A25": {
+  "nombre": "Tipo de comprobante de pago",
+  "tipo": "Texto",
+  "largo": "2",
+  "texto": "Sólo habilitado para los siguientes CDP\nCompras internas: 07, 08, 87 y 88 (Doc Refer. Ver archivo leeme.txt)\nCompras externas: 97 y 98 (Doc. Refer. Ver archivo leeme.txt)\nCompras externas: 91 (Doc. Refer. Ver archivo leeme.txt)\n-----------------------------------------------------------------------------------\n01 Factura\n07 Nota de crédito\n08 Nota de débito\n-----------------------------------------------------------------------------------\n91 Comprobante de No Domiciliado                                                 \n97 Nota de Crédito - No Domiciliado\n98 Nota de Débito - No Domiciliado"
+ },
+ "A26": {
+  "nombre": "Serie del comprobante",
+  "tipo": "Texto",
+  "largo": "10",
+  "texto": "Compras internas: 07, 08, 87 y 88 (Doc. Refer. 01 = Factura) dato obligatorio, hasta cuatro dígitos.\nCompras externas: 97 y 98 (Doc. Refer. 91, 97 y 98), dato opcional, alfanumérico de 10 posiciones.\nCompras externas: 91 (Doc. Refer. 01 =Factura), dato opcional, alfanumérico de 10 posiciones"
+ },
+ "A27": {
+  "nombre": "Número de comprobante",
+  "tipo": "Texto",
+  "largo": "20",
+  "texto": "Compras internas: 07, 08, 87 y 88 (Doc. Refer. 01 = Factura) dato obligatorio, hasta cuatro dígitos.\nCompras externas: 97 y 98 (Doc. Refer. 91, 97 y 98), dato obligatorio, alfanumérico de 20 posiciones.\nCompras externas: 91 (Doc. Refer. 01 =Factura), dato obligatorio, alfanumérico de 20 posiciones"
+ },
+ "A28": {
+  "nombre": "Fecha de emisión",
+  "tipo": "Texto",
+  "largo": "10",
+  "texto": "Formato: dd/mm/aaaa\nDonde dd=día, mm=mes, aaaa=año\nLa fecha de emisión del documento de la referencia\nno puede ser mayor a la fecha de emisión de la nota de crédito/débito."
+ },
+ "A29": {
+  "nombre": "Base imponible",
+  "tipo": "Numérico",
+  "largo": "10,2",
+  "texto": "Dato Obligatorio, máximo 10 enteros y dos decimales\nDebe registrar sólo el importe por el cual se emite\n la nota de crédito/débito, no por el importe total del documento original."
+ },
+ "A30": {
+  "nombre": "IGV",
+  "tipo": "Numérico",
+  "largo": "10,2",
+  "texto": "Dato Obligatorio, máximo 10 enteros y dos decimales.\nDebe registrar sólo el importe por el cual se emite la nota\nde crédito/débito, no por el importe total del documento original."
+ },
+ "C1": {
+  "nombre": "Tipo de venta",
+  "tipo": "Texto",
+  "largo": "2",
+  "texto": "======================\n     VENTAS\n======================\n  01    Venta interna\n  02    Venta externa"
+ },
+ "C2": {
+  "nombre": "Tipo de comprobante",
+  "tipo": "Texto",
+  "largo": "2",
+  "texto": "============================================\n     TIPO DE COMPROBANTE\n============================================\n***PARA VENTA INTERNA***\n01  FACTURA\n03  BOLETA DE VENTA\n05  BOLETO DE COMPAÑÍA DE AVIACIÓN COMERCIAL POR EL SERVICIO DE TRANSPORTE AÉREO DE PASAJEROS\n06  CARTA DE PORTE AÉREO POR EL SERVICIO DE TRANSPORTE DE CARGA AÉREA\n07  NOTA DE CRÉDITO\n08  NOTA DE DÉBITO\n12  TICKET O CINTA EMITIDO POR MÁQUINA REGISTRADORA\n15  BOLETO EMITIDO POR LAS EMPRESAS DE TRANSPORTE PÚBLICO URBANO DE PASAJEROS\n16  BOLETO DE VIAJE EMITIDO POR LAS EMPRESAS DE TRANSPORTE PÚBLICO INTERPROVINCIAL DE PASAJEROS DENTRO DEL PAÍS\n23  PÓLIZAS DE ADJUDICACIÓN EMITIDAS CON OCASIÓN DEL REMATE O ADJUDICACIÓN DE BIENES POR VENTA FORZADA, POR LOS\n24  CERTIFICADO DE PAGO DE REGALÍAS EMITIDAS POR PERUPETRO S.A\n25  DOCUMENTO DE ATRIBUCIÓN (LEY DEL IMPUESTO GENERAL A LAS VENTAS E IMPUESTO SELECTIVO AL CONSUMO, ART. 19º,\n34  DOCUMENTO DEL OPERADOR\n35  DOCUMENTO DEL PARTÍCIPE\n36  RECIBO DE DISTRIBUCIÓN DE GAS NATURAL\n37  DOCUMENTOS QUE EMITAN LOS CONCESIONARIOS DEL SERVICIO DE REVISIONES TÉCNICAS VEHICULARES\n\n***PARA VENTA EXTERNA***\n01  FACTURA\n03  BOLETA DE VENTA\n07  NOTA DE CRÉDITO\n08  NOTA DE DÉBITO\n12  TICKET O CINTA EMITIDO POR MÁQUINA REGISTRADORA\n34  DOCUMENTO DEL OPERADOR\n35  DOCUMENTO DEL PARTÍCIPE\n36  RECIBO DE DISTRIBUCIÓN DE GAS NATURAL\n37  DOCUMENTOS QUE EMITAN LOS CONCESIONARIOS DEL SERVICIO DE REVISIONES TÉCNICAS VEHICULARES."
+ },
+ "C3": {
+  "nombre": "Fecha de emisión/Pago",
+  "tipo": "Texto",
+  "largo": "10",
+  "texto": "Formato: dd/mm/aaaa\nDonde dd=día, mm=mes, aaaa=año\nLa fecha de emisión no debe ser mayor a la Fecha del Sistema.\nEl año y el mes de la Fecha de emisión no debe ser mayor al periodo."
+ },
+ "C4": {
+  "nombre": "Serie del comprobante de pago",
+  "tipo": "Numérico",
+  "largo": "20",
+  "texto": "- Dato Obligatorio y longitud máxima de cuatro dígitos para los siguientes Tipos de comprobantes:\n01, 03, 07, 08, 34, 35, 36, 37\n-Para el tipo de comprobante 12, es alfanumérico de hasta 20 posiciones.\n-Para los demás Tipos de Comprobante la longitud máxima de la serie es hasta de 10 dígitos."
+ },
+ "C5": {
+  "nombre": "Número de comprobante",
+  "tipo": "Texto",
+  "largo": "20",
+  "texto": "Debe ser numérico y mayor a cero.\nLa longitud máxima es de 20 dígitos\nPara el tipo de comprobante 12-Tiket, deberá ser alfanumérico."
+ },
+ "C6": {
+  "nombre": "Tipo de persona",
+  "tipo": "Texto",
+  "largo": "2",
+  "texto": "01 = Persona Natural\n02 = Persona Jurídica\n03 = Sujetos no domiciliados"
+ },
+ "C7": {
+  "nombre": "Tipo de documento",
+  "tipo": "Texto",
+  "largo": "1",
+  "texto": "El tipo de persona 01.Persona Natural, consta de los siguientes Tipos de Documento:\n- = Sin documento\n1 = Libreta electoral - DNI\n2 = Carnet de Fuerzas Policiales\n3 = Carnet de Fuerzas Armadas\n4 = Carnet de extranjería\n6 = RUC\n7 = Pasaporte\nEl tipo de Persona 02-Persona Jurídica, consta del siguiente Tipo de Documento\n6 = RUC\nEl tipo de Persona 03-Sujetos no domiciliados, consta de los siguientes Tipos de Documento.\n- = Sin documento\n7 = Pasaporte"
+ },
+ "C8": {
+  "nombre": "Número de documento",
+  "tipo": "Texto",
+  "largo": "15",
+  "texto": "Dato obligatorio.\nDebe ser numérico, longitud máxima hasta 12 dígitos de acuerdo al Tipo de Documento."
+ },
+ "C9": {
+  "nombre": "Nombre o razón social",
+  "tipo": "Texto",
+  "largo": "40",
+  "texto": "Obligatorio para los siguientes Tipos de Persona:\n02 = Persona Jurídica\n03 = Sujetos no domicilados"
+ },
+ "C10": {
+  "nombre": "Apellido paterno",
+  "tipo": "Texto",
+  "largo": "20",
+  "texto": "Obligatorio para el siguiente Tipo de Persona:\n01 = Persona Natural"
+ },
+ "C11": {
+  "nombre": "Apellido materno",
+  "tipo": "Texto",
+  "largo": "20",
+  "texto": "Dato opcional para el siguiente Tipo de Persona:\n01-Persona natural, caso contrario no consigna valor alguno."
+ },
+ "C12": {
+  "nombre": "Nombre 1",
+  "tipo": "Textp",
+  "largo": "20",
+  "texto": "Obligatorio para el siguiente Tipo de Persona:\n01 = Persona Natural"
+ },
+ "C13": {
+  "nombre": "Nombre 2",
+  "tipo": "Textp",
+  "largo": "20",
+  "texto": "Dato opcional para el siguiente Tipo de Persona:\n01 = Persona Natural, caso contrario no consignar valor alguno."
+ },
+ "C14": {
+  "nombre": "Tipo de moneda",
+  "tipo": "Texto",
+  "largo": "1",
+  "texto": "1 = Nuevos Soles\n2 = Dólares Americanos\n3 = Otra moneda"
+ },
+ "C15": {
+  "nombre": "Código de destino",
+  "tipo": "Texto",
+  "largo": "1",
+  "texto": "===========================\n    CODIGO DESTINO\n===========================\n1 = Operación gravada con el IGV\n2 = Operación no gravada con el IGV\n3 = Mixto"
+ },
+ "C16": {
+  "nombre": "Número de destino",
+  "tipo": "Texto",
+  "largo": "1",
+  "texto": "Por defecto 1 para los código de destino  del 1 al 2\nPara el código de destino igual a 3, será un correlativo que comenzará en 1  y terminará en 2."
+ },
+ "C17": {
+  "nombre": "Base imponible",
+  "tipo": "Numérico",
+  "largo": "10,2",
+  "texto": "Dato Obligatorio, máximo 10 enteros y dos decimales"
+ },
+ "C18": {
+  "nombre": "Monto ISC",
+  "tipo": "Numérico",
+  "largo": "10,2",
+  "texto": "Dato opcional, máximo 10 enteros y dos decimales.\nPara los  código  de destino \"2\" (ver campo 15) no deben registrar el monto de ISC."
+ },
+ "C19": {
+  "nombre": "Monto IGV",
+  "tipo": "Numérico",
+  "largo": "10,2",
+  "texto": "Dato Obligatorio, máximo 10 enteros y dos decimales.\nPara los código de destino \"2\" (ver campo 15) no deben registrar el monto de IGV."
+ },
+ "C20": {
+  "nombre": "Monto Otros",
+  "tipo": "Numérico",
+  "largo": "10,2",
+  "texto": "Dato opcional, máximo 10 enteros y dos decimales."
+ },
+ "C21": {
+  "nombre": "Indicador de percepciones",
+  "tipo": "Texto",
+  "largo": "1",
+  "texto": "1 = El comprobante de pago está sujeto a percepción\n0 = El comprobante de pago NO está sujeto a percepción."
+ },
+ "C22": {
+  "nombre": "Tipo de Tasa de la percepción",
+  "tipo": "Texto",
+  "largo": "2",
+  "texto": "Obligatorio si el campo N° 21 está en 1, en caso contrario dejar en blanco\n01 1% Combustibles\n02 10% Importaciones art 4° lit.a)\n03 5% Importaciones art 4° lit.b)\n04 3.5% Importaciones art 4° lit.c)\n05 10% Vtas Internas - art 5° lit a)\n06 2% Vtas Internas - art 5° lit b)\n07 0.5% Vtas Internas - art 5° lit c)"
+ },
+ "C23": {
+  "nombre": "Número de serie del documento de la percepción",
+  "tipo": "Texto",
+  "largo": "4",
+  "texto": "Obligatorio si el campo N° 21 está en 1, en caso contrario dejar en blanco."
+ },
+ "C24": {
+  "nombre": "Número del documento de la percepción",
+  "tipo": "Texto",
+  "largo": "10",
+  "texto": "Obligatorio si el campo N° 21 está en 1, en caso contrario dejar en blanco."
+ },
+ "C25": {
+  "nombre": "Tipo de comprobante de pago",
+  "tipo": "Texto",
+  "largo": "2",
+  "texto": "Solo habilitado para los siguientes CDP\nVenta internas y externas: 07, y 08\n01 Factura\n03 Boleta de Venta\n05 Boleto de compañía de aviación comercial por el servicio de transporte aéreo de pasajeros\n06 Carta de porte aéreo por el servicio de transporte de carga aérea\n07 Nota de crédito\n08 Nota de débito\n12 Ticket o cinta emitido por máquina registradora\n15 Boleto emitido por las empresas de transporte público urbano de pasajeros\n16 Boleto de viaje emitido por las empresas de transporte público interprovincial de pasajeros dentro del país\n23 Pólizas de Adjudicación emitidas con ocasión del remate o adjudicación de bienes por venta forzada, por los \n24 Certificado de pago de regalías emitidas por PERUPETRO S.A\n25 Documento de Atribución (Ley del Impuesto General a las Ventas e Impuesto Selectivo al Consumo, Art. 19º, \n34 Documento del Operador\n35 Documento del Partícipe\n36 Recibo de Distribución de Gas Natural\n37 Documentos que emitan los concesionarios del servicio de revisiones técnicas vehiculares, por la prestación de dicho"
+ },
+ "C26": {
+  "nombre": "Serie del comprobante",
+  "tipo": "Texto",
+  "largo": "10",
+  "texto": "Ventas internas: 07 y 08 (Doc. Refer. 01=Factura), dato obligatorio, hasta 4 dígitos,\nVentas externas: 07 y 08 (Doc. Refer. 01=Factura), dato obligatorio, hasta 10 dígitos."
+ },
+ "C27": {
+  "nombre": "Número de comprobante",
+  "tipo": "Texto",
+  "largo": "20",
+  "texto": "Ventas internas: 07 y 08 (Doc. Refer. 01=Factura), dato obligatorio, hasta 20 dígitos,\nVentas externas: 07 y 08 (Doc. Refer. 01=Factura), dato obligatorio, hasta 20 dígitos."
+ },
+ "C28": {
+  "nombre": "Fecha de emisión",
+  "tipo": "Texto",
+  "largo": "10",
+  "texto": "Formato: dd/mm/aaaa\nDonde dd=día, mm=mes, aaaa=año\nLa fecha de emisión del documento de la referencia\nno puede ser mayor a la fecha de emisión de la nota de crédito/débito."
+ },
+ "C29": {
+  "nombre": "Base imponible",
+  "tipo": "Numérico",
+  "largo": "10,2",
+  "texto": "Dato Obligatorio, máximo 10 enteros y dos decimales\nDebe registrar sólo el importe por el cual se emite la nota\nde crédito/débito, no por el importe total del documento original."
+ },
+ "C30": {
+  "nombre": "IGV",
+  "tipo": "Numérico",
+  "largo": "10,2",
+  "texto": "Dato Obligatorio, máximo 10 enteros y dos decimales\nPara las ventas externas no se considera el IGV.\nDebe registrar sólo el importe por el cual se emite la nota de\ncrédito/débito, no por el importe total del documento original."
+ },
+ "C31": {
+  "nombre": "Campo referencial",
+  "tipo": "",
+  "largo": "",
+  "texto": "======================================================================================\n                      TIPO DE EXPORTACIÓN\n======================================================================================\n01\tEXPORTACION DEFINITIVA INDIVIDUAL\t\n02\tEXPORTACION DE JOYAS DE ORO CON OPERACIONES SWAP\t\n03\tEXPORTACION A TRAVES DE TERCEROS(COMISIONISTA)\t\n04\tEXPORTACION DEFINITIVA BAJO CONTRATOS DE COLABORACION EMPRESARIAL\t\n05\tEXPORTACION SIMPLIFICADA\t\n06\tCONSTANCIA DE EJECUCION SWAP\t\n07\tEXPORTACION DE SERVICIOS\t\n08\tESTABLECIMIENTOS DE HOSPEDAJE\t\n09\tVTA.BIEN NACIONAL. O NACIONALIZ. A ESTAB.UBIC.EN LA Z.INT. DE PUERT. O AEROP.\t\n10\tZONA INTERNACIONAL DE LOS AEROPUERTOS DE LA REPUB. VTA. DE BIENES DUTY FREE\t\n11\tORO - BOLSA DE PRODUCTOS\t\n12\tEXPORTACION TEMPORAL A EXPORTACION DEFINITIVA"
+ },
+ "B1": {
+  "nombre": "Tipo de compra",
+  "tipo": "Texto",
+  "largo": "2",
+  "texto": "01 = Compra Interna\n02 = Compra externa"
+ },
+ "B2": {
+  "nombre": "Tipo de comprobante",
+  "tipo": "Texto",
+  "largo": "2",
+  "texto": "PARA COMPRA INTERNA\n01 Factura\n03 Boleta de venta                                                                 \n04 Liquidacion de compra                                                           \n05 Boleto de companias de aviacion                                                 \n06 Carta de porte aereo                                                            \n07 Nota de credito                                                                 \n08 Nota de debito                                                                  \n10 Recibo por arrendamiento                                                        \n11 Poliza de la bolsa de valores                                                   \n12 Ticket de maquina registradora                                                  \n13 Documentos banca y seguros                                                      \n14 Recibos por servicios publicos                                                  \n15 Boleto emitido por el transporte urbano                                         \n16 Boleto de viaje-transporte interprovincial                                      \n17 Documentos emitidos por la iglesia                                              \n18 Documentos emitidos por las afp y eps                                           \n21 Conocimiento de embarque                                                        \n22 Comprobante por operaciones no habituales                                       \n23 Poliza de adjudicacion por remate de bienes                                     \n24 Certificado de pago regalias-perupetro s.a.                                     \n25 Documento de atribucion                                                         \n26 Recibo por el pago de tarifa por uso de agua superficial                        \n27 Seguro complementario de trabajo de riesgo                                      \n28 Tarifa unificada de uso de aeropuerto                                           \n29 Documentos emitidos por la cofopri                                              \n30 Doc. emit. empresas adq. en los sist. de pago med. tarjetas de crédito o débito \n32 Doc. emit. emp. recaudadoras (garantia de red principal)                        \n34 Documento del operador                                                          \n35 Documento del participe                                                         \n36 Recibo de distribucion de gas natural                                           \n37 Doc. concesionarios del servicio revisiones tecnicas vehiculares                \n55  Boleto de viaje emitido por medios electrónicos para transporte ferroviario de pasajeros (bvme)                                                   \n87  Nota de credito especial \n88 Nota de debito especial \n96 Exceso de credito fiscal por retiro de bienes                                   \n99 Otros-consolidado de boletas de venta \n\nPARA COMPRA EXTERNA\n50 Declaracion unica de aduanas - importacion definitiva                           \n52 Despacho simplificado - importacion simplificada                                \n53 Declaracion de mensajeria o courier                                             \n54 Liquidacion de cobranza \n91 Comprobante de no domiciliado\n97 Nota de credito - no domiciliado                                                \n98 Nota de debito - no domiciliado"
+ },
+ "B3": {
+  "nombre": "Número de serie del comprobante de pago",
+  "tipo": "Texto",
+  "largo": "10",
+  "texto": "-Debe ser numérico y mayor a cero.\n- Dato obligatorio y longitud máxima de cuatro dígitos para los siguientes Tipo de Comprobantes: 01, 03, 04, 07, 08\n- Para el Tipo de Comprobante 10 y 12, no se debe incorporar el número de serie.\n- Para los comprobantes 50 ,52, 53 y 54 debe registrar el código de Aduana con el siguiente formato: CCCAAAANNNNNN\nCCC=Código de Aduana\nAAAA=Año\nNNNNNN=Número correlativo\nCompra externa: Tipo de comprobante 91 y 98 deberá consignar los formularios: 1062, 1262 y 1662.\n- Para los demás Tipos de Comprobante la longitud máxima del N° de serie es hasta de 10 dígitos."
+ },
+ "B4": {
+  "nombre": "Número de comprobante",
+  "tipo": "Texto",
+  "largo": "20",
+  "texto": "Debe ser numérico y mayor a cero.\nLa longitud máxima es de 20 dígitos\nPara el tipo de comprobante 12-Tiket, deberá ser alfanumérico.\nCompra externa: Tipo de Comprobante 91 y 98 deberá consignar el número de orden de los siguientes formularios: 1062, 1262 y 1662.\n- Para los comprobantes 50, 52, 53 y 54 esta columna debe estar vacío (blanco)"
+ },
+ "B5": {
+  "nombre": "Tipo de persona",
+  "tipo": "Texto",
+  "largo": "2",
+  "texto": "01-Persona Natural\n02-Persona Jurídica\n03-Sujetos no domicilados"
+ },
+ "B6": {
+  "nombre": "Tipo de documento",
+  "tipo": "Texto",
+  "largo": "1",
+  "texto": "El tipo de Persona 01-Persona Natural, consta de los siguientes Tipos de Documento.\n- = Sin Documento\n1 = Libreta electoral - DNI\n2 = Carnet de Fuerzas Policiales\n3 = Carnet de Fuerzas Armadas\n4 = Carnet de extranjería\n6 = RUC\n7 = Pasaporte\nEl tipo de Persona 02-Persona Jurídica, consta del siguiente Tipo de Documento\n6 = RUC\nEl tipo de Persona 03-Sujetos no domiciliados, consta de los siguientes Tipos de Documento\n- = Sin documento\n7 = Pasaporte"
+ },
+ "B7": {
+  "nombre": "Número de documento",
+  "tipo": "Texto",
+  "largo": "15",
+  "texto": "Dato obligatorio.\nDebe ser numérico, longitud máxima hasta 12 dígitos de acuerdo al Tipo de Documento."
+ },
+ "B8": {
+  "nombre": "Medio de pago",
+  "tipo": "Texto",
+  "largo": "3",
+  "texto": "=========================================\n          MEDIOS DE PAGO\n=========================================\n**** Dato oblligatorio\nPara el total de la adquisición en nuevos soles menores o iguales a 5,000 (3,500 a partir de\nenero del 2008), deberán estar habilitados los tipo de medio de pago: 003, 007, 009, 011, 012, 013 y 014\nEn caso contrario deberán estar habilitados todos los tipo de medio de pago. ****\n=========================================\n001  DEP. EN CUENTA\t\n002  GIRO\t\n003  TRANSF. DE FONDOS\t\n004  ORDEN DE PAGO\t\n005  TARJETA DE DEBITO\t\n006  TARJETA DE CREDITO\t\n007  CHEQUES\t\n009  EFECTIVO\t\n010  MEDIOS DE PAGO DE COM. EXTERIOR\t\n011  LETRAS DE CAMBIO\t\n012  DOCUMENTOS EMITIDOS POR LAS EDPYMES Y LAS COOPERATIVAS DE AHORRO Y CRÉDITO NO AUTORIZADAS A CAPTAR DEPÓSITOS DEL PÚBLICO\n013  TARJETA DE CRÉDITO EMITIDA EN EL PAÍS O EN EL EXTERIOR POR UNA EMPRESA NO PERTENECIENTE AL SISTEMA FINANCIERO, CUYO OBJETO PRINCIPAL SEA LA EMISIÓN Y ADMINISTRACIÓN DE TARJETAS DE CRÉDITO\t\n014  TARJETAS DE CRÉDITO EMITIDAS EN EL EXTERIOR POR EMPRESAS BANCARIAS O FINANCIERAS NO DOMICILIADAS.\n098  PENDIENTE DE PAGO"
+ },
+ "B9": {
+  "nombre": "Código del banco o entidad",
+  "tipo": "Texto",
+  "largo": "2",
+  "texto": "=========================================\n          CODIGO DEL BANCO\n=========================================\n**** Si el tipo de medio de pago es 009, 011, 013, 014 o 098 deberá dejar en blanco este campo. ****\n02  DE CREDITO DEL PERU\n03  INTERBANK\n05  LATINO\n07  CITYBANK N.A.\n08  STANDARD CHARTERED\n09  SCOTIABANK\n11  CONTINENTAL\n12  DE LIMA\n16  MERCANTIL\n18  NACION\n22  SANTANDER CENTRAL HISPANO - PERU\n23  DE COMERCIO\n25  REPUBLICA\n26  NBK BANK\n29  NANCOSUR\n35  FINANCIERO DEL PERU\n37  DEL PROGRESO\n38  INTERAMERICANO FINANZAS\n39  BANEX\n40  NUEVO MUNDO\n41  SUDAMERICANO\n42  DEL LIBERTADOR\n43  DEL TRABAJO\n44  SOLVENTA\n45  SERBANCO\n46  BANK OF BOSTON\n47  ORION\n48  DEL PAIS\n49  MI BANCO\n50  DE PARIS\n53  HSBC BANK PERU S.A.\n54  BANCO FALABELLA PERU\n55  BANCO RIPLEY\n56  BANCO SANTANDER PERU S.A.\n58  BANCO AZTECA DEL PERU\n99  BANCOS DEL EXTERIOR\na0  CAJA MUNICIPAL DE CREDITO POPULAR DE LIMA\na1  CAJA MUNICIPAL DE AHORRO Y CRED AREQUIPA\na2  CAJA MUNICIPAL AHORRO Y CREDITO DE TRUJILLO S.A\na3  CMAC PIURA S.A.C.\na4  CAJA MUNICIPAL AHORRO Y CREDITO SULLANA S. A.\na5  CAJA MUNICIPAL DE AHORRO Y CREDITO DE PAITA S.A.\na6  CAJA MUNICIPAL DE AHORRO Y CREDITO CUSCO S.A.\na7  CAJA MUNICIPAL DE AHORRO CREDITO ICA SA\na8  CAJA MUNICIPAL AHORRO Y CREDITO PISCO SA\na9  CAJA MUNICIPAL DE AHORR. Y CRED. DE TACNA S.A.\nb0  CAJA MUNICIPAL DE AHORRO Y CRED MAYNAS SA\nb1  CMAC - HUANCAYO S.A.\nb2  CAJA MUNICIPAL AHORRO Y CREDIT DEL SANTA SA\nb3  PRODUCTOS Y MERCADOS AGRICOLAS DE HUARAL CAJA RURAL DE AHORROS Y CRE\nb4  CAJA RURAL DE AHORRO Y CREDITO QUILLABAMBA\nb5  CAJA RURAL DE AHORRO Y CREDITO LOS LIBERTADORES\nb6  CAJA RURAL DE AHORRO Y CREDITO SENOR DE LUREN\nb7  CAJA RURAL DE AHORRO Y CREDITO CHAVIN SA\nb8  CAJA RURAL DE AHORRO Y CREDITO CAJAMARCA S.A.A.\nb9  CAJA RURAL DE AHORRO Y CREDITO SIPAN S.A\nc0  CAJA RURAL DE AHORRO Y CREDITO LOS ANDES\nc1  CAJASUR\nc2  CAJA RURAL DE AHORRO Y CREDITO NOR PERU\nc3  CAJA RURAL DE AHORRO Y CREDITO REG. SAN MARTIN\nc4  CRAC PROMOTORA DE FINANZAS S.A.A.\nc5  ENT.DES.PEQ.Y MICROEMP.EDPYME EDYFICAR\nc6  EDPYMES PROEMPRESA S.A.\nc7  EDPYME RAIZ S.A.\nc8  ENT.DES.DE LA PQNA Y MICROEM.CREDIVISION\nc9  EDPYME CREDITOS AREQUIPA S.A.\nd0  EDPYME NUEVA VISION S.A.\nd1  EDPYME CRED. DE ALCANCE REG.TRUJILLO SA.\nd2  E.D.P.Y.M.DEL FOMENTO COMERC.Y PROD.S.A\nd3  EDPYME ALTERNATIVA\nd4  EDPYME SOLIDARIDAD S.A.A.\nd5  EDPYME EFECTIVA S.A.\nd6  EDPYME CREDITOS DE ALCANCE REG.TACNA S.A\nd7  EDPYME CONFIANZA S.A.\nd8  EDPYME MICASITA SOCIEDAD ANONIMA (EDPYME MICASITA S.A )"
+ },
+ "B10": {
+  "nombre": "Número de operación / Nombre del banco del exterior",
+  "tipo": "Texto",
+  "largo": "30",
+  "texto": "Si el código de banco es igual a 99, deberá indicar el nombre del banco del exterior, acepta datos alfanuméricos.\nSi el código de banco es diferente a 99, deberá indicar el número de operación, acepta letras y números.\nSi el tipo de medio de pago es 009, 011, 013 o 014 deberá dejar en blanco este campo."
+ },
+ "B11": {
+  "nombre": "Fecha de operación",
+  "tipo": "Fecha",
+  "largo": "10",
+  "texto": "Formato: dd/mm/aaaa\nDonde: dd=día, mm=mes, aaaa=año\nLa fecha de operación debe ser mayor o igual a la fecha de emisión del comprobante de pago\ny menor o igual a la fecha del sistema.\nSi el tipo de medio de pago es 009 o 098 deberá dejar en blanco este campo."
+ },
+ "B12": {
+  "nombre": "Monto de la operación",
+  "tipo": "Texto",
+  "largo": "10,2",
+  "texto": "Dato Obligatorio, máximo 10 enteros y dos decimales\nLa suma de los montos de la operación de los medios de pago para un mismo comprobante\nde pago deberá ser menor o igual al total de la adquisición en nuevos soles.\nSi el tipo de medio de pago es 098 deberá dejar en blanco este campo."
+ },
+ "L1": {
+  "nombre": "Fecha de tipo de cambio",
+  "tipo": "Número",
+  "largo": "10",
+  "texto": "Dato obligatorio\nFormato: dd/mm/aaaa"
+ },
+ "L2": {
+  "nombre": "Tipo de cambio promedio ponderado compra",
+  "tipo": "Número",
+  "largo": "3,3",
+  "texto": "Dato obligatorio, considerar como máximo tres enteros y tres decimales"
+ },
+ "L3": {
+  "nombre": "Tipo de cambio promedio ponderado venta",
+  "tipo": "Número",
+  "largo": "3,3",
+  "texto": "Dato obligatorio, considerar como máximo tres enteros y tres decimales"
+ }
+}
