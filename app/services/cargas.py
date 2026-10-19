@@ -182,6 +182,7 @@ def _fila_venta(decl: Declaracion, c: dict, avisos: list[str]) -> list[str]:
         "", "", "", "",                              # C21-C24
         rt, rs, rn, "", _num(base) if rt else "",
         _num(igv) if (rt and not es_export) else "",   # C25-C30 (29-30: importe de la nota; ventas externas sin IGV)
+        "1" if es_export else "",                    # C31 tipo de exportación (1 = definitiva); solo en la hoja
     ]
 
 

@@ -179,12 +179,17 @@ def purgar_tc_futuros(db: Session) -> int:
 
 
 def normalizar_ventas_sin_documento(db: Session) -> int:
-    """Ventas con tipo de documento «-»: deja en blanco su N° de documento (regla de SUNAT)."""
+    """Ventas con tipo de documento «-»: deja en blanco su N° de documento (regla de SUNAT).
+    También completa C31 (tipo de exportación = 1) en las ventas externas que no lo tenían."""
     n = 0
     for f in db.query(HojaFila).filter(HojaFila.hoja == "VENTAS").all():
-        c = list(f.celdas)
-        if len(c) > 7 and str(c[6]).strip() == "-" and str(c[7]).strip():
-            c[7] = ""
+        c = list(f.celdas) + [""] * max(0, 31 - len(f.celdas))
+        cambio = len(c) != len(f.celdas)
+        if str(c[6]).strip() == "-" and str(c[7]).strip():
+            c[7], cambio = "", True
+        if str(c[0]).strip().lstrip("0") == "2" and not str(c[30]).strip():
+            c[30], cambio = "1", True
+        if cambio:
             f.celdas = c
             n += 1
     if n:
