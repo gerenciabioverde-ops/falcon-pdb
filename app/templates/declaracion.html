@@ -254,7 +254,7 @@
     <div class="flex flex-wrap items-center gap-x-5 gap-y-2 px-4 py-2 bg-emerald-50 border-b text-sm">
       <form method="post" action="/declaraciones/{{ decl.id }}/form1662" enctype="multipart/form-data" class="flex flex-wrap items-center gap-2"
             data-ext=".pdf" data-etiqueta="PDF" onsubmit="return enviarXml(event, this)"
-            title="Suba el PDF «Constancia Formulario 1662». Se enlaza por serie y número del comprobante y pasa el importe pagado al IGV (A19) de la compra, de cualquier período.">
+            title="Suba el PDF «Constancia Formulario 1662». Se enlaza por serie y número del comprobante y pasa el IGV pagado a A19 y la base (IGV ÷ 18%) a A17 de la compra, de cualquier período.">
         <label class="border border-emerald-700 text-emerald-800 rounded px-3 py-1 cursor-pointer hover:bg-emerald-100 whitespace-nowrap">Elegir archivo(s)
           <input type="file" accept=".pdf" multiple class="hidden" onchange="resumenXml(this.form)"></label>
         <label class="border border-emerald-700 text-emerald-800 rounded px-3 py-1 cursor-pointer hover:bg-emerald-100 whitespace-nowrap">Elegir carpeta
@@ -263,7 +263,7 @@
         <button class="bg-emerald-700 text-white rounded px-3 py-1 whitespace-nowrap">Leer Formulario 1662</button>
       </form>
       <form method="post" action="/declaraciones/{{ decl.id }}/form1662/aplicar">
-        <button class="border border-emerald-700 text-emerald-800 rounded px-3 py-1 hover:bg-emerald-100 whitespace-nowrap" title="Vuelve a pasar el IGV pagado a las compras.">Aplicar a las compras</button>
+        <button class="border border-emerald-700 text-emerald-800 rounded px-3 py-1 hover:bg-emerald-100 whitespace-nowrap" title="Vuelve a pasar la base y el IGV pagado a las compras.">Aplicar a las compras</button>
       </form>
     </div>
     <div class="overflow-auto max-h-[28rem]">
@@ -278,7 +278,7 @@
             <td class="px-2">{{ f.fecha_pago.strftime('%d/%m/%Y') if f.fecha_pago }}</td>
             <td class="px-2">{{ f.periodo }}</td>
             <td class="px-2 whitespace-nowrap">{{ f.serie }}-{{ f.numero }}</td>
-            <td class="px-2 text-right" title="Calculada: IGV pagado ÷ 0.18">{{ (f.importe|float / 0.18)|round(2)|miles(2) }}</td>
+            <td class="px-2 text-right" title="Calculada: IGV pagado ÷ 0.18 (pasa a A17 de la compra)">{{ (f.importe|float / 0.18)|round(2)|miles(2) }}</td>
             <td class="px-2 text-right">{{ f.importe|miles(2) }}</td>
             <td class="px-2">{{ f.banco }}</td>
             <td class="px-2">{{ f.nro_operacion }}</td>

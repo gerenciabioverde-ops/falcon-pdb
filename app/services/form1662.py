@@ -1,6 +1,6 @@
-"""Formulario 1662: carga de constancias (PDF SUNAT) y paso del IGV pagado a COMPRAS (A19)."""
+"""Formulario 1662: carga de constancias (PDF SUNAT) y paso del IGV pagado y la base a COMPRAS (A19 y A17)."""
 from __future__ import annotations
-from decimal import Decimal, InvalidOperation
+from decimal import ROUND_HALF_UP, Decimal, InvalidOperation
 
 from sqlalchemy import select
 from sqlalchemy.orm import Session
@@ -41,7 +41,7 @@ def cargar_constancias(db: Session, empresa: Empresa, archivos: list[tuple[str, 
 
 
 def aplicar_a_compras(db: Session, empresa: Empresa) -> int:
-    """Pone el IGV pagado (A19) en la compra del mismo comprobante, en cualquier período. Devuelve filas cambiadas."""
+    """Pone el IGV pagado (A19) y la base imponible (A17 = IGV ÷ 0.18) en la compra del mismo comprobante, en cualquier período. Devuelve filas cambiadas."""
     pagos: dict[tuple, Decimal] = {}
     for f in db.scalars(select(Form1662).where(Form1662.empresa_id == empresa.id)):
         k = _clave(f.serie, f.numero)
@@ -54,10 +54,13 @@ def aplicar_a_compras(db: Session, empresa: Empresa) -> int:
             if f.hoja != "COMPRAS" or len(f.celdas) < 20:
                 continue
             igv = pagos.get(_clave(f.celdas[3], f.celdas[4]))
-            if igv is None or _dec(f.celdas[18]) == igv:
+            if igv is None:
+                continue
+            base = (igv / Decimal("0.18")).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)   # base = IGV ÷ 18 %
+            if _dec(f.celdas[18]) == igv and _dec(f.celdas[16]) == base:
                 continue
             nuevo = list(f.celdas)
-            nuevo[18] = f"{igv:.2f}"
+            nuevo[16], nuevo[18] = f"{base:.2f}", f"{igv:.2f}"
             f.celdas = nuevo
             n += 1
     return n

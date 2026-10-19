@@ -261,7 +261,7 @@ async def subir_form1662(decl_id: int, request: Request, db: Db, usuario: User):
     n, avisos = f1662.cargar_constancias(db, decl.empresa, subidos)
     aplicadas = f1662.aplicar_a_compras(db, decl.empresa)
     db.commit()
-    msg = (f"Formularios 1662 cargados: {n}. Compras actualizadas (IGV A19): {aplicadas}, en todos los períodos."
+    msg = (f"Formularios 1662 cargados: {n}. Compras actualizadas (base A17 e IGV A19): {aplicadas}, en todos los períodos."
            + (f" Avisos ({len(avisos)}): " + " · ".join(avisos[:3]) if avisos else ""))
     return _volver(decl_id, "compras", msg if n else "Error: " + " · ".join(avisos[:3]), "", "FORM1662")
 
@@ -271,7 +271,7 @@ def aplicar_form1662(decl_id: int, db: Db, usuario: User):
     decl = _decl(db, decl_id)
     n = f1662.aplicar_a_compras(db, decl.empresa)
     db.commit()
-    return _volver(decl_id, "compras", f"Compras actualizadas con el IGV del Formulario 1662: {n} (todos los períodos).", "", "FORM1662")
+    return _volver(decl_id, "compras", f"Compras actualizadas con la base y el IGV del Formulario 1662: {n} (todos los períodos).", "", "FORM1662")
 
 
 @router.post("/declaraciones/{decl_id}/form1662/{fid}/eliminar")
