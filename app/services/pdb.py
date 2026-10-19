@@ -268,7 +268,8 @@ _FACT = re.compile(r"^([A-Za-z0-9]{1,10})\s*-\s*0*(\d+)$")
 def _parsear_facturas(texto: str, n_fila: int) -> list[tuple[str, str]]:
     """'FFF1-651, FFF1-652' → [('FFF1','651'), ('FFF1','652')]. ValueError si algún elemento no es SERIE-NÚMERO."""
     salida: list[tuple[str, str]] = []
-    for trozo in re.split(r"[;,\n]+", texto or ""):
+    texto = (texto or "").replace(MARCA_SIN_FACTURA, ",")      # «(sin factura)FFF1-639» → «, FFF1-639»
+    for trozo in re.split(r"[;,\n]+", texto):
         trozo = trozo.strip()
         if not trozo or trozo.startswith("(") or not trozo.strip("-–— "):
             continue                                   # vacío, «(sin factura)» o un guion suelto

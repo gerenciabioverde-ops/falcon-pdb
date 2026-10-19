@@ -255,6 +255,14 @@ function conMiles(i) {
   if (/^-?\d+(\.\d+)?$/.test(v)) i.value = Number(v).toLocaleString('en-US', {minimumFractionDigits: +i.dataset.dec, maximumFractionDigits: +i.dataset.dec});
 }
 document.addEventListener('focusin', e => { if (e.target.dataset && e.target.dataset.dec && !e.target.readOnly) sinMiles(e.target); });
+// En «Factura(s)»: al entrar a la celda se selecciona «(sin factura)» para que lo que se escriba lo reemplace.
+document.addEventListener('focusin', e => {
+  const i = e.target, M = '(sin factura)';
+  if (i.dataset && i.dataset.cod === 'FAC' && !i.readOnly) {
+    const k = i.value.indexOf(M);
+    if (k >= 0) setTimeout(() => i.setSelectionRange(k, k + M.length), 0);
+  }
+});
 document.addEventListener('focusout', e => { if (e.target.dataset && e.target.dataset.dec && !e.target.readOnly) conMiles(e.target); });
 function abrirEdicion(fila) {
   fila.querySelectorAll('input:not([data-calc])').forEach(i => i.readOnly = false);
