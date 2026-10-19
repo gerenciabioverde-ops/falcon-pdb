@@ -3,22 +3,6 @@
 <section class="bg-white rounded shadow mt-3" data-grilla="{{ b.clave }}">
   <div class="flex flex-wrap items-center justify-between gap-2 px-4 py-2 border-b">
     <h2 class="font-semibold text-sm">{{ b.titulo }} <span class="text-slate-500 font-normal">· {{ b.filas|length }} fila(s)</span></h2>
-    <div class="flex flex-wrap items-center gap-3 text-sm">
-      {% if b.clave == 'DUAS_D' %}
-      <form method="post" action="/declaraciones/{{ decl.id }}/importar-duas" enctype="multipart/form-data" class="flex items-center gap-1">
-        <input type="file" name="archivo" accept=".csv" required class="text-xs w-44">
-        <button class="border rounded px-2 py-1 hover:bg-slate-50">Importar CSV (DUAS)</button>
-      </form>
-      <a class="text-emerald-700" href="/declaraciones/{{ decl.id }}/exportar/duas.csv">Exportar CSV</a>
-      {% elif b.clave != 'DUAS_E' %}
-      <form method="post" action="/declaraciones/{{ decl.id }}/importar-hoja" enctype="multipart/form-data" class="flex items-center gap-1">
-        <input type="hidden" name="hoja" value="{{ b.clave }}"><input type="hidden" name="pestana" value="{{ pestana.clave }}">
-        <input type="file" name="archivo" accept=".csv" required class="text-xs w-44">
-        <button class="border rounded px-2 py-1 hover:bg-slate-50">Importar CSV</button>
-      </form>
-      <a class="text-emerald-700" href="/declaraciones/{{ decl.id }}/exportar/{{ b.clave }}.csv">Exportar CSV</a>
-      {% endif %}
-    </div>
   </div>
   {% set carga = {'TC': ('tc', '.pdf', 'PDF de tipo de cambio de SUNAT', false), 'HISTORIAL_TC': ('historial', '.pdf', 'PDF de tipo de cambio de SUNAT (cualquier mes)', true), 'VENTAS': ('ventas', '.xml', 'XML de comprobantes emitidos', true),
                   'COMPRAS': ('compras', '.xml', 'XML de comprobantes recibidos', true), 'DUAS_D': ('duas', '.pdf', 'PDF de la DAM (uno o varios)', true)}.get(b.clave) %}
