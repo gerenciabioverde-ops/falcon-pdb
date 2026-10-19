@@ -239,8 +239,8 @@
             <td class="px-2">{{ d.nro_operacion }}</td>
             <td class="px-2 whitespace-nowrap">{% set pr = ligadas.get(d.constancia, []) %}
               {% if not pr %}<span class="text-amber-600">⏳ sin compra</span>
-              {% elif d.periodo_tributario in pr %}<span class="text-green-700">✔ {{ pr|join(', ') }}</span>
-              {% else %}<span class="text-red-600 font-medium" title="La constancia es del período {{ d.periodo_tributario }} pero la compra está registrada en {{ pr|join(', ') }}.">⚠ {{ pr|join(', ') }} · const. {{ d.periodo_tributario }}</span>{% endif %}</td>
+              {% elif not d.fecha_pago or pr|min >= d.fecha_pago.strftime('%Y%m') %}<span class="text-green-700" title="Depósito de {{ d.fecha_pago.strftime('%m/%Y') if d.fecha_pago }}; la compra se registra en ese período o en uno posterior.">✔ {{ pr|join(', ') }}</span>
+              {% else %}<span class="text-red-600 font-medium" title="La compra está registrada en {{ pr|min }}, antes del depósito ({{ d.fecha_pago.strftime('%m/%Y') }}).">⚠ {{ pr|join(', ') }} · depósito {{ d.fecha_pago.strftime('%Y%m') }}</span>{% endif %}</td>
             <td class="px-2"><form method="post" action="/declaraciones/{{ decl.id }}/detracciones/{{ d.id }}/eliminar" onsubmit="return confirm('¿Quitar esta constancia?')"><button class="text-slate-300 hover:text-red-600" title="Quitar">✕</button></form></td>
           </tr>
         {% else %}
@@ -287,8 +287,8 @@
             <td class="px-2">{{ f.nro_operacion }}</td>
             <td class="px-2 whitespace-nowrap">{% set pr = compras_1662.get((f.serie|upper|trim, (f.numero|trim|upper).lstrip('0') or f.numero), []) %}
               {% if not pr %}<span class="text-amber-600">⏳ sin compra</span>
-              {% elif f.periodo in pr %}<span class="text-green-700">✔ {{ pr|join(', ') }}</span>
-              {% else %}<span class="text-red-600 font-medium" title="El pago es del período {{ f.periodo }} pero la compra está registrada en {{ pr|join(', ') }}.">⚠ {{ pr|join(', ') }} · pago {{ f.periodo }}</span>{% endif %}</td>
+              {% elif pr|min >= f.periodo %}<span class="text-green-700" title="Pago del período {{ f.periodo }}; la compra se registra en ese período o en uno posterior.">✔ {{ pr|join(', ') }}</span>
+              {% else %}<span class="text-red-600 font-medium" title="La compra está registrada en {{ pr|min }}, antes del pago ({{ f.periodo }}).">⚠ {{ pr|join(', ') }} · pago {{ f.periodo }}</span>{% endif %}</td>
             <td class="px-2"><form method="post" action="/declaraciones/{{ decl.id }}/form1662/{{ f.id }}/eliminar" onsubmit="return confirm('¿Quitar este formulario?')"><button class="text-slate-300 hover:text-red-600" title="Quitar">✕</button></form></td>
           </tr>
         {% else %}
