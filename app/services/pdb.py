@@ -231,6 +231,16 @@ def validar(decl: Declaracion) -> list[dict]:
         elif d.fecha_embarque and d.fecha_regularizacion < d.fecha_embarque:
             err(f"DUA {d.clave}: regularización anterior al embarque.")
 
+    ventas = {(f.celdas[3].strip().upper(), f.celdas[4].strip().lstrip("0")): f.celdas
+              for f in decl.filas if f.hoja == "VENTAS" and len(f.celdas) > 4}
+    en_dam = {(c.serie.strip().upper(), c.numero.strip().lstrip("0")) for c in decl.cdps}
+    if ventas:
+        for serie, num in sorted(en_dam - set(ventas)):
+            avi(f"Factura {serie}-{num} de la DAM no figura en la hoja VENTAS.")
+        for (serie, num), celdas in sorted(ventas.items()):
+            if celdas[0] == "2" and (serie, num) not in en_dam and decl.cdps:
+                avi(f"Exportación {serie}-{num} de VENTAS no figura en las DUAS (bloque E).")
+
     hojas = {f.hoja for f in decl.filas}
     for hoja in ("VENTAS", "COMPRAS"):
         if hoja not in hojas:

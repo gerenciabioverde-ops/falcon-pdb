@@ -10,6 +10,7 @@ Cada carga devuelve (cantidad, avisos). Los avisos son observaciones que el usua
 debe revisar; no detienen la carga.
 """
 from __future__ import annotations
+import re
 import xml.etree.ElementTree as ET
 from datetime import date, datetime
 from decimal import ROUND_HALF_UP, Decimal
@@ -131,13 +132,16 @@ def _fila_venta(decl: Declaracion, c: dict, avisos: list[str]) -> list[str]:
     isc = _a_soles(decl, c["isc"], c["moneda"], c["fecha_emision"], avisos, etiqueta) if not es_export else c["isc"]
     otros = c["icbper"] + (c["otros_cargos"] or CERO)
     rt, rs, rn = _referencia(c.get("raw_xml", "")) if c["tipo_comprobante"] in ("07", "08") else ("", "", "")
+    doc_cli = c["ruc_receptor"]
+    if td in ("", "0", "-"):                         # no domiciliado sin documento: como en el libro
+        td, doc_cli = "-", (doc_cli if doc_cli.strip("0") else "00000001")
     return [
         "2" if es_export else "1",                   # C1
         _sin_ceros(c["tipo_comprobante"]) or "1",    # C2
         _f(c["fecha_emision"]),                      # C3
         c["serie"], _sin_ceros(c["numero"]),         # C4, C5
-        _tipo_persona(td), td or "0",                # C6, C7
-        c["ruc_receptor"], c["razon_social_receptor"],  # C8, C9
+        _tipo_persona(td), td,                       # C6, C7
+        doc_cli, c["razon_social_receptor"],         # C8, C9
         "", "", "", "",                              # C10-C13
         "2" if usd else "1",                         # C14
         "", "",                                      # C15-C16
@@ -181,6 +185,12 @@ def _cargar_xmls(db: Session, decl: Declaracion, archivos: list[tuple[str, bytes
     avisos: list[str] = []
     nuevas: dict[tuple, list[str]] = {}
     for nombre, contenido in archivos:
+        if b"ApplicationResponse" in contenido[:3000]:
+            m = re.search(rb"<cbc:ReferenceID>([^<]+)<", contenido) or re.search(rb"numero ([A-Z0-9]+-\d+)", contenido)
+            ref = m.group(1).decode() if m else "un comprobante"
+            avisos.append(f"{nombre}: es la constancia de recepción (CDR) de {ref}, no el comprobante; "
+                          f"suba el XML del comprobante (el que no empieza con «R-»).")
+            continue
         try:
             c = parsear_xml_cpe(contenido)
         except ValueError as e:
@@ -385,6 +395,15 @@ def dam_a_filas(cab: dict, series: list[dict]) -> tuple[Dua, list[Cdp]]:
             tipo_exportacion="1", dua_key=clave, fob_facturado=fob, fob_propietario=fob,
             pct_participacion=Decimal("100"), ruc_operador="",
         ))
+    por_factura: dict[tuple, Cdp] = {}
+    for c in cdps:                                   # varias series pueden ser de la misma factura
+        k = (c.tipo_comprobante, c.serie, c.numero)
+        if k in por_factura:
+            por_factura[k].fob_facturado += c.fob_facturado
+            por_factura[k].fob_propietario += c.fob_propietario
+        else:
+            por_factura[k] = c
+    cdps = list(por_factura.values())
     dua = Dua(codigo_aduana=aduana, anio_dua=anio, correlativo=correlativo,
               fecha_embarque=cab.get("fecha_embarque"), fecha_regularizacion=cab.get("fecha_regularizacion"),
               fob_usd=sum((c.fob_facturado for c in cdps), CERO))
