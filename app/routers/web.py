@@ -186,8 +186,7 @@ PESTANA_DE_CARGA = {"tc": "tc", "ventas": "ventas", "compras": "compras", "pagos
 
 
 @router.post("/declaraciones/{decl_id}/cargar/{tipo}")
-async def cargar(decl_id: int, tipo: str, db: Db, usuario: User,
-                 archivos: Annotated[list[UploadFile], File()] = []):
+async def cargar(decl_id: int, tipo: str, request: Request, db: Db, usuario: User):
     """Llena una hoja desde los documentos de origen (PDF de TC, XML, PDF de DAM) o,
     para `pagos`, desde las compras ya cargadas."""
     decl = _decl(db, decl_id)
@@ -198,7 +197,12 @@ async def cargar(decl_id: int, tipo: str, db: Db, usuario: User,
         if tipo == "pagos":
             n, avisos = cargas.generar_pagos_desde_compras(db, decl)
         else:
-            subidos = [(a.filename or "archivo", await a.read()) for a in archivos if a.filename]
+            try:                                   # una carpeta puede traer cientos de archivos
+                form = await request.form(max_files=20000, max_fields=20000)
+            except TypeError:                      # Starlette antiguo, sin esos parámetros
+                form = await request.form()
+            subidos = [(a.filename, await a.read()) for a in form.getlist("archivos")
+                       if getattr(a, "filename", None)]
             if not subidos:
                 raise ValueError("Seleccione al menos un archivo.")
             if tipo == "tc":

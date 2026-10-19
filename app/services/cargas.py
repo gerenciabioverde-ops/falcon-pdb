@@ -213,42 +213,65 @@ def _clave_fila(celdas: list[str], i_tipo: int, i_serie: int, i_num: int) -> tup
     return (_sin_ceros(celdas[i_tipo]), celdas[i_serie], _sin_ceros(celdas[i_num]))
 
 
+def _resumen(prefijo: str, items: list[str], ejemplos: int = 3) -> str:
+    return f"{prefijo}: {len(items)} ({', '.join(items[:ejemplos])}{'…' if len(items) > ejemplos else ''})."
+
+
 def _cargar_xmls(db: Session, decl: Declaracion, archivos: list[tuple[str, bytes]], hoja: str,
                  lado: str) -> tuple[int, list[str]]:
-    """lado = 'emisor' (ventas: la empresa emite) o 'receptor' (compras: la empresa recibe)."""
+    """Lee uno o muchos XML (por ejemplo, toda una carpeta). Agrega los comprobantes nuevos y
+    actualiza los que ya estaban (misma clave tipo·serie·número); el resto de filas no se toca.
+    lado = 'emisor' (ventas: la empresa emite) o 'receptor' (compras: la empresa recibe)."""
     avisos: list[str] = []
+    cdr: list[str] = []
+    otro_ruc: list[str] = []
+    invalidos: list[str] = []
+    fuera: list[str] = []
+    sin_tc: list[str] = []
     nuevas: dict[tuple, list[str]] = {}
     for nombre, contenido in archivos:
-        if b"ApplicationResponse" in contenido[:3000]:
-            m = re.search(rb"<cbc:ReferenceID>([^<]+)<", contenido) or re.search(rb"numero ([A-Z0-9]+-\d+)", contenido)
-            ref = m.group(1).decode() if m else "un comprobante"
-            avisos.append(f"{nombre}: es la constancia de recepción (CDR) de {ref}, no el comprobante; "
-                          f"suba el XML del comprobante (el que no empieza con «R-»).")
+        if not nombre.lower().endswith(".xml"):
+            continue                                              # otros archivos de la carpeta
+        if b"ApplicationResponse" in contenido[:3000]:           # constancia de recepción (CDR), no el comprobante
+            cdr.append(nombre)
             continue
         try:
             c = parsear_xml_cpe(contenido)
-        except ValueError as e:
-            avisos.append(f"{nombre}: {e}")
+        except ValueError:
+            invalidos.append(nombre)
             continue
         ruc_empresa = c["ruc_emisor"] if lado == "emisor" else c["ruc_receptor"]
         if ruc_empresa != decl.empresa.ruc:
-            avisos.append(f"{nombre}: el {'emisor' if lado == 'emisor' else 'receptor'} es {ruc_empresa}, "
-                          f"no la empresa {decl.empresa.ruc}; se omitió.")
+            otro_ruc.append(f"{c['serie']}-{c['numero']}")
             continue
         fe = c["fecha_emision"]
         if fe and (fe.year, fe.month) != (decl.anio, decl.mes):
-            avisos.append(f"{c['serie']}-{c['numero']}: emitido en {_f(fe)}, fuera del período {decl.periodo}.")
-        fila = (_fila_venta if hoja == "VENTAS" else _fila_compra)(decl, c, avisos)
+            fuera.append(f"{c['serie']}-{c['numero']}")
+        fila = (_fila_venta if hoja == "VENTAS" else _fila_compra)(decl, c, sin_tc)
         nuevas[_clave_fila(fila, 1, 3, 4)] = fila
+    if sin_tc:
+        sin_tc = sorted({m.split(":")[0] for m in sin_tc})
+        avisos.append(_resumen("Comprobantes en dólares sin tipo de cambio de su fecha (suba el PDF de TC y vuelva a leerlos)", sin_tc))
+    if cdr:
+        avisos.append(_resumen("Constancias de recepción (CDR) omitidas; suba el XML del comprobante, sin «R-»", cdr))
+    if otro_ruc:
+        avisos.append(_resumen(f"Comprobantes que no son de la empresa {decl.empresa.ruc} omitidos", otro_ruc))
+    if invalidos:
+        avisos.append(_resumen("XML no reconocidos como comprobante", invalidos))
+    if fuera:
+        avisos.append(_resumen(f"Comprobantes fuera del período {decl.periodo}", fuera))
     if not nuevas:
         if not avisos:
             avisos.append("No se cargó ningún comprobante.")
         return 0, avisos
     existentes = {_clave_fila(f.celdas, 1, 3, 4): f.celdas for f in _filas(decl, hoja) if len(f.celdas) > 4}
+    actualizados = sum(1 for k in nuevas if k in existentes)
     existentes.update(nuevas)
     ordenadas = sorted(existentes.values(), key=lambda r: (_sin_cero_fecha(r[2]), r[3], r[4]))
     _completar_referencias(ordenadas)
     _reemplazar(db, decl, hoja, ordenadas)
+    avisos.insert(0, f"{len(nuevas) - actualizados} nuevo(s), {actualizados} actualizado(s); "
+                     f"la hoja queda con {len(ordenadas)} fila(s).")
     return len(nuevas), avisos
 
 

@@ -10,7 +10,17 @@
                   'DUAS_D': ('duas', '.pdf', 'PDF de DAM', true, 'Llena los bloques D y E de cada DAM (reemplaza la misma DUA si ya estaba).')}.get(b.clave) %}
   {% if carga or b.clave == 'COMPRAS_PAGO' or (archivo_de.get(b.clave) and (b.clave != 'TC' or tc_sel == (decl.anio, decl.mes))) %}
   <div class="flex flex-wrap items-center gap-x-5 gap-y-2 px-4 py-2 bg-emerald-50 border-b text-sm">
-    {% if carga %}
+    {% if carga and carga[0] in ('ventas', 'compras') %}
+    <form method="post" action="/declaraciones/{{ decl.id }}/cargar/{{ carga[0] }}" enctype="multipart/form-data" class="flex flex-wrap items-center gap-2"
+          title="{{ carga[4] }}" onsubmit="return enviarXml(event, this)">
+      <label class="border border-emerald-700 text-emerald-800 rounded px-3 py-1 cursor-pointer hover:bg-emerald-100 whitespace-nowrap">Elegir archivo(s)
+        <input type="file" accept=".xml" multiple class="hidden" onchange="resumenXml(this.form)"></label>
+      <label class="border border-emerald-700 text-emerald-800 rounded px-3 py-1 cursor-pointer hover:bg-emerald-100 whitespace-nowrap">Elegir carpeta
+        <input type="file" webkitdirectory directory multiple class="hidden" onchange="resumenXml(this.form)"></label>
+      <span class="text-xs text-slate-600 min-w-[8rem]" data-resumen>Ningún XML seleccionado</span>
+      <button class="bg-emerald-700 text-white rounded px-3 py-1 whitespace-nowrap">Leer {{ carga[2] }}</button>
+    </form>
+    {% elif carga %}
     <form method="post" action="/declaraciones/{{ decl.id }}/cargar/{{ carga[0] }}" enctype="multipart/form-data" class="flex items-center gap-2" title="{{ carga[4] }}">
       <input type="file" name="archivos" accept="{{ carga[1] }}" {{ 'multiple' if carga[3] }} required class="text-xs w-52">
       <button class="bg-emerald-700 text-white rounded px-3 py-1 whitespace-nowrap">Leer {{ carga[2] }}</button>
@@ -184,6 +194,30 @@ document.addEventListener('focusin', e => {
   document.getElementById('ayuda-texto').textContent = a.texto;
   panel.classList.remove('hidden');
 });
+// XML sueltos o una carpeta entera: solo se envían los .xml (sin las constancias «R-…»).
+function xmlsDe(form) {
+  const todos = [];
+  form.querySelectorAll('input[type=file]').forEach(i => todos.push(...i.files));
+  const xml = todos.filter(f => f.name.toLowerCase().endsWith('.xml'));
+  const cdr = xml.filter(f => /^R-/i.test(f.name)).length;
+  return {todos: todos.length, xml: xml.filter(f => !/^R-/i.test(f.name)), cdr};
+}
+function resumenXml(form) {
+  const r = xmlsDe(form);
+  form.querySelector('[data-resumen]').textContent = r.todos === 0 ? 'Ningún XML seleccionado'
+    : r.xml.length + ' XML' + (r.cdr ? ' (' + r.cdr + ' constancias R- omitidas)' : '') + (r.todos - r.xml.length - r.cdr ? ' · ' + (r.todos - r.xml.length - r.cdr) + ' otros archivos ignorados' : '');
+}
+async function enviarXml(ev, form) {
+  ev.preventDefault();
+  const r = xmlsDe(form);
+  if (!r.xml.length) { form.querySelector('[data-resumen]').textContent = 'Elija uno o más XML, o una carpeta con XML.'; return false; }
+  const btn = form.querySelector('button'); btn.disabled = true; btn.textContent = 'Leyendo ' + r.xml.length + ' XML…';
+  const fd = new FormData();
+  r.xml.forEach(f => fd.append('archivos', f, f.name));
+  const resp = await fetch(form.action, {method: 'POST', body: fd});
+  window.location = resp.url;
+  return false;
+}
 function agregarFila(btn) {
   const f = btn.closest('form');
   f.querySelector('tbody').insertAdjacentHTML('beforeend', f.querySelector('template').innerHTML);
