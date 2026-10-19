@@ -140,3 +140,19 @@ class Detraccion(Base):
     fecha_pago: Mapped[date | None] = mapped_column(Date, nullable=True)
     periodo_tributario: Mapped[str] = mapped_column(String(6), default="")
     nro_operacion: Mapped[str] = mapped_column(String(20), default="")
+
+
+class Form1662(Base):
+    """Constancia del Formulario 1662 (pago de IGV por servicios de no domiciliados). De la empresa, no de un período."""
+    __tablename__ = "formularios_1662"
+    __table_args__ = (UniqueConstraint("empresa_id", "nro_orden", name="uq_f1662_orden"),)
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    empresa_id: Mapped[int] = mapped_column(ForeignKey("empresas.id", ondelete="CASCADE"), index=True)
+    nro_orden: Mapped[str] = mapped_column(String(20), nullable=False)
+    periodo: Mapped[str] = mapped_column(String(6), default="")
+    serie: Mapped[str] = mapped_column(String(20), default="")
+    numero: Mapped[str] = mapped_column(String(30), default="")
+    importe: Mapped[Decimal] = mapped_column(Numeric(14, 2), default=0)
+    fecha_pago: Mapped[date | None] = mapped_column(Date, nullable=True)
+    banco: Mapped[str] = mapped_column(String(80), default="")
+    nro_operacion: Mapped[str] = mapped_column(String(30), default="")

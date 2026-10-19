@@ -309,6 +309,8 @@ def cargar_compras_xml(db, decl, archivos):
     r = _cargar_xmls(db, decl, archivos, "COMPRAS", "receptor")
     db.flush()
     aplicar_a_compras(db, decl.empresa)
+    from app.services.form1662 import aplicar_a_compras as igv_1662
+    igv_1662(db, decl.empresa)
     return r
 
 

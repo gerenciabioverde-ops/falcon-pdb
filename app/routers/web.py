@@ -17,8 +17,9 @@ from app.database import get_db
 from app.hojas import (ARCHIVO_BLOQUE, TITULO_SUB, BLOQUES_TABULARES, COLUMNAS_TODAS, PESTANA, PESTANAS,
                        TITULOS_BLOQUE)
 from sqlalchemy import select
-from app.models import ESTADOS, Declaracion, Detraccion, Empresa, Usuario
+from app.models import ESTADOS, Declaracion, Detraccion, Empresa, Form1662, Usuario
 from app.services import detracciones as detr
+from app.services import form1662 as f1662
 from app.services import archivos_sunat as arch
 from app.services import cargas
 from app.services import pdb as svc
@@ -164,14 +165,18 @@ def ver_declaracion(request: Request, decl_id: int, db: Db, usuario: User, hoja:
         sub_sel = sub if sub in claves else claves[0]
         subs = [{"clave": b, "titulo": TITULO_SUB.get(b, t), "n": len(svc.filas_bloque(decl, b))} for b, t in pestana["bloques"]]
         visibles = [(b, t) for b, t in pestana["bloques"] if b == sub_sel]
-    detracciones, ligadas = [], set()
+    detracciones, ligadas, forms1662, compras_1662 = [], set(), [], set()
     if pestana["clave"] == "compras":                   # 3.ª sub-pestaña: constancias de detracción (HTML SUNAT)
         detracciones = list(db.scalars(select(Detraccion).where(Detraccion.empresa_id == decl.empresa_id)
                                        .order_by(Detraccion.fecha_pago.desc(), Detraccion.id.desc())))
         ligadas = detr.enlazadas(db, decl.empresa)
         subs.append({"clave": "DETRACCIONES", "titulo": "Detracciones", "n": len(detracciones)})
-        if sub == "DETRACCIONES":
-            sub_sel, visibles = "DETRACCIONES", []
+        forms1662 = list(db.scalars(select(Form1662).where(Form1662.empresa_id == decl.empresa_id)
+                                    .order_by(Form1662.fecha_pago.desc(), Form1662.id.desc())))
+        compras_1662 = f1662.enlazadas(db, decl.empresa)
+        subs.append({"clave": "FORM1662", "titulo": "Form. 1662", "n": len(forms1662)})
+        if sub in ("DETRACCIONES", "FORM1662"):
+            sub_sel, visibles = sub, []
     bloques = [{"clave": b, "titulo": t, "columnas": COLUMNAS_TODAS[b], "filas": svc.filas_bloque(decl, b, tc_sel)}
                for b, t in visibles]
     for b in bloques:
@@ -187,7 +192,7 @@ def ver_declaracion(request: Request, decl_id: int, db: Db, usuario: User, hoja:
                    pestanas=PESTANAS, cuentas=cuentas, bloques=bloques, hallazgos=hallazgos,
                    n_errores=sum(h["nivel"] == "error" for h in hallazgos), archivos=archivos,
                    archivo_bloque=ARCHIVO_BLOQUE, tc_sel=tc_sel, subs=subs, sub_sel=sub_sel,
-                   detracciones=detracciones, ligadas=ligadas,
+                   detracciones=detracciones, ligadas=ligadas, forms1662=forms1662, compras_1662=compras_1662,
                    tc_meses=svc.meses_tc(db) if pestana["clave"] == "tc" else [],
                    ayuda={c[0]: AYUDA[c[0]] for b in bloques for c in b["columnas"] if c[0] in AYUDA})
 
@@ -244,6 +249,39 @@ def eliminar_detraccion(decl_id: int, det_id: int, db: Db, usuario: User):
         db.delete(d)
         db.commit()
     return _volver(decl_id, "compras", "Constancia eliminada (las compras ya rellenadas conservan sus datos).", "", "DETRACCIONES")
+
+
+@router.post("/declaraciones/{decl_id}/form1662")
+async def subir_form1662(decl_id: int, request: Request, db: Db, usuario: User):
+    decl = _decl(db, decl_id)
+    form = await request.form(max_files=2000, max_fields=2000)
+    subidos = [(a.filename, await a.read()) for a in form.getlist("archivos") if getattr(a, "filename", None)]
+    if not subidos:
+        return _volver(decl_id, "compras", "Error: seleccione al menos un PDF del Formulario 1662.", "", "FORM1662")
+    n, avisos = f1662.cargar_constancias(db, decl.empresa, subidos)
+    aplicadas = f1662.aplicar_a_compras(db, decl.empresa)
+    db.commit()
+    msg = (f"Formularios 1662 cargados: {n}. Compras actualizadas (IGV A19): {aplicadas}, en todos los períodos."
+           + (f" Avisos ({len(avisos)}): " + " · ".join(avisos[:3]) if avisos else ""))
+    return _volver(decl_id, "compras", msg if n else "Error: " + " · ".join(avisos[:3]), "", "FORM1662")
+
+
+@router.post("/declaraciones/{decl_id}/form1662/aplicar")
+def aplicar_form1662(decl_id: int, db: Db, usuario: User):
+    decl = _decl(db, decl_id)
+    n = f1662.aplicar_a_compras(db, decl.empresa)
+    db.commit()
+    return _volver(decl_id, "compras", f"Compras actualizadas con el IGV del Formulario 1662: {n} (todos los períodos).", "", "FORM1662")
+
+
+@router.post("/declaraciones/{decl_id}/form1662/{fid}/eliminar")
+def eliminar_form1662(decl_id: int, fid: int, db: Db, usuario: User):
+    decl = _decl(db, decl_id)
+    f = db.get(Form1662, fid)
+    if f and f.empresa_id == decl.empresa_id:
+        db.delete(f)
+        db.commit()
+    return _volver(decl_id, "compras", "Formulario 1662 eliminado (las compras ya rellenadas conservan su IGV).", "", "FORM1662")
 
 
 @router.post("/declaraciones/{decl_id}/importar-duas")

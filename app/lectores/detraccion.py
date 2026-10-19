@@ -33,7 +33,8 @@ def parsear_constancia(contenido: bytes) -> dict:
     partes = comp.split()
     serie, numero = (partes[0], partes[-1]) if len(partes) >= 2 else ("", comp)
     try:
-        monto = Decimal(re.sub(r"[^0-9.]", "", buscar("monto del dep")) or "0")
+        m = re.search(r"\d[\d,]*(?:\.\d+)?", buscar("monto del dep"))
+        monto = Decimal(m.group().replace(",", "")) if m else Decimal("0")
     except InvalidOperation:
         monto = Decimal("0")
     try:

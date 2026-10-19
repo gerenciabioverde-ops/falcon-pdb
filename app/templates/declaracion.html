@@ -248,6 +248,50 @@
     </div>
   </section>
   {% endif %}
+  {% if sub_sel == 'FORM1662' %}
+  <section class="bg-white rounded shadow mt-3">
+    <div class="px-4 py-2 border-b"><h2 class="font-semibold text-sm">Formulario 1662 · IGV de servicios de no domiciliados <span class="text-slate-500 font-normal">· {{ forms1662|length }} constancia(s) · de la empresa, sin importar el período</span></h2></div>
+    <div class="flex flex-wrap items-center gap-x-5 gap-y-2 px-4 py-2 bg-emerald-50 border-b text-sm">
+      <form method="post" action="/declaraciones/{{ decl.id }}/form1662" enctype="multipart/form-data" class="flex flex-wrap items-center gap-2"
+            data-ext=".pdf" data-etiqueta="PDF" onsubmit="return enviarXml(event, this)"
+            title="Suba el PDF «Constancia Formulario 1662». Se enlaza por serie y número del comprobante y pasa el importe pagado al IGV (A19) de la compra, de cualquier período.">
+        <label class="border border-emerald-700 text-emerald-800 rounded px-3 py-1 cursor-pointer hover:bg-emerald-100 whitespace-nowrap">Elegir archivo(s)
+          <input type="file" accept=".pdf" multiple class="hidden" onchange="resumenXml(this.form)"></label>
+        <label class="border border-emerald-700 text-emerald-800 rounded px-3 py-1 cursor-pointer hover:bg-emerald-100 whitespace-nowrap">Elegir carpeta
+          <input type="file" webkitdirectory directory multiple class="hidden" onchange="resumenXml(this.form)"></label>
+        <span class="text-xs text-slate-600 min-w-[8rem]" data-resumen>Ningún PDF seleccionado</span>
+        <button class="bg-emerald-700 text-white rounded px-3 py-1 whitespace-nowrap">Leer Formulario 1662</button>
+      </form>
+      <form method="post" action="/declaraciones/{{ decl.id }}/form1662/aplicar">
+        <button class="border border-emerald-700 text-emerald-800 rounded px-3 py-1 hover:bg-emerald-100 whitespace-nowrap" title="Vuelve a pasar el IGV pagado a las compras.">Aplicar a las compras</button>
+      </form>
+    </div>
+    <div class="overflow-auto max-h-[28rem]">
+      <table class="text-xs border-collapse w-full">
+        <thead class="sticky top-0"><tr class="bg-emerald-100 text-emerald-900">
+          {% for t in ['N° de orden','Fecha de pago','Período','Comprobante','IGV pagado S/','Banco','N° operación','En compras',''] %}<th class="px-2 py-1 text-left font-medium">{{ t }}</th>{% endfor %}
+        </tr></thead>
+        <tbody>
+        {% for f in forms1662 %}
+          <tr class="border-t hover:bg-amber-50">
+            <td class="px-2 py-1">{{ f.nro_orden }}</td>
+            <td class="px-2">{{ f.fecha_pago.strftime('%d/%m/%Y') if f.fecha_pago }}</td>
+            <td class="px-2">{{ f.periodo }}</td>
+            <td class="px-2 whitespace-nowrap">{{ f.serie }}-{{ f.numero }}</td>
+            <td class="px-2 text-right">{{ f.importe|miles(2) }}</td>
+            <td class="px-2">{{ f.banco }}</td>
+            <td class="px-2">{{ f.nro_operacion }}</td>
+            <td class="px-2">{% if (f.serie|upper|trim, (f.numero|trim|upper).lstrip('0') or f.numero) in compras_1662 %}<span class="text-green-700">✔ enlazada</span>{% else %}<span class="text-amber-600">⏳ sin compra</span>{% endif %}</td>
+            <td class="px-2"><form method="post" action="/declaraciones/{{ decl.id }}/form1662/{{ f.id }}/eliminar" onsubmit="return confirm('¿Quitar este formulario?')"><button class="text-slate-300 hover:text-red-600" title="Quitar">✕</button></form></td>
+          </tr>
+        {% else %}
+          <tr><td colspan="9" class="px-4 py-6 text-center text-slate-400">Aún no hay formularios. Suba los PDF «Constancia Formulario 1662» de SUNAT.</td></tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </section>
+  {% endif %}
   {% for b in bloques %}{{ grilla(b) }}{% endfor %}
   {% if pestana.clave == 'duas' and n_errores %}
   <section class="bg-white rounded shadow p-4 mt-3">
