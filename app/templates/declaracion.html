@@ -116,7 +116,7 @@
   </td>
   {% endif %}
   {% for cod, tit, fmt in cols %}
-  <td class="p-0 border-l border-slate-100 {{ 'bg-slate-50' if cod == 'REF' }}"><input readonly {{ 'data-calc' if cod == 'REF' }} data-cod="{{ cod }}" {% set v = fila[loop.index0] if fila and loop.index0 < fila|length else '' %}{% set dec = 2 if fmt in ('0.00', '0.00*') else (3 if fmt == '0.000' else 0) %}{% if dec %}data-dec="{{ dec }}" {% endif %}value="{{ v|miles(dec) if dec else v }}"
+  <td class="p-0 border-l border-slate-100 {{ 'bg-slate-50' if cod == 'REF' else ('bg-sky-50' if cod == 'FAC') }}"><input readonly {{ 'data-calc' if cod == 'REF' }} data-cod="{{ cod }}" {% set v = fila[loop.index0] if fila and loop.index0 < fila|length else '' %}{% set dec = 2 if fmt in ('0.00', '0.00*') else (3 if fmt == '0.000' else 0) %}{% if dec %}data-dec="{{ dec }}" {% endif %}value="{{ v|miles(dec) if dec else v }}"
       class="w-full min-w-[7rem] px-2 py-1 bg-transparent focus:bg-white focus:outline focus:outline-2 focus:outline-emerald-500 {{ 'text-right' if fmt in ('0.00','0.00*','0.000') else '' }}"></td>
   {% endfor %}
   <td class="px-1"><button type="button" onclick="this.closest('tr').remove(); marcarCambio(this)" class="btn-quitar hidden text-slate-300 hover:text-red-600" title="Quitar fila">✕</button></td>

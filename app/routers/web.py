@@ -22,6 +22,12 @@ from app.services import cargas
 from app.services import pdb as svc
 
 AYUDA = json.loads((Path(__file__).resolve().parent.parent / "ayuda_sunat.json").read_text(encoding="utf-8"))
+AYUDA["REF"] = {"nombre": "N° de DUA (seguimiento)", "tipo": "Texto", "largo": "",
+                "texto": "Se arma solo con D1, D2 y D3 (aduana-año-régimen 40-correlativo). Solo para consulta; no va al archivo de SUNAT."}
+AYUDA["FAC"] = {"nombre": "Factura(s) de la DUA", "tipo": "Texto", "largo": "",
+                "texto": "Escriba SERIE-NÚMERO separadas por coma. Ej.: FFF1-651, FFF1-652.\nAl guardar se enlazan al bloque E de esta DUA:\n"
+                         "· las nuevas se crean (si es una sola, con el FOB que falte para completar el de la DUA);\n"
+                         "· las que quite se eliminan del bloque E.\nAfecta el archivo .du1; no va en el .dua."}
 router = APIRouter()
 _NUM = re.compile(r"^-?\d+(\.\d+)?$")
 
@@ -183,9 +189,13 @@ def guardar_bloque(decl_id: int, bloque: str, db: Db, usuario: User, hoja: Annot
         raise HTTPException(404, "Bloque desconocido")
     try:
         filas = json.loads(datos)
+        antes = len(decl.cdps)
         n = svc.guardar_grilla(db, decl, bloque, filas, _mes_tc(mes))
         db.commit()
         msg = f"Guardado: {n} fila(s)."
+        if bloque == "DUAS_D" and len(decl.cdps) != antes:
+            d = len(decl.cdps) - antes
+            msg += f" Bloque E: {abs(d)} factura(s) {'agregada(s)' if d > 0 else 'quitada(s)'}" + (" (revise el FOB en «Bloque E · Facturas»)." if d > 0 else ".")
     except (ValueError, TypeError) as e:
         db.rollback()
         msg = f"Error: {e}"

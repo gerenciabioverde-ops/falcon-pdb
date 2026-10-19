@@ -5,6 +5,7 @@ Formato de intercambio con Falcon Contable: CSV con ';' y dos bloques
 """
 from __future__ import annotations
 import csv
+import re
 import io
 from datetime import date, datetime
 from decimal import Decimal, InvalidOperation
@@ -259,6 +260,47 @@ def filas_bloque(decl: Declaracion, bloque: str, mes: tuple[int, int] | None = N
     return [f.celdas for f in decl.filas if f.hoja == bloque]
 
 
+_FACT = re.compile(r"^([A-Za-z0-9]{1,10})\s*-\s*0*(\d+)$")
+
+
+def _parsear_facturas(texto: str, n_fila: int) -> list[tuple[str, str]]:
+    """'FFF1-651, FFF1-652' → [('FFF1','651'), ('FFF1','652')]. ValueError si algún elemento no es SERIE-NÚMERO."""
+    salida: list[tuple[str, str]] = []
+    for trozo in re.split(r"[;,\n]+", texto or ""):
+        trozo = trozo.strip()
+        if not trozo:
+            continue
+        m = _FACT.match(trozo)
+        if not m:
+            raise ValueError(f"Fila {n_fila}: factura «{trozo}» no válida; use SERIE-NÚMERO (ej.: FFF1-651), separadas por coma.")
+        par = (m.group(1).upper(), m.group(2))
+        if par not in salida:
+            salida.append(par)
+    return salida
+
+
+def _enlazar_facturas(db: Session, decl: Declaracion, dua: Dua, deseadas: list[tuple[str, str]]) -> None:
+    """Deja en el bloque E exactamente las facturas indicadas para esa DUA: conserva las que ya estaban
+    (con sus importes), crea las nuevas y quita las que ya no figuran. Las filas sin serie/número no se tocan."""
+    clave = dua.clave
+    existentes = [c for c in decl.cdps if c.dua_key == clave and c.serie.strip() and c.numero.strip()]
+    por_par = {(c.serie.strip().upper(), c.numero.strip().lstrip("0")): c for c in existentes}
+    for par, c in por_par.items():
+        if par not in deseadas:
+            decl.cdps.remove(c)
+    nuevas = [par for par in deseadas if par not in por_par]
+    if not nuevas:
+        return
+    fob_asignado = sum((c.fob_facturado or Decimal("0")) for par, c in por_par.items() if par in deseadas)
+    pendiente = (dua.fob_usd or Decimal("0")) - fob_asignado
+    fob = pendiente if (len(nuevas) == 1 and pendiente > 0) else Decimal("0")
+    periodo = dua.fecha_embarque.strftime("%Y%m") if dua.fecha_embarque else decl.periodo
+    for serie, numero in nuevas:
+        decl.cdps.append(Cdp(periodo_cdp=periodo, tipo_comprobante="01", serie=serie, numero=numero,
+                             tipo_exportacion="1", dua_key=clave, fob_facturado=fob, fob_propietario=fob,
+                             pct_participacion=Decimal("100"), ruc_operador=""))
+
+
 def guardar_grilla(db: Session, decl: Declaracion, bloque: str, filas: list[list[str]],
                    mes: tuple[int, int] | None = None) -> int:
     """Reemplaza el contenido de un bloque con las filas de la grilla (filas vacías se omiten).
@@ -290,9 +332,12 @@ def guardar_grilla(db: Session, decl: Declaracion, bloque: str, filas: list[list
                                   fob_usd=_dec(f[5])))
             except ValueError as e:
                 raise ValueError(f"Fila {n}: {e}") from None
+        deseadas = [(d, _parsear_facturas(f[7], n)) for n, (d, f) in enumerate(zip(nuevas, filas), start=1)]
         decl.duas.clear()
         db.flush()
         decl.duas.extend(nuevas)
+        for dua, lista in deseadas:
+            _enlazar_facturas(db, decl, dua, lista)
     elif bloque == "DUAS_E":
         nuevas = []
         for n, f in enumerate(filas, start=1):
