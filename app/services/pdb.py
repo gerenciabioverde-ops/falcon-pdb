@@ -48,6 +48,11 @@ def _fecha(txt) -> date | None:
     raise ValueError(f"Fecha inválida: {txt!r} (use dd/mm/aaaa)")
 
 
+def _money(x) -> str:
+    """Importe para mostrar al usuario: 12,345.60 (los archivos de SUNAT siguen sin comas)."""
+    return f"{Decimal(x or 0):,.2f}"
+
+
 def _ddmmyyyy(d) -> str:
     return d.strftime("%d/%m/%Y") if d else ""
 
@@ -355,7 +360,7 @@ def validar(decl: Declaracion) -> list[dict]:
         if d.clave not in fob_cdp:
             err(f"DUA {d.clave} sin facturas en el bloque E.")
         elif abs(fob_cdp[d.clave] - (d.fob_usd or 0)) > TOLERANCIA_FOB:
-            err(f"DUA {d.clave}: FOB {d.fob_usd} ≠ suma de facturas {fob_cdp[d.clave]}.")
+            err(f"DUA {d.clave}: FOB US$ {_money(d.fob_usd)} ≠ suma de facturas US$ {_money(fob_cdp[d.clave])}.")
         if not d.fecha_embarque:
             err(f"DUA {d.clave}: falta fecha de embarque.")
         elif (d.fecha_embarque.year, d.fecha_embarque.month) != (decl.anio, decl.mes):

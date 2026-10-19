@@ -421,7 +421,7 @@ def cargar_pagos_bancos(db: Session, decl: Declaracion, archivos: list[tuple[str
             filas.append(base + [p["medio"], p["banco"], p["operacion"], _f(p["fecha"]) or a[2], _num(monto)])
         esperado = _monto_compra(decl, a, avisos)
         if esperado and abs(suma - esperado) > Decimal("1.00"):
-            avisos.append(f"{a[3]}-{a[4]}: pagos S/ {suma:.2f} ≠ comprobante S/ {esperado:.2f}.")
+            avisos.append(f"{a[3]}-{a[4]}: pagos S/ {suma:,.2f} ≠ comprobante S/ {esperado:,.2f}.")
     if sin_pago:
         avisos.append(f"{sin_pago} compra(s) sin pago en los libros de bancos (quedan con medio/banco vacíos).")
     ignorados = egresos - sum(len(v) for k, v in pagos.items() if k in usados)
