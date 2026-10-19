@@ -14,7 +14,7 @@ from sqlalchemy.orm import Session
 from app.core.deps import get_current_user
 from app.core.security import crear_token, verify_password
 from app.database import get_db
-from app.hojas import (ARCHIVO_BLOQUE, BLOQUES_TABULARES, COLUMNAS_TODAS, PESTANA, PESTANAS,
+from app.hojas import (ARCHIVO_BLOQUE, TITULO_SUB, BLOQUES_TABULARES, COLUMNAS_TODAS, PESTANA, PESTANAS,
                        TITULOS_BLOQUE)
 from app.models import ESTADOS, Declaracion, Empresa, Usuario
 from app.services import archivos_sunat as arch
@@ -154,7 +154,7 @@ def ver_declaracion(request: Request, decl_id: int, db: Db, usuario: User, hoja:
     if pestana.get("subpestanas"):                      # p. ej. COMPRAS: «Comprobantes» y «Forma de pago»
         claves = [b for b, _ in pestana["bloques"]]
         sub_sel = sub if sub in claves else claves[0]
-        subs = [{"clave": b, "titulo": t, "n": len(svc.filas_bloque(decl, b))} for b, t in pestana["bloques"]]
+        subs = [{"clave": b, "titulo": TITULO_SUB.get(b, t), "n": len(svc.filas_bloque(decl, b))} for b, t in pestana["bloques"]]
         visibles = [(b, t) for b, t in pestana["bloques"] if b == sub_sel]
     bloques = [{"clave": b, "titulo": t, "columnas": COLUMNAS_TODAS[b], "filas": svc.filas_bloque(decl, b, tc_sel)}
                for b, t in visibles]
@@ -221,7 +221,7 @@ async def importar_hoja(decl_id: int, db: Db, usuario: User, hoja: Annotated[str
     return _volver(decl_id, pestana, msg)
 
 
-SUB_DE_CARGA = {"compras": "COMPRAS", "pagos": "COMPRAS_PAGO", "pagos_bancos": "COMPRAS_PAGO"}
+SUB_DE_CARGA = {"compras": "COMPRAS", "pagos": "COMPRAS_PAGO", "pagos_bancos": "COMPRAS_PAGO", "duas": "DUAS_D"}
 PESTANA_DE_CARGA = {"tc": "tc", "ventas": "ventas", "compras": "compras", "pagos": "compras",
                     "pagos_bancos": "compras", "duas": "duas"}
 

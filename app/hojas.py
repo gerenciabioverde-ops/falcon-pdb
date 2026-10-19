@@ -28,7 +28,7 @@ PESTANAS = [
     {"clave": "compras", "nombre": "COMPRAS", "subpestanas": True,
      "bloques": [("COMPRAS", "Comprobantes de compras"), ("COMPRAS_PAGO", "Forma de pago")]},
     {"clave": "ventas", "nombre": "VENTAS", "bloques": [("VENTAS", "Comprobantes de ventas")]},
-    {"clave": "duas", "nombre": "DUAS",
+    {"clave": "duas", "nombre": "DUAS", "subpestanas": True,
      "bloques": [("DUAS_D", "Bloque D · una fila por DUA"),
                  ("DUAS_E", "Bloque E · exportación con DUA's (01 al 05) · una fila por factura")]},
     {"clave": "swap", "nombre": "SWAP", "bloques": [("SWAP", "Tipo 06 · Constancia de ejecución SWAP")]},
@@ -49,3 +49,7 @@ ARCHIVO_BLOQUE = {
 }
 TITULOS_BLOQUE = {b: t for p in PESTANAS for b, t in p["bloques"]}
 BLOQUES_TABULARES = list(ARCHIVO_BLOQUE)
+
+# Títulos cortos para las pestañas internas (cuando una hoja se divide en bloques).
+TITULO_SUB = {"COMPRAS": "Comprobantes de compras", "COMPRAS_PAGO": "Forma de pago",
+              "DUAS_D": "Bloque D · DUA", "DUAS_E": "Bloque E · Facturas"}
