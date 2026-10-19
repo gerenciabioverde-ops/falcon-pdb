@@ -212,7 +212,9 @@
       <div class="text-right print:hidden">
         <span class="inline-block text-sm px-3 py-1 rounded {{ 'bg-green-100 text-green-800' if not n_errores else 'bg-red-100 text-red-800' }}">
           {{ '✔ Sin errores: listo para presentar' if not n_errores else '✖ ' ~ n_errores ~ ' error(es) por corregir' }}</span>
-        <div class="mt-2"><button type="button" onclick="window.print()" class="border border-emerald-700 text-emerald-800 rounded px-3 py-1 text-sm hover:bg-emerald-50">🖨 Imprimir</button>
+        <div class="mt-2"><a href="/declaraciones/{{ decl.id }}/reporte.xlsx" class="border border-emerald-700 text-emerald-800 rounded px-3 py-1 text-sm hover:bg-emerald-50">⬇ Excel</a>
+        <a href="/declaraciones/{{ decl.id }}/reporte.pdf" class="border border-emerald-700 text-emerald-800 rounded px-3 py-1 text-sm hover:bg-emerald-50 ml-1">⬇ PDF</a>
+        <button type="button" onclick="window.print()" class="border border-emerald-700 text-emerald-800 rounded px-3 py-1 text-sm hover:bg-emerald-50 ml-1">🖨 Imprimir</button>
         {% if archivos %}<a class="ml-2 bg-amber-600 text-white rounded px-3 py-1 text-sm hover:bg-amber-700" href="/declaraciones/{{ decl.id }}/archivos.zip">⬇ Descargar todos (ZIP)</a>{% endif %}</div>
       </div>
     </div>

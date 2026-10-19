@@ -375,6 +375,22 @@ async def cargar(decl_id: int, tipo: str, request: Request, db: Db, usuario: Use
     return _volver(decl_id, PESTANA_DE_CARGA[tipo], msg, mes_ver, SUB_DE_CARGA.get(tipo, ""))
 
 
+@router.get("/declaraciones/{decl_id}/reporte.xlsx")
+def reporte_excel(decl_id: int, db: Db, usuario: User):
+    from app.services import reporte_export
+    decl = _decl(db, decl_id)
+    return Response(reporte_export.a_excel(decl), media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                    headers={"Content-Disposition": f'attachment; filename="Reporte_PDB_{decl.periodo}.xlsx"'})
+
+
+@router.get("/declaraciones/{decl_id}/reporte.pdf")
+def reporte_pdf(decl_id: int, db: Db, usuario: User):
+    from app.services import reporte_export
+    decl = _decl(db, decl_id)
+    return Response(reporte_export.a_pdf(decl), media_type="application/pdf",
+                    headers={"Content-Disposition": f'attachment; filename="Reporte_PDB_{decl.periodo}.pdf"'})
+
+
 @router.post("/declaraciones/{decl_id}/estado")
 def cambiar_estado(decl_id: int, db: Db, usuario: User, estado: Annotated[str, Form()],
                    fecha_envio: Annotated[str, Form()] = "", nro_constancia: Annotated[str, Form()] = "",
