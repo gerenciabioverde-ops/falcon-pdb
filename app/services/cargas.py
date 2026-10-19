@@ -23,7 +23,7 @@ from app.lectores.dam_pdf import parsear_dam_pdf
 from app.lectores.tc_pdf import ImportadorTCError, parsear_pdf_sunat
 from app.lectores.xml_cpe import NS, parsear_xml_cpe
 from app.models import Cdp, Declaracion, Dua, HojaFila, TipoCambioDia
-from app.services.pdb import _dec, _fecha, registrar_tc_historial
+from app.services.pdb import _dec, _fecha, purgar_tc_futuros, registrar_tc_historial
 from sqlalchemy.orm import object_session
 
 CERO = Decimal("0")
@@ -87,6 +87,9 @@ def cargar_tc_pdf(db: Session, pdf: bytes) -> tuple[int, list[str], tuple[int, i
     if not validos:
         raise ValueError(f"El PDF no tiene días publicados hasta el {_f(limite)}.")
     n = registrar_tc_historial(db, [(r["fecha"], r["compra"], r["venta"]) for r in validos])
+    borrados = purgar_tc_futuros(db)
+    if borrados:
+        avisos.append(f"Se quitaron {borrados} día(s) futuros que estaban guardados por error.")
     return n, avisos, (meta["anio_detectado"], meta["mes_detectado"])
 
 

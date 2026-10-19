@@ -170,8 +170,18 @@ def registrar_tc_historial(db: Session, registros: list[tuple]) -> int:
     return len(registros)
 
 
+def purgar_tc_futuros(db: Session) -> int:
+    """Borra del historial los días posteriores a hoy: SUNAT aún no los publica, así que son datos
+    de otro mes/año cargados por error. Devuelve cuántos borró."""
+    n = db.query(TipoCambioDia).filter(TipoCambioDia.fecha > date.today()).delete(synchronize_session=False)
+    db.flush()
+    return n
+
+
 def sembrar_historial(db: Session) -> None:
-    """Al arrancar: copia al historial los TC que ya estaban en declaraciones (solo fechas faltantes)."""
+    """Al arrancar: copia al historial los TC que ya estaban en declaraciones (solo fechas faltantes)
+    y quita los días futuros."""
+    purgar_tc_futuros(db)
     existentes = {r[0] for r in db.query(TipoCambioDia.fecha).all()}
     nuevos = []
     for f in db.query(HojaFila).filter(HojaFila.hoja == "TC").all():
@@ -179,12 +189,12 @@ def sembrar_historial(db: Session) -> None:
             (fecha, c, v), = _parsear_tc([f.celdas])
         except ValueError:
             continue
-        if fecha not in existentes:
+        if fecha not in existentes and fecha <= date.today():
             existentes.add(fecha)
             nuevos.append((fecha, c, v))
     if nuevos:
         registrar_tc_historial(db, nuevos)
-        db.commit()
+    db.commit()
 
 
 def _tc_del_mes(db: Session, anio: int, mes: int) -> list[TipoCambioDia]:
