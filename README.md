@@ -24,13 +24,13 @@ Las columnas y formatos de cada hoja salen de `app/hojas_cols.py` (extraído del
 Una declaración se ve como el libro Excel: pestañas INICIO (validación, archivos, estado), TC, COMPRAS, VENTAS, DUAS, SWAP, SERVICIOS, HOSPEDAJE, SIN DETALLE, EXP. DEF. y TURISTAS. Cada pestaña es una grilla editable con los códigos y títulos de columna del libro (importar/exportar CSV, agregar/quitar filas, guardar).
 
 ## Windows
-Doble click en `instalar.bat` (primera vez) y luego `iniciar.bat`: abre http://localhost:8001 (usuario `admin`, clave `admin123`). `detener.bat` cierra el servidor. `actualizar.bat` baja la última versión desde GitHub y actualiza las dependencias (no toca la base de datos). Si la carpeta está en OneDrive, excluya `.venv` y `falcon_pdb.db` de la sincronización.
+Doble click en `instalar.bat` (primera vez) y luego `iniciar.bat`: abre http://localhost:8003 (usuario `admin`, clave `admin123`). `detener.bat` cierra el servidor. `actualizar.bat` baja la última versión desde GitHub y actualiza las dependencias (no toca la base de datos). Si la carpeta está en OneDrive, excluya `.venv` y `falcon_pdb.db` de la sincronización.
 
 ## Uso local
 ```
 pip install -r requirements.txt
 python seed.py                      # crea la BD y el usuario admin / admin123
-uvicorn app.main:app --reload       # http://localhost:8000
+uvicorn app.main:app --port 8003 --reload   # http://localhost:8003
 ```
 En producción con PostgreSQL use `pip install -r requirements-prod.txt` (agrega `psycopg2-binary`; en local con SQLite no hace falta).
 
