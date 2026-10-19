@@ -204,7 +204,7 @@
   {% endif %}
   {% if sub_sel == 'DETRACCIONES' %}
   <section class="bg-white rounded shadow mt-3">
-    <div class="px-4 py-2 border-b"><h2 class="font-semibold text-sm">Constancias de detracción <span class="text-slate-500 font-normal">· {{ detracciones|length }} constancia(s) · solo de este período ({{ decl.periodo }}); se enlazan a la compra donde esté registrada la factura</span></h2></div>
+    <div class="px-4 py-2 border-b"><h2 class="font-semibold text-sm">Constancias de detracción <span class="text-slate-500 font-normal">· {{ detracciones|length }} constancia(s) · <b class="text-slate-800">Total depositado S/ {{ detracciones|sum(attribute='monto')|miles(2) }}</b> · solo de este período ({{ decl.periodo }}); se enlazan a la compra donde esté registrada la factura</span></h2></div>
     <div class="flex flex-wrap items-center gap-x-5 gap-y-2 px-4 py-2 bg-emerald-50 border-b text-sm">
       <form method="post" action="/declaraciones/{{ decl.id }}/detracciones" enctype="multipart/form-data" class="flex flex-wrap items-center gap-2"
             data-ext=".html,.htm" data-etiqueta="HTML" onsubmit="return enviarXml(event, this)"
@@ -246,13 +246,16 @@
           <tr><td colspan="11" class="px-4 py-6 text-center text-slate-400">Aún no hay constancias. Suba los HTML de «Constancia de depósito» de SUNAT.</td></tr>
         {% endfor %}
         </tbody>
+        {% if detracciones %}<tfoot class="sticky bottom-0"><tr class="bg-emerald-100 font-semibold text-emerald-900">
+          <td class="px-2 py-1" colspan="7">TOTAL · {{ detracciones|length }} constancia(s)</td>
+          <td class="px-2 text-right">{{ detracciones|sum(attribute='monto')|miles(2) }}</td><td colspan="3"></td></tr></tfoot>{% endif %}
       </table>
     </div>
   </section>
   {% endif %}
   {% if sub_sel == 'FORM1662' %}
   <section class="bg-white rounded shadow mt-3">
-    <div class="px-4 py-2 border-b"><h2 class="font-semibold text-sm inline">Formulario 1662 · IGV de servicios de no domiciliados <span class="text-slate-500 font-normal">· {{ forms1662|length }} constancia(s) {{ 'de todos los períodos' if ver_todas else 'del período ' ~ decl.periodo }}</span></h2>
+    <div class="px-4 py-2 border-b"><h2 class="font-semibold text-sm inline">Formulario 1662 · IGV de servicios de no domiciliados <span class="text-slate-500 font-normal">· {{ forms1662|length }} constancia(s) · <b class="text-slate-800">IGV total S/ {{ forms1662|sum(attribute='importe')|miles(2) }}</b> {{ 'de todos los períodos' if ver_todas else 'del período ' ~ decl.periodo }}</span></h2>
       <span class="ml-3 text-xs">
         <a href="/declaraciones/{{ decl.id }}?hoja=compras&sub=FORM1662" class="px-2 py-0.5 rounded {{ 'bg-emerald-700 text-white' if not ver_todas else 'text-emerald-800 border border-emerald-700' }}">Período {{ decl.periodo }}</a>
         <a href="/declaraciones/{{ decl.id }}?hoja=compras&sub=FORM1662&todas=1" class="px-2 py-0.5 rounded {{ 'bg-emerald-700 text-white' if ver_todas else 'text-emerald-800 border border-emerald-700' }}">Todos ({{ total_1662 }})</a>
@@ -295,6 +298,10 @@
           <tr><td colspan="10" class="px-4 py-6 text-center text-slate-400">Sin formularios{{ '' if ver_todas else ' de este período' }}. Suba los PDF «Constancia Formulario 1662» de SUNAT{{ ' o pulse «Todos»' if not ver_todas and total_1662 else '' }}.</td></tr>
         {% endfor %}
         </tbody>
+        {% if forms1662 %}<tfoot class="sticky bottom-0"><tr class="bg-emerald-100 font-semibold text-emerald-900">
+          <td class="px-2 py-1" colspan="4">TOTAL · {{ forms1662|length }} constancia(s)</td>
+          <td class="px-2 text-right">{{ (forms1662|sum(attribute='importe')|float / 0.18)|round(2)|miles(2) }}</td>
+          <td class="px-2 text-right">{{ forms1662|sum(attribute='importe')|miles(2) }}</td><td colspan="4"></td></tr></tfoot>{% endif %}
       </table>
     </div>
   </section>
