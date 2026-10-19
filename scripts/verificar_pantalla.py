@@ -20,7 +20,7 @@ from app.main import app  # noqa: E402
 from seed import *  # noqa: E402,F401,F403  (crea la BD y el usuario admin)
 
 FUNCIONES = ["alternarEdicion", "abrirEdicion", "marcarCambio", "agregarFila", "enviarGrilla",
-             "archivosDe", "resumenXml", "enviarXml", "sinMiles", "conMiles"]
+             "archivosDe", "eliminarSeleccionados", "seleccionarTodos", "resumenXml", "enviarXml", "sinMiles", "conMiles"]
 
 fallas = []
 with TestClient(app) as c:

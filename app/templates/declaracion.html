@@ -13,6 +13,8 @@
       <span class="text-xs text-slate-500" data-igv-n></span>
     </div>
     {% endif %}
+    <button type="button" class="btn-eliminar-sel text-sm rounded border border-red-300 text-red-700 px-3 py-1 hover:bg-red-50 disabled:opacity-40 disabled:cursor-not-allowed" disabled
+            onclick="eliminarSeleccionados(this)" title="Marque las filas con la casilla de la izquierda y elimínelas en bloque.">🗑 Eliminar seleccionados <span data-n-sel></span></button>
     <label class="flex items-center gap-1.5 text-sm cursor-pointer select-none rounded border border-slate-300 px-3 py-1 hover:bg-slate-50" title="Las grillas están protegidas: marque «Editar» para modificar, agregar o quitar filas.">
       <input type="checkbox" class="chk-editar" onchange="alternarEdicion(this)"> ✎ Editar</label>
   </div>
@@ -63,7 +65,7 @@
       <table class="text-xs border-collapse">
         <thead class="sticky top-0 z-10">
           <tr class="bg-emerald-800 text-white">
-            <th class="px-2 py-1 w-8"></th>
+            <th class="px-2 py-1 w-8"><input type="checkbox" class="chk-todos" title="Seleccionar todos los visibles" onchange="seleccionarTodos(this)"></th>
             {% if b.extra is not none %}<th class="px-2 py-1 text-center font-semibold bg-sky-800">REF</th>{% endif %}
             {% if b.clave == 'VENTAS' %}<th class="px-2 py-1 text-center font-semibold bg-sky-800 border-l border-sky-700">ESTADO</th>{% endif %}
             {% for cod, tit, fmt in b.columnas if cod != 'ESTADO' %}<th class="px-2 py-1 text-center font-semibold border-l border-emerald-700">{{ cod }}</th>{% if b.clave == 'COMPRAS' and cod == 'A20' %}<th class="px-2 py-1 text-center font-semibold bg-sky-800 border-l border-emerald-700">TOTAL</th>{% endif %}{% endfor %}
@@ -118,7 +120,7 @@
 {% endmacro %}
 {% macro fila_html(cols, fila, n, extra=none) %}
 <tr class="border-t hover:bg-amber-50">
-  <td class="px-2 text-slate-400 text-right select-none">{{ n if n else '' }}</td>
+  <td class="px-2 text-slate-400 text-right select-none whitespace-nowrap"><input type="checkbox" class="chk-fila mr-1 align-middle" onchange="contarSeleccion(this)"><span>{{ n if n else '' }}</span></td>
   {% if extra is not none %}
   <td class="px-2 py-1 whitespace-nowrap bg-sky-50 text-xs select-text">
     {% if extra.estado == 'ok' %}<span class="text-green-700 font-medium" title="Embarcada el {{ extra.embarque.strftime('%d/%m/%Y') if extra.embarque }} · regularizada el {{ extra.regularizada.strftime('%d/%m/%Y') }} · PDB {{ extra.periodo }}">✔ {{ extra.dua }}</span>
@@ -519,6 +521,27 @@ function recalcularTotal(tr) {
 function recalcularTotales(raiz) { (raiz || document).querySelectorAll('tbody tr').forEach(recalcularTotal); }
 document.addEventListener('input', e => { const tr = e.target.closest && e.target.closest('tr'); if (tr) recalcularTotal(tr); });
 document.addEventListener('DOMContentLoaded', () => recalcularTotales());
+function contarSeleccion(el) {
+  const sec = el.closest('section'), n = sec.querySelectorAll('tbody .chk-fila:checked').length;
+  const b = sec.querySelector('.btn-eliminar-sel');
+  b.disabled = n === 0;
+  b.querySelector('[data-n-sel]').textContent = n ? '(' + n + ')' : '';
+  const todos = sec.querySelector('.chk-todos');
+  if (todos) todos.checked = n > 0 && n === [...sec.querySelectorAll('tbody tr')].filter(tr => tr.style.display !== 'none').length;
+}
+function seleccionarTodos(chk) {
+  const sec = chk.closest('section');
+  sec.querySelectorAll('tbody tr').forEach(tr => { if (tr.style.display !== 'none') tr.querySelector('.chk-fila').checked = chk.checked; });
+  contarSeleccion(chk);
+}
+function eliminarSeleccionados(btn) {
+  const sec = btn.closest('section'), marcadas = [...sec.querySelectorAll('tbody .chk-fila:checked')];
+  if (!marcadas.length) return;
+  if (!confirm('¿Eliminar ' + marcadas.length + ' fila(s) seleccionada(s)? Se guarda al instante y no se puede deshacer.')) return;
+  marcadas.forEach(c => c.closest('tr').remove());
+  const form = sec.querySelector('form[action*="/bloque/"]');
+  if (form.requestSubmit) form.requestSubmit(); else form.submit();
+}
 function filtrarIgv(sel) {
   const sec = sel.closest('section'), solo = sel.value === 'solo';
   let ocultas = 0;
@@ -579,10 +602,10 @@ function agregarFila(btn) {
   const fila = f.querySelector('tbody tr:last-child');
   abrirEdicion(fila);
   marcarCambio(fila);
-  fila.querySelector('input').focus();
+  fila.querySelector('input:not(.chk-fila)').focus();
 }
 function enviarGrilla(form) {
-  const filas = [...form.querySelectorAll('tbody tr')].map(tr => [...tr.querySelectorAll('input, select')]
+  const filas = [...form.querySelectorAll('tbody tr')].map(tr => [...tr.querySelectorAll('input:not(.chk-fila), select')]
     .sort((a, b) => (a.dataset.cod === 'ESTADO') - (b.dataset.cod === 'ESTADO')).map(i => i.dataset.dec ? i.value.replace(/,/g, '') : i.value));
   form.querySelector('[name=datos]').value = JSON.stringify(filas);
   return true;
