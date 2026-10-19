@@ -73,8 +73,9 @@ def inicio(request: Request, db: Db, usuario: User, empresa_id: int | None = Non
     anios, meses_info = [], []
     if empresa:
         existentes = {d.anio for d in empresa.declaraciones}
-        anios = sorted(existentes | {hoy.year}, reverse=True)
-        anio = anio if anio in anios else (hoy.year if hoy.year in anios else anios[0])
+        if anio is None or not 2000 <= anio <= 2100:
+            anio = hoy.year if (hoy.year in existentes or not existentes) else max(existentes)
+        anios = sorted(existentes | {hoy.year, anio}, reverse=True)
         por_mes = {d.mes: d for d in empresa.declaraciones if d.anio == anio}
         for m in range(1, 13):
             d = por_mes.get(m)

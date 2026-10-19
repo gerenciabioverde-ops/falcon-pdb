@@ -43,10 +43,15 @@
           <h2 class="text-lg font-semibold">{{ empresa.razon_social }}</h2>
           <p class="text-sm text-slate-500">RUC {{ empresa.ruc }}</p>
         </div>
-        <div class="flex items-center gap-1">
+        <div class="flex flex-wrap items-center justify-end gap-1">
           {% for a in anios %}
           <a href="/?empresa_id={{ empresa.id }}&anio={{ a }}" class="px-3 py-1.5 text-sm rounded-md border {{ 'bg-emerald-700 text-white border-emerald-700' if a == anio else 'bg-white text-slate-700 border-slate-300 hover:bg-slate-50' }}">{{ a }}</a>
           {% endfor %}
+          <form method="get" action="/" class="flex items-center gap-1 ml-2" title="Abrir otro año">
+            <input type="hidden" name="empresa_id" value="{{ empresa.id }}">
+            <input name="anio" type="number" min="2000" max="2100" placeholder="Otro año" required class="w-24 border border-slate-300 rounded-md px-2 py-1.5 text-sm">
+            <button class="px-2.5 py-1.5 text-sm rounded-md border border-slate-300 hover:bg-slate-50">Ir</button>
+          </form>
         </div>
       </div>
       <dl class="mt-4 grid grid-cols-2 md:grid-cols-4 gap-3 text-center">
