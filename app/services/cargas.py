@@ -483,26 +483,32 @@ def dam_a_filas(cab: dict, series: list[dict]) -> tuple[Dua, list[Cdp]]:
 
 
 def cargar_dam_pdf(db: Session, decl: Declaracion, archivos: list[tuple[str, bytes]]) -> tuple[int, list[str]]:
-    """Solo acepta DAM embarcadas dentro del período de la declaración (regla D4 del PDB: el año y
-    mes de la fecha de embarque deben ser los del período). Las demás se omiten con un aviso."""
+    """Lee una o muchas DAM (PDF suelto o carpeta). Solo se suben las embarcadas dentro del período de
+    la declaración (regla D4 del PDB: año y mes de embarque = período); las demás se omiten con un aviso.
+    Si la DUA ya estaba, se reemplaza; el resto de DUAs no se toca."""
     avisos: list[str] = []
     fuera: list[str] = []
-    n = 0
+    no_dam: list[str] = []
+    sin_fecha: list[str] = []
+    cargadas: list[str] = []
     for nombre, contenido in archivos:
+        if not nombre.lower().endswith(".pdf"):
+            continue
         try:
             cab, series = parsear_dam_pdf(contenido)
             if not cab or not series:
-                raise ValueError("no se reconoció como PDF de DAM (Registro de Aduanas)")
+                raise ValueError("no es DAM")
             dua, cdps = dam_a_filas(cab, series)
-        except Exception as e:  # noqa: BLE001 - el PDF puede fallar de muchas formas
-            avisos.append(f"{nombre}: {e}")
+        except Exception:  # noqa: BLE001 - el PDF puede fallar de muchas formas (facturas, otros PDF…)
+            no_dam.append(nombre)
             continue
         fe = dua.fecha_embarque
+        nro = f"{dua.codigo_aduana}-{dua.anio_dua}-{dua.correlativo}"
         if not fe:
-            avisos.append(f"{nombre}: no se leyó la fecha de embarque; no se puede validar el período.")
+            sin_fecha.append(nro)
             continue
         if (fe.year, fe.month) != (decl.anio, decl.mes):
-            fuera.append(f"{dua.codigo_aduana}-{dua.anio_dua}-{dua.correlativo} embarcada el {_f(fe)}")
+            fuera.append(f"{nro} ({_f(fe)})")
             continue
         for d in [d for d in decl.duas if d.clave == dua.clave]:
             decl.duas.remove(d)
@@ -511,8 +517,13 @@ def cargar_dam_pdf(db: Session, decl: Declaracion, archivos: list[tuple[str, byt
         db.flush()
         decl.duas.append(dua)
         decl.cdps.extend(cdps)
-        n += 1
+        cargadas.append(nro)
+    if cargadas:
+        avisos.append(_resumen("DUA cargadas", cargadas, 6))
     if fuera:
-        avisos.insert(0, f"DAM omitidas por no estar embarcadas en {decl.periodo} ({len(fuera)}): "
-                         + "; ".join(fuera[:4]) + ("…" if len(fuera) > 4 else "") + ".")
-    return n, avisos
+        avisos.append(_resumen(f"DAM omitidas: no se embarcaron en {decl.periodo}", fuera))
+    if sin_fecha:
+        avisos.append(_resumen("DAM sin fecha de embarque legible (no se puede validar el período)", sin_fecha))
+    if no_dam:
+        avisos.append(_resumen("PDF que no son una DAM (Registro de Aduanas)", no_dam))
+    return len(cargadas), avisos
