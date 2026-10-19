@@ -286,8 +286,7 @@
             <td class="px-2">{{ f.nro_operacion }}</td>
             <td class="px-2 whitespace-nowrap">{% set pr = compras_1662.get((f.serie|upper|trim, (f.numero|trim|upper).lstrip('0') or f.numero), []) %}
               {% if not pr %}<span class="text-amber-600">⏳ sin compra</span>
-              {% elif pr|min >= f.periodo %}<span class="text-green-700" title="Pago del período {{ f.periodo }}; la compra se registra en ese período o en uno posterior.">✔ {{ pr|join(', ') }}</span>
-              {% else %}<span class="text-red-600 font-medium" title="La compra está registrada en {{ pr|min }}, antes del pago ({{ f.periodo }}).">⚠ {{ pr|join(', ') }} · pago {{ f.periodo }}</span>{% endif %}</td>
+              {% else %}<span class="text-green-700" title="El IGV y la base van en la compra, en el período donde está registrada la factura (pago: {{ f.fecha_pago.strftime('%m/%Y') if f.fecha_pago }}).">✔ {{ pr|join(', ') }}</span>{% endif %}</td>
             <td class="px-2"><form method="post" action="/declaraciones/{{ decl.id }}/form1662/{{ f.id }}/eliminar" onsubmit="return confirm('¿Quitar este formulario?')"><button class="text-slate-300 hover:text-red-600" title="Quitar">✕</button></form></td>
           </tr>
         {% else %}
