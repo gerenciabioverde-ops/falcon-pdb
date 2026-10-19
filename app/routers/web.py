@@ -108,9 +108,14 @@ def ver_declaracion(request: Request, decl_id: int, db: Db, usuario: User, hoja:
     cuentas = {p["clave"]: sum(len(svc.filas_bloque(decl, b)) for b, _ in p["bloques"]) for p in PESTANAS}
     bloques = [{"clave": b, "titulo": t, "columnas": COLUMNAS_TODAS[b], "filas": svc.filas_bloque(decl, b)}
                for b, t in pestana["bloques"]]
-    return _render(request, "declaracion.html", usuario=usuario, decl=decl, msg=msg, pestana=pestana,
+    archivos = arch.archivos(decl)
+    ruc, per = decl.empresa.ruc, decl.periodo
+    nombre_de = {b: f"{p}{ruc}{per if cp else ''}{e}" for b, (p, e, cp) in ARCHIVO_BLOQUE.items()}
+    nombre_de.update({"DUAS_D": f"{ruc}{per}.dua", "DUAS_E": f"{ruc}{per}.du1"})
+    archivo_de = {b: n for b, n in nombre_de.items() if n in archivos}
+    return _render(request, "declaracion.html", usuario=usuario, decl=decl, msg=msg, pestana=pestana, archivo_de=archivo_de,
                    pestanas=PESTANAS, cuentas=cuentas, bloques=bloques, hallazgos=hallazgos,
-                   n_errores=sum(h["nivel"] == "error" for h in hallazgos), archivos=arch.archivos(decl),
+                   n_errores=sum(h["nivel"] == "error" for h in hallazgos), archivos=archivos,
                    archivo_bloque=ARCHIVO_BLOQUE,
                    ayuda={c[0]: AYUDA[c[0]] for b in bloques for c in b["columnas"] if c[0] in AYUDA})
 

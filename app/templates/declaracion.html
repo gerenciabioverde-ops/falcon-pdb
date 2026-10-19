@@ -46,6 +46,13 @@
     <span class="text-xs text-slate-500">Suba el libro de cada cuenta (MN y ME). Una fila por pago: medio, banco, N° de operación y fecha reales.</span>
   </form>
   {% endif %}
+  {% if archivo_de.get(b.clave) %}
+  <div class="flex flex-wrap items-center gap-2 px-4 py-2 bg-amber-50 border-b text-sm">
+    <span class="font-medium text-amber-900">Archivo para SUNAT (PDT/PDB):</span>
+    <a class="bg-amber-600 text-white rounded px-3 py-1 hover:bg-amber-700" href="/declaraciones/{{ decl.id }}/archivos/{{ archivo_de[b.clave] }}">⬇ Descargar {{ archivo_de[b.clave] }}</a>
+    <span class="text-xs text-slate-500">Se genera con lo último guardado en esta grilla.</span>
+  </div>
+  {% endif %}
   <form method="post" action="/declaraciones/{{ decl.id }}/bloque/{{ b.clave }}" onsubmit="return enviarGrilla(this)">
     <input type="hidden" name="hoja" value="{{ pestana.clave }}">
     <input type="hidden" name="datos" value="">
