@@ -3,6 +3,8 @@
 <section class="bg-white rounded shadow mt-3" data-grilla="{{ b.clave }}">
   <div class="flex flex-wrap items-center justify-between gap-2 px-4 py-2 border-b">
     <h2 class="font-semibold text-sm">{{ b.titulo }} <span class="text-slate-500 font-normal">· {{ b.filas|length }} fila(s)</span></h2>
+    <label class="flex items-center gap-1.5 text-sm cursor-pointer select-none rounded border border-slate-300 px-3 py-1 hover:bg-slate-50" title="Las grillas están protegidas: marque «Editar» para modificar, agregar o quitar filas.">
+      <input type="checkbox" class="chk-editar" onchange="alternarEdicion(this)"> ✎ Editar</label>
   </div>
   {% set carga = {'TC': ('tc', '.pdf', 'PDF de SUNAT', true, 'Agrega o actualiza los días en el historial interno; el mes se lee del propio PDF. Puede subir varios meses a la vez.'),
                   'VENTAS': ('ventas', '.xml', 'XML de ventas', true, 'Agrega o reemplaza por tipo·serie·número; el resto de filas se conserva.'),
@@ -86,10 +88,15 @@
     {% endif %}
     </div>
     <template>{{ fila_html(b.columnas, [], 0) }}</template>
-    <div class="flex items-center gap-2 px-4 py-2 border-t">
-      <button type="button" onclick="agregarFila(this)" class="text-sm border rounded px-3 py-1 hover:bg-slate-50">+ Agregar fila</button>
-      <button class="text-sm bg-emerald-700 text-white rounded px-4 py-1">Guardar {{ b.clave|replace('_',' ') }}</button>
-      <span class="text-xs text-slate-500">Fechas dd/mm/aaaa · se guarda toda la grilla.</span>
+    <div class="px-4 py-2 border-t">
+      <div class="barra-solo-lectura text-xs text-slate-500">🔒 Solo lectura · marque <b>✎ Editar</b> para modificar, agregar o quitar filas.</div>
+      <div class="barra-edicion hidden">
+        <div class="flex items-center gap-2">
+          <button type="button" onclick="agregarFila(this)" class="text-sm border rounded px-3 py-1 hover:bg-slate-50">+ Agregar fila</button>
+          <button class="text-sm bg-emerald-700 text-white rounded px-4 py-1">Guardar {{ b.clave|replace('_',' ') }}</button>
+          <span class="text-xs text-slate-500">Fechas dd/mm/aaaa · se guarda toda la grilla. Si sale sin guardar, se descartan los cambios.</span>
+        </div>
+      </div>
     </div>
   </form>
 </section>
@@ -98,10 +105,10 @@
 <tr class="border-t hover:bg-amber-50">
   <td class="px-2 text-slate-400 text-right select-none">{{ n if n else '' }}</td>
   {% for cod, tit, fmt in cols %}
-  <td class="p-0 border-l border-slate-100"><input data-cod="{{ cod }}" value="{{ fila[loop.index0] if fila and loop.index0 < fila|length else '' }}"
+  <td class="p-0 border-l border-slate-100"><input readonly data-cod="{{ cod }}" value="{{ fila[loop.index0] if fila and loop.index0 < fila|length else '' }}"
       class="w-full min-w-[7rem] px-2 py-1 bg-transparent focus:bg-white focus:outline focus:outline-2 focus:outline-emerald-500 {{ 'text-right' if fmt in ('0.00','0.00*','0.000') else '' }}"></td>
   {% endfor %}
-  <td class="px-1"><button type="button" onclick="this.closest('tr').remove()" class="text-slate-300 hover:text-red-600" title="Quitar fila">✕</button></td>
+  <td class="px-1"><button type="button" onclick="this.closest('tr').remove(); marcarCambio(this)" class="btn-quitar hidden text-slate-300 hover:text-red-600" title="Quitar fila">✕</button></td>
 </tr>
 {% endmacro %}
 
@@ -218,10 +225,32 @@ async function enviarXml(ev, form) {
   window.location = resp.url;
   return false;
 }
+function abrirEdicion(fila) {
+  fila.querySelectorAll('input').forEach(i => i.readOnly = false);
+  fila.querySelectorAll('.btn-quitar').forEach(b => b.classList.remove('hidden'));
+}
+function alternarEdicion(chk) {
+  const sec = chk.closest('section');
+  if (!chk.checked) {                                   // volver a solo lectura
+    if (sec.dataset.cambios && !confirm('Hay cambios sin guardar. ¿Descartarlos?')) { chk.checked = true; return; }
+    location.reload();
+    return;
+  }
+  sec.dataset.editando = '1';
+  sec.querySelectorAll('tbody tr').forEach(abrirEdicion);
+  sec.querySelector('.barra-solo-lectura').classList.add('hidden');
+  sec.querySelector('.barra-edicion').classList.remove('hidden');
+  sec.querySelector('.overflow-auto').classList.add('ring-2', 'ring-amber-300');
+}
+function marcarCambio(el) { const s = el.closest('section'); if (s) s.dataset.cambios = '1'; }
+document.addEventListener('input', e => { if (e.target.closest && e.target.closest('tbody')) marcarCambio(e.target); });
 function agregarFila(btn) {
   const f = btn.closest('form');
   f.querySelector('tbody').insertAdjacentHTML('beforeend', f.querySelector('template').innerHTML);
-  f.querySelector('tbody tr:last-child input').focus();
+  const fila = f.querySelector('tbody tr:last-child');
+  abrirEdicion(fila);
+  marcarCambio(fila);
+  fila.querySelector('input').focus();
 }
 function enviarGrilla(form) {
   const filas = [...form.querySelectorAll('tbody tr')].map(tr => [...tr.querySelectorAll('input')].map(i => i.value));
