@@ -239,8 +239,7 @@
             <td class="px-2">{{ d.nro_operacion }}</td>
             <td class="px-2 whitespace-nowrap">{% set pr = ligadas.get(d.constancia, []) %}
               {% if not pr %}<span class="text-amber-600">⏳ sin compra</span>
-              {% elif not d.fecha_pago or pr|min >= d.fecha_pago.strftime('%Y%m') %}<span class="text-green-700" title="Depósito de {{ d.fecha_pago.strftime('%m/%Y') if d.fecha_pago }}; la compra se registra en ese período o en uno posterior.">✔ {{ pr|join(', ') }}</span>
-              {% else %}<span class="text-red-600 font-medium" title="La compra está registrada en {{ pr|min }}, antes del depósito ({{ d.fecha_pago.strftime('%m/%Y') }}).">⚠ {{ pr|join(', ') }} · depósito {{ d.fecha_pago.strftime('%Y%m') }}</span>{% endif %}</td>
+              {% else %}<span class="text-green-700" title="El N° de constancia va en la compra, en el período donde está registrada la factura (depósito: {{ d.fecha_pago.strftime('%m/%Y') if d.fecha_pago }}).">✔ {{ pr|join(', ') }}</span>{% endif %}</td>
             <td class="px-2"><form method="post" action="/declaraciones/{{ decl.id }}/detracciones/{{ d.id }}/eliminar" onsubmit="return confirm('¿Quitar esta constancia?')"><button class="text-slate-300 hover:text-red-600" title="Quitar">✕</button></form></td>
           </tr>
         {% else %}
