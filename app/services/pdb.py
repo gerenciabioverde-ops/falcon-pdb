@@ -178,10 +178,25 @@ def purgar_tc_futuros(db: Session) -> int:
     return n
 
 
+def normalizar_ventas_sin_documento(db: Session) -> int:
+    """Ventas con tipo de documento «-»: deja en blanco su N° de documento (regla de SUNAT)."""
+    n = 0
+    for f in db.query(HojaFila).filter(HojaFila.hoja == "VENTAS").all():
+        c = list(f.celdas)
+        if len(c) > 7 and str(c[6]).strip() == "-" and str(c[7]).strip():
+            c[7] = ""
+            f.celdas = c
+            n += 1
+    if n:
+        db.flush()
+    return n
+
+
 def sembrar_historial(db: Session) -> None:
     """Al arrancar: copia al historial los TC que ya estaban en declaraciones (solo fechas faltantes)
     y quita los días futuros."""
     purgar_tc_futuros(db)
+    normalizar_ventas_sin_documento(db)
     existentes = {r[0] for r in db.query(TipoCambioDia.fecha).all()}
     nuevos = []
     for f in db.query(HojaFila).filter(HojaFila.hoja == "TC").all():
@@ -234,6 +249,10 @@ def guardar_grilla(db: Session, decl: Declaracion, bloque: str, filas: list[list
     Lanza ValueError con el N° de fila si un dato no es válido."""
     ncols = len(COLUMNAS_TODAS[bloque])
     filas = [([str(c).strip() for c in f] + [""] * ncols)[:ncols] for f in filas if any(str(c).strip() for c in f)]
+    if bloque == "VENTAS":
+        for f in filas:
+            if f[6] == "-":
+                f[7] = ""                        # sin documento → N° de documento en blanco
     if bloque == "TC":
         registros = _parsear_tc(filas)
         anio, m = mes or (decl.anio, decl.mes)
