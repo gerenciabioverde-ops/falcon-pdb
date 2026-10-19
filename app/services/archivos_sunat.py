@@ -95,6 +95,14 @@ def _con_doc(celdas: list[str]) -> list[str]:
     return celdas
 
 
+def _anulado_en_cero(celdas: list[str]) -> list[str]:
+    """Comprobante ANULADO: va en el archivo con todos sus importes (C17-C20 y C29-C30) en cero."""
+    celdas = list(celdas)
+    for i in (16, 17, 18, 19, 28, 29):
+        celdas[i] = "0.00" if i < 20 or str(celdas[i]).strip() else ""
+    return celdas
+
+
 def archivos(decl: Declaracion) -> dict[str, list[str]]:
     """{nombre_archivo: [líneas]} — solo los que tienen datos."""
     ruc, per = decl.empresa.ruc, decl.periodo
@@ -104,7 +112,8 @@ def archivos(decl: Declaracion) -> dict[str, list[str]]:
         formatos = [c[2] for c in COLUMNAS[bloque]]
         if bloque == "VENTAS":
             formatos = formatos[:30]                 # C31 (tipo de exportación) no va en el archivo                       # cliente sin documento («-»): N° según el ajuste
-            todo[nombre] = [_linea(_con_doc(c), formatos) for c in _pdb.filas_bloque(decl, bloque) if any(c) and not _pdb.es_anulado(c)]
+            todo[nombre] = [_linea(_anulado_en_cero(_con_doc(c)) if _pdb.es_anulado(c) else _con_doc(c), formatos)
+                            for c in _pdb.filas_bloque(decl, bloque) if any(c)]
         else:
             todo[nombre] = _filas_hoja(decl, bloque, formatos)
     return {n: l for n, l in todo.items() if l}

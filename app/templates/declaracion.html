@@ -53,7 +53,6 @@
     {% endif %}
   </div>
   {% endif %}
-  {% if b.clave == 'VENTAS' %}<datalist id="lst-estado"><option value="VÁLIDO"><option value="ANULADO"></datalist>{% endif %}
   <form method="post" action="/declaraciones/{{ decl.id }}/bloque/{{ b.clave }}" onsubmit="return enviarGrilla(this)">
     <input type="hidden" name="hoja" value="{{ pestana.clave }}">
     <input type="hidden" name="datos" value="">
@@ -130,12 +129,13 @@
   </td>
   {% endif %}
   {% if cols[-1][0] == 'ESTADO' %}{% set est = fila[cols|length - 1] if fila and fila|length >= cols|length else 'VÁLIDO' %}
-  <td class="p-0 border-l border-slate-100 bg-sky-50"><input readonly list="lst-estado" data-cod="ESTADO" value="{{ est }}"
-      class="w-full min-w-[7rem] px-2 py-1 bg-transparent {{ 'text-red-600 font-semibold' if est == 'ANULADO' }} focus:bg-white focus:outline focus:outline-2 focus:outline-emerald-500"></td>
+  <td class="p-0 border-l border-slate-100 bg-sky-50"><select disabled data-cod="ESTADO"
+      class="w-full min-w-[7rem] px-2 py-1 bg-transparent {{ 'text-red-600 font-semibold' if est == 'ANULADO' }} focus:bg-white focus:outline focus:outline-2 focus:outline-emerald-500">
+      <option value="VÁLIDO" {{ 'selected' if est != 'ANULADO' }}>VÁLIDO</option><option value="ANULADO" {{ 'selected' if est == 'ANULADO' }}>ANULADO</option></select></td>
   {% endif %}
   {% for cod, tit, fmt in cols if cod != 'ESTADO' %}
   {% if cod == 'A21' and cols|length == 30 %}<td class="px-2 text-right bg-sky-50 font-medium select-text whitespace-nowrap" data-total></td>{% endif %}
-  <td class="p-0 border-l border-slate-100 {{ 'bg-slate-50' if cod == 'REF' else ('bg-sky-50' if cod == 'FAC') }}"><input readonly {{ 'data-calc' if cod == 'REF' }} {{ 'list=lst-estado' if cod == 'ESTADO' }} data-cod="{{ cod }}" {% set v = fila[loop.index0] if fila and loop.index0 < fila|length else '' %}{% set dec = 2 if fmt in ('0.00', '0.00*') else (3 if fmt == '0.000' else 0) %}{% if dec %}data-dec="{{ dec }}" {% endif %}value="{{ v|miles(dec) if dec else v }}"
+  <td class="p-0 border-l border-slate-100 {{ 'bg-slate-50' if cod == 'REF' else ('bg-sky-50' if cod == 'FAC') }}"><input readonly {{ 'data-calc' if cod == 'REF' }} data-cod="{{ cod }}" {% set v = fila[loop.index0] if fila and loop.index0 < fila|length else '' %}{% set dec = 2 if fmt in ('0.00', '0.00*') else (3 if fmt == '0.000' else 0) %}{% if dec %}data-dec="{{ dec }}" {% endif %}value="{{ v|miles(dec) if dec else v }}"
       class="w-full min-w-[7rem] px-2 py-1 bg-transparent {{ 'text-red-600 font-semibold' if v == 'ANULADO' }} focus:bg-white focus:outline focus:outline-2 focus:outline-emerald-500 {{ 'text-right' if fmt in ('0.00','0.00*','0.000') else '' }}"></td>
   {% endfor %}
   <td class="px-1"><button type="button" onclick="this.closest('tr').remove(); marcarCambio(this)" class="btn-quitar hidden text-slate-300 hover:text-red-600" title="Quitar fila">✕</button></td>
@@ -421,6 +421,7 @@ document.addEventListener('focusin', e => {
 document.addEventListener('focusout', e => { if (e.target.dataset && e.target.dataset.dec && !e.target.readOnly) conMiles(e.target); });
 function abrirEdicion(fila) {
   fila.querySelectorAll('input:not([data-calc])').forEach(i => i.readOnly = false);
+  fila.querySelectorAll('select').forEach(i => i.disabled = false);
   fila.querySelectorAll('.btn-quitar').forEach(b => b.classList.remove('hidden'));
 }
 function alternarEdicion(chk) {
@@ -447,7 +448,7 @@ function agregarFila(btn) {
   fila.querySelector('input').focus();
 }
 function enviarGrilla(form) {
-  const filas = [...form.querySelectorAll('tbody tr')].map(tr => [...tr.querySelectorAll('input')]
+  const filas = [...form.querySelectorAll('tbody tr')].map(tr => [...tr.querySelectorAll('input, select')]
     .sort((a, b) => (a.dataset.cod === 'ESTADO') - (b.dataset.cod === 'ESTADO')).map(i => i.dataset.dec ? i.value.replace(/,/g, '') : i.value));
   form.querySelector('[name=datos]').value = JSON.stringify(filas);
   return true;
