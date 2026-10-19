@@ -269,7 +269,7 @@
     <div class="overflow-auto max-h-[28rem]">
       <table class="text-xs border-collapse w-full">
         <thead class="sticky top-0"><tr class="bg-emerald-100 text-emerald-900">
-          {% for t in ['N° de orden','Fecha de pago','Período','Comprobante','IGV pagado S/','Banco','N° operación','En compras',''] %}<th class="px-2 py-1 text-left font-medium">{{ t }}</th>{% endfor %}
+          {% for t in ['N° de orden','Fecha de pago','Período','Comprobante','Base imponible S/ (IGV ÷ 18%)','IGV pagado S/','Banco','N° operación','En compras',''] %}<th class="px-2 py-1 text-left font-medium">{{ t }}</th>{% endfor %}
         </tr></thead>
         <tbody>
         {% for f in forms1662 %}
@@ -278,6 +278,7 @@
             <td class="px-2">{{ f.fecha_pago.strftime('%d/%m/%Y') if f.fecha_pago }}</td>
             <td class="px-2">{{ f.periodo }}</td>
             <td class="px-2 whitespace-nowrap">{{ f.serie }}-{{ f.numero }}</td>
+            <td class="px-2 text-right" title="Calculada: IGV pagado ÷ 0.18">{{ (f.importe|float / 0.18)|round(2)|miles(2) }}</td>
             <td class="px-2 text-right">{{ f.importe|miles(2) }}</td>
             <td class="px-2">{{ f.banco }}</td>
             <td class="px-2">{{ f.nro_operacion }}</td>
@@ -285,7 +286,7 @@
             <td class="px-2"><form method="post" action="/declaraciones/{{ decl.id }}/form1662/{{ f.id }}/eliminar" onsubmit="return confirm('¿Quitar este formulario?')"><button class="text-slate-300 hover:text-red-600" title="Quitar">✕</button></form></td>
           </tr>
         {% else %}
-          <tr><td colspan="9" class="px-4 py-6 text-center text-slate-400">Aún no hay formularios. Suba los PDF «Constancia Formulario 1662» de SUNAT.</td></tr>
+          <tr><td colspan="10" class="px-4 py-6 text-center text-slate-400">Aún no hay formularios. Suba los PDF «Constancia Formulario 1662» de SUNAT.</td></tr>
         {% endfor %}
         </tbody>
       </table>
