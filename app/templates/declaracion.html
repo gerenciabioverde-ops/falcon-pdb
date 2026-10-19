@@ -252,7 +252,11 @@
   {% endif %}
   {% if sub_sel == 'FORM1662' %}
   <section class="bg-white rounded shadow mt-3">
-    <div class="px-4 py-2 border-b"><h2 class="font-semibold text-sm">Formulario 1662 · IGV de servicios de no domiciliados <span class="text-slate-500 font-normal">· {{ forms1662|length }} constancia(s) · de la empresa, sin importar el período</span></h2></div>
+    <div class="px-4 py-2 border-b"><h2 class="font-semibold text-sm inline">Formulario 1662 · IGV de servicios de no domiciliados <span class="text-slate-500 font-normal">· {{ forms1662|length }} constancia(s) {{ 'de todos los períodos' if ver_todas else 'del período ' ~ decl.periodo }}</span></h2>
+      <span class="ml-3 text-xs">
+        <a href="/declaraciones/{{ decl.id }}?hoja=compras&sub=FORM1662" class="px-2 py-0.5 rounded {{ 'bg-emerald-700 text-white' if not ver_todas else 'text-emerald-800 border border-emerald-700' }}">Período {{ decl.periodo }}</a>
+        <a href="/declaraciones/{{ decl.id }}?hoja=compras&sub=FORM1662&todas=1" class="px-2 py-0.5 rounded {{ 'bg-emerald-700 text-white' if ver_todas else 'text-emerald-800 border border-emerald-700' }}">Todos ({{ total_1662 }})</a>
+      </span></div>
     <div class="flex flex-wrap items-center gap-x-5 gap-y-2 px-4 py-2 bg-emerald-50 border-b text-sm">
       <form method="post" action="/declaraciones/{{ decl.id }}/form1662" enctype="multipart/form-data" class="flex flex-wrap items-center gap-2"
             data-ext=".pdf" data-etiqueta="PDF" onsubmit="return enviarXml(event, this)"
@@ -288,7 +292,7 @@
             <td class="px-2"><form method="post" action="/declaraciones/{{ decl.id }}/form1662/{{ f.id }}/eliminar" onsubmit="return confirm('¿Quitar este formulario?')"><button class="text-slate-300 hover:text-red-600" title="Quitar">✕</button></form></td>
           </tr>
         {% else %}
-          <tr><td colspan="10" class="px-4 py-6 text-center text-slate-400">Aún no hay formularios. Suba los PDF «Constancia Formulario 1662» de SUNAT.</td></tr>
+          <tr><td colspan="10" class="px-4 py-6 text-center text-slate-400">Sin formularios{{ '' if ver_todas else ' de este período' }}. Suba los PDF «Constancia Formulario 1662» de SUNAT{{ ' o pulse «Todos»' if not ver_todas and total_1662 else '' }}.</td></tr>
         {% endfor %}
         </tbody>
       </table>

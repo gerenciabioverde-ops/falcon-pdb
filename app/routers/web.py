@@ -152,7 +152,7 @@ def _mes_tc(txt: str) -> tuple[int, int] | None:
 
 @router.get("/declaraciones/{decl_id}", response_class=HTMLResponse)
 def ver_declaracion(request: Request, decl_id: int, db: Db, usuario: User, hoja: str = "resumen", msg: str = "",
-                    mes: str = "", sub: str = ""):
+                    mes: str = "", sub: str = "", todas: str = ""):
     decl = _decl(db, decl_id)
     pestana = PESTANA.get(hoja) or PESTANA["resumen"]
     hallazgos = svc.validar(decl)
@@ -165,7 +165,7 @@ def ver_declaracion(request: Request, decl_id: int, db: Db, usuario: User, hoja:
         sub_sel = sub if sub in claves else claves[0]
         subs = [{"clave": b, "titulo": TITULO_SUB.get(b, t), "n": len(svc.filas_bloque(decl, b))} for b, t in pestana["bloques"]]
         visibles = [(b, t) for b, t in pestana["bloques"] if b == sub_sel]
-    detracciones, ligadas, forms1662, compras_1662 = [], set(), [], set()
+    detracciones, ligadas, forms1662, compras_1662, total_1662 = [], set(), [], set(), 0
     if pestana["clave"] == "compras":                   # 3.ª sub-pestaña: constancias de detracción (HTML SUNAT)
         detracciones = list(db.scalars(select(Detraccion).where(Detraccion.empresa_id == decl.empresa_id)
                                        .order_by(Detraccion.fecha_pago.desc(), Detraccion.id.desc())))
@@ -174,6 +174,9 @@ def ver_declaracion(request: Request, decl_id: int, db: Db, usuario: User, hoja:
         forms1662 = list(db.scalars(select(Form1662).where(Form1662.empresa_id == decl.empresa_id)
                                     .order_by(Form1662.fecha_pago.desc(), Form1662.id.desc())))
         compras_1662 = f1662.enlazadas(db, decl.empresa)
+        total_1662 = len(forms1662)
+        if not todas:                                    # por defecto, los del período de esta declaración
+            forms1662 = [f for f in forms1662 if f.periodo == decl.periodo]
         subs.append({"clave": "FORM1662", "titulo": "Form. 1662", "n": len(forms1662)})
         if sub in ("DETRACCIONES", "FORM1662"):
             sub_sel, visibles = sub, []
@@ -192,7 +195,7 @@ def ver_declaracion(request: Request, decl_id: int, db: Db, usuario: User, hoja:
                    pestanas=PESTANAS, cuentas=cuentas, bloques=bloques, hallazgos=hallazgos,
                    n_errores=sum(h["nivel"] == "error" for h in hallazgos), archivos=archivos,
                    archivo_bloque=ARCHIVO_BLOQUE, tc_sel=tc_sel, subs=subs, sub_sel=sub_sel,
-                   detracciones=detracciones, ligadas=ligadas, forms1662=forms1662, compras_1662=compras_1662,
+                   detracciones=detracciones, ligadas=ligadas, forms1662=forms1662, compras_1662=compras_1662, total_1662=total_1662, ver_todas=bool(todas),
                    tc_meses=svc.meses_tc(db) if pestana["clave"] == "tc" else [],
                    ayuda={c[0]: AYUDA[c[0]] for b in bloques for c in b["columnas"] if c[0] in AYUDA})
 
