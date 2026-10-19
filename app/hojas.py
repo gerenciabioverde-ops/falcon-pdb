@@ -25,7 +25,7 @@ PESTANAS = [
     {"clave": "resumen", "nombre": "INICIO", "bloques": []},
     {"clave": "tc", "nombre": "TC", "archivo": ("", ".tc", False),
      "bloques": [("TC", "Tipo de cambio")]},
-    {"clave": "compras", "nombre": "COMPRAS",
+    {"clave": "compras", "nombre": "COMPRAS", "subpestanas": True,
      "bloques": [("COMPRAS", "Comprobantes de compras"), ("COMPRAS_PAGO", "Forma de pago")]},
     {"clave": "ventas", "nombre": "VENTAS", "bloques": [("VENTAS", "Comprobantes de ventas")]},
     {"clave": "duas", "nombre": "DUAS",
