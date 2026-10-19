@@ -638,7 +638,28 @@ def reporte(decl: Declaracion) -> dict:
              for h, t in (("SWAP", "SWAP (tipo 06)"), ("SERVICIOS", "Servicios (tipo 07)"), ("HOSPEDAJE", "Hospedaje (tipo 08)"),
                           ("SIN_DETALLE", "Sin detalle (tipos 09-11)"), ("EXP_DEF", "Exp. temporal a definitiva (tipo 12)"),
                           ("TURISTAS", "Turistas (tipo 13)"))}
+    def fecha_orden(c):
+        return _safe_fecha(c[2]) or date.min
+
+    def nombre(c):
+        return f"{str(c[3]).strip()}-{str(c[4]).strip().lstrip('0') or str(c[4]).strip()}"
+
+    lista_compras = [{"fecha": c[2], "tipo": c[1], "doc": nombre(c), "ruc": c[7], "nombre": c[8],
+                      "moneda": "US$" if str(c[13]).strip() == "2" else "S/",
+                      "base": importe(c, 16), "igv": importe(c, 18), "otros": importe(c, 17) + importe(c, 19),
+                      "total": importe(c, 16) + importe(c, 17) + importe(c, 18) + importe(c, 19),
+                      "detraccion": c[22] if len(c) > 22 else "", "nota": nota_c(c)}
+                     for c in sorted(compras, key=fecha_orden) if len(c) > 19]
+    lista_ventas = [{"fecha": c[2], "tipo": c[1], "doc": nombre(c), "ruc": c[7], "nombre": c[8],
+                     "moneda": "US$" if str(c[13]).strip() == "2" else "S/", "externa": str(c[0]).strip().lstrip("0") == "2",
+                     "base": importe(c, 16), "igv": importe(c, 18), "total": importe(c, 16) + importe(c, 17) + importe(c, 18) + importe(c, 19),
+                     "anulado": es_anulado(c), "nota": nota_v(c)}
+                    for c in sorted(ventas_todas, key=fecha_orden) if len(c) > 19]
+    lista_pagos = [{"fecha": c[10], "tipo": c[1], "doc": f"{str(c[2]).strip()}-{str(c[3]).strip().lstrip('0') or str(c[3]).strip()}",
+                    "ruc": c[6], "medio": c[7], "banco": c[8], "operacion": c[9], "monto": importe(c, 11)}
+                   for c in sorted(pagos, key=lambda c: (_safe_fecha(c[10]) or date.min)) if len(c) > 11]
     return {
+        "lista_compras": lista_compras, "lista_ventas": lista_ventas, "lista_pagos": lista_pagos,
         "compras": {"n": len(compras), "con_igv": len(con_igv), "sin_igv": len(compras) - len(con_igv),
                     "con_detraccion": sum(1 for c in compras if len(c) > 22 and str(c[20]).strip() == "1"),
                     **sumar(compras, nota_c)},

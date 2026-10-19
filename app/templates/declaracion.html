@@ -259,7 +259,63 @@
   </section>
 
   <section class="bg-white rounded shadow p-5">
-    <h3 class="font-semibold mb-2">3. Observaciones de la validación</h3>
+    <h3 class="font-semibold mb-1">3. Relación de comprobantes de VENTAS <span class="text-slate-500 font-normal text-sm">· {{ rep.lista_ventas|length }}</span></h3>
+    <p class="text-xs text-slate-500 mb-2">Importes en soles. Los anulados van con importes en cero.</p>
+    <div class="overflow-x-auto"><table class="w-full text-xs">
+      <thead><tr class="bg-emerald-100 text-emerald-900 text-left">
+        <th class="px-2 py-1">N°</th><th class="px-2">Fecha</th><th class="px-2">Tipo</th><th class="px-2">Comprobante</th><th class="px-2">Cliente</th><th class="px-2">Moneda</th><th class="px-2">Venta</th>
+        <th class="px-2 text-right">Base S/</th><th class="px-2 text-right">IGV S/</th><th class="px-2 text-right">Total S/</th><th class="px-2">Estado</th></tr></thead>
+      <tbody class="divide-y">
+      {% for v in rep.lista_ventas %}
+        <tr class="{{ 'text-red-600' if v.anulado }}"><td class="px-2 py-1 text-slate-400">{{ loop.index }}</td><td class="px-2 whitespace-nowrap">{{ v.fecha }}</td><td class="px-2">{{ v.tipo }}</td>
+          <td class="px-2 whitespace-nowrap font-mono">{{ v.doc }}</td><td class="px-2">{{ v.nombre }}{% if v.ruc %} <span class="text-slate-400">· {{ v.ruc }}</span>{% endif %}</td><td class="px-2">{{ v.moneda }}</td>
+          <td class="px-2">{{ 'Exportación' if v.externa else 'Interna' }}</td>
+          <td class="px-2 text-right">{{ v.base|miles(2) }}</td><td class="px-2 text-right">{{ v.igv|miles(2) }}</td><td class="px-2 text-right">{{ v.total|miles(2) }}</td>
+          <td class="px-2">{{ '✖ ANULADO' if v.anulado else 'Válido' }}</td></tr>
+      {% else %}<tr><td colspan="11" class="px-2 py-4 text-center text-slate-400">Sin ventas.</td></tr>{% endfor %}
+      </tbody>
+      {% if rep.lista_ventas %}<tfoot><tr class="bg-emerald-50 font-semibold"><td colspan="7" class="px-2 py-1">TOTAL (las notas de crédito restan)</td>
+        <td class="px-2 text-right">{{ rep.ventas.base|miles(2) }}</td><td class="px-2 text-right">{{ rep.ventas.igv|miles(2) }}</td><td class="px-2 text-right">{{ rep.ventas.total|miles(2) }}</td><td></td></tr></tfoot>{% endif %}
+    </table></div>
+  </section>
+
+  <section class="bg-white rounded shadow p-5">
+    <h3 class="font-semibold mb-1">4. Relación de comprobantes de COMPRAS <span class="text-slate-500 font-normal text-sm">· {{ rep.lista_compras|length }}</span></h3>
+    <p class="text-xs text-slate-500 mb-2">Importes en soles (los comprobantes en dólares ya están convertidos con el tipo de cambio).</p>
+    <div class="overflow-x-auto"><table class="w-full text-xs">
+      <thead><tr class="bg-emerald-100 text-emerald-900 text-left">
+        <th class="px-2 py-1">N°</th><th class="px-2">Fecha</th><th class="px-2">Tipo</th><th class="px-2">Comprobante</th><th class="px-2">Proveedor</th><th class="px-2">Mon. orig.</th>
+        <th class="px-2 text-right">Base S/</th><th class="px-2 text-right">IGV S/</th><th class="px-2 text-right">Otros S/</th><th class="px-2 text-right">Total S/</th><th class="px-2">Detracción</th></tr></thead>
+      <tbody class="divide-y">
+      {% for c in rep.lista_compras %}
+        <tr><td class="px-2 py-1 text-slate-400">{{ loop.index }}</td><td class="px-2 whitespace-nowrap">{{ c.fecha }}</td><td class="px-2">{{ c.tipo }}</td>
+          <td class="px-2 whitespace-nowrap font-mono">{{ c.doc }}</td><td class="px-2">{{ c.nombre }}{% if c.ruc %} <span class="text-slate-400">· {{ c.ruc }}</span>{% endif %}</td><td class="px-2">{{ c.moneda }}</td>
+          <td class="px-2 text-right">{{ c.base|miles(2) }}</td><td class="px-2 text-right">{{ c.igv|miles(2) }}</td><td class="px-2 text-right">{{ c.otros|miles(2) }}</td><td class="px-2 text-right">{{ c.total|miles(2) }}</td>
+          <td class="px-2 whitespace-nowrap">{{ c.detraccion }}</td></tr>
+      {% else %}<tr><td colspan="11" class="px-2 py-4 text-center text-slate-400">Sin compras.</td></tr>{% endfor %}
+      </tbody>
+      {% if rep.lista_compras %}<tfoot><tr class="bg-emerald-50 font-semibold"><td colspan="6" class="px-2 py-1">TOTAL (las notas de crédito restan)</td>
+        <td class="px-2 text-right">{{ rep.compras.base|miles(2) }}</td><td class="px-2 text-right">{{ rep.compras.igv|miles(2) }}</td><td class="px-2 text-right">{{ rep.compras.otros|miles(2) }}</td><td class="px-2 text-right">{{ rep.compras.total|miles(2) }}</td><td></td></tr></tfoot>{% endif %}
+    </table></div>
+  </section>
+
+  <section class="bg-white rounded shadow p-5">
+    <h3 class="font-semibold mb-1">5. Relación de PAGOS (forma de pago de compras) <span class="text-slate-500 font-normal text-sm">· {{ rep.lista_pagos|length }}</span></h3>
+    <div class="overflow-x-auto"><table class="w-full text-xs">
+      <thead><tr class="bg-emerald-100 text-emerald-900 text-left">
+        <th class="px-2 py-1">N°</th><th class="px-2">Fecha de operación</th><th class="px-2">Comprobante pagado</th><th class="px-2">RUC / Doc.</th><th class="px-2">Medio de pago</th><th class="px-2">Banco</th><th class="px-2">N° de operación</th><th class="px-2 text-right">Monto S/</th></tr></thead>
+      <tbody class="divide-y">
+      {% for p in rep.lista_pagos %}
+        <tr><td class="px-2 py-1 text-slate-400">{{ loop.index }}</td><td class="px-2 whitespace-nowrap">{{ p.fecha }}</td><td class="px-2 whitespace-nowrap font-mono">{{ p.tipo }} · {{ p.doc }}</td><td class="px-2">{{ p.ruc }}</td>
+          <td class="px-2">{{ p.medio }}</td><td class="px-2">{{ p.banco }}</td><td class="px-2 font-mono">{{ p.operacion }}</td><td class="px-2 text-right">{{ p.monto|miles(2) }}</td></tr>
+      {% else %}<tr><td colspan="8" class="px-2 py-4 text-center text-slate-400">Sin pagos. Use «Generar desde las compras» o «Buscar en libros de bancos» en la sub-pestaña Forma de pago.</td></tr>{% endfor %}
+      </tbody>
+      {% if rep.lista_pagos %}<tfoot><tr class="bg-emerald-50 font-semibold"><td colspan="7" class="px-2 py-1">TOTAL</td><td class="px-2 text-right">{{ rep.pagos.monto|miles(2) }}</td></tr></tfoot>{% endif %}
+    </table></div>
+  </section>
+
+  <section class="bg-white rounded shadow p-5">
+    <h3 class="font-semibold mb-2">6. Observaciones de la validación</h3>
     {% for h in hallazgos %}
       <p class="text-sm {{ 'text-red-700' if h.nivel == 'error' else 'text-amber-700' }}">{{ '✖' if h.nivel == 'error' else '▲' }}
         {% if h.periodo %}<span class="font-mono text-xs rounded bg-slate-100 text-slate-700 px-1.5 py-0.5 mr-1">{{ h.periodo }}</span>{% endif %}{{ h.texto }}</p>
