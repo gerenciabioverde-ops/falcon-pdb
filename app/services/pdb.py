@@ -469,6 +469,20 @@ def validar(decl: Declaracion) -> list[dict]:
             if not f.celdas[21].strip() or not f.celdas[22].strip():
                 avi(f"Compra {f.celdas[3]}-{f.celdas[4]} con detracción: falta el código de la tasa (A22) o la constancia (A23).")
 
+    # Un comprobante de compra se registra en UN solo período (puede ser posterior al de su fecha de emisión).
+    def _id_compra(c): return (str(c[7]).strip(), str(c[1]).strip().lstrip("0"), *clave(c[3], c[4]))
+    ya: dict[tuple, str] = {}
+    for d in sorted(decl.empresa.declaraciones, key=lambda x: (x.anio, x.mes)):
+        for f in d.filas:
+            if f.hoja != "COMPRAS" or len(f.celdas) < 8:
+                continue
+            k = _id_compra(f.celdas)
+            if k in ya and (d.id == decl.id or ya[k] == decl.periodo):
+                otro = d.periodo if ya[k] == decl.periodo else ya[k]
+                err(f"Compra {f.celdas[3]}-{f.celdas[4]} (RUC {k[0]}) repetida: ya está registrada en el período {otro}. "
+                    "Un comprobante se registra en un solo período.", decl.periodo)
+            ya.setdefault(k, d.periodo)
+
     notas = {"COMPRAS": ("7", "8", "87", "88", "97", "98"), "VENTAS": ("7", "8")}
     for f in decl.filas:
         if f.hoja in notas and len(f.celdas) > 27 and f.celdas[1].strip().lstrip("0") in notas[f.hoja]:
