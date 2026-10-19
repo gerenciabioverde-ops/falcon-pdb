@@ -40,10 +40,10 @@ def codigo_tasa(bien: str, monto: Decimal, total: Decimal) -> str:
     return min(cands, key=lambda ct: abs(ct[1] - tasa))[0]
 
 
-def cargar_constancias(db: Session, decl: Declaracion, archivos: list[tuple[str, bytes]]) -> tuple[int, list[str]]:
+def cargar_constancias(db: Session, decl: Declaracion, archivos: list[tuple[str, bytes]]) -> tuple[int, list[str], int]:
     """Guarda las constancias y las deja visibles SOLO en la declaración (período) donde se subieron."""
     empresa = decl.empresa
-    n, avisos = 0, []
+    n, nuevas, avisos = 0, 0, []
     for nombre, contenido in archivos:
         try:
             d = parsear_constancia(contenido)
@@ -57,13 +57,14 @@ def cargar_constancias(db: Session, decl: Declaracion, archivos: list[tuple[str,
         if fila is None:
             fila = Detraccion(empresa_id=empresa.id, constancia=d["constancia"])
             db.add(fila)
+            nuevas += 1
         for k, v in d.items():
             setattr(fila, k, v)
         db.flush()
         db.query(DetraccionDecl).filter(DetraccionDecl.detraccion_id == fila.id).delete()
         db.add(DetraccionDecl(detraccion_id=fila.id, declaracion_id=decl.id))                       # la misma constancia repetida en el envío se actualiza, no se duplica
         n += 1
-    return n, avisos
+    return n, avisos, nuevas
 
 
 def aplicar_a_compras(db: Session, empresa: Empresa) -> int:

@@ -228,11 +228,12 @@ async def subir_detracciones(decl_id: int, request: Request, db: Db, usuario: Us
     subidos = [(a.filename, await a.read()) for a in form.getlist("archivos") if getattr(a, "filename", None)]
     if not subidos:
         return _volver(decl_id, "compras", "Error: seleccione al menos una constancia HTML.", "", "DETRACCIONES")
-    n, avisos = detr.cargar_constancias(db, decl, subidos)
+    n, avisos, nuevas = detr.cargar_constancias(db, decl, subidos)
     aplicadas = detr.aplicar_a_compras(db, decl.empresa)
     db.commit()
-    msg = (f"Constancias cargadas: {n}. Compras actualizadas: {aplicadas} (en todos los períodos)."
-           + (f" Avisos ({len(avisos)}): " + " · ".join(avisos[:3]) if avisos else ""))
+    msg = (f"HTML recibidos: {len(subidos)} · leídos: {n} · constancias nuevas: {nuevas} · repetidas/actualizadas: {n - nuevas}"
+           f" · no válidos: {len(avisos)}. Compras actualizadas: {aplicadas} (en todos los períodos)."
+           + (" Detalle: " + " · ".join(avisos[:3]) + (" …" if len(avisos) > 3 else "") if avisos else ""))
     return _volver(decl_id, "compras", msg if n else "Error: " + " · ".join(avisos[:3]), "", "DETRACCIONES")
 
 
