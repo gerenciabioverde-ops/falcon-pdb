@@ -199,7 +199,7 @@ def _parsear_contenedores(p1: str) -> list[dict]:
 
 # --------------------------------------------------------------------- series
 
-_FACTURA_DESC = re.compile(r"FACTURA\s*(?:N[°º.]*\s*)?([A-Za-z]{1,4}\d{0,4})\s*[-–]\s*(\d{1,12})", re.IGNORECASE)
+_FACTURA_DESC = re.compile(r"FACTURA\s*[:.]?\s*(?:N[°º.]*\s*)?[:.]?\s*([A-Za-z]{1,4}\d{0,4})\s*[-–]\s*(\d{1,12})", re.IGNORECASE)
 _NOMBRE_FACT = re.compile(r"^([A-Za-z]{1,4}\d{1,4})\s*-\s*(\d{1,12})((?:_\d{1,12})*)(?=_|\.|$)")
 
 
