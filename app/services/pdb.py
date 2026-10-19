@@ -9,10 +9,10 @@ import io
 from datetime import date, datetime
 from decimal import Decimal, InvalidOperation
 
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, object_session
 
 from app.hojas import COLUMNAS_TODAS
-from app.models import Cdp, Declaracion, Dua, HojaFila
+from app.models import Cdp, Declaracion, Dua, HojaFila, TipoCambioDia
 
 PDB_DUA_HEADERS = [
     "D1 Cod.Aduana", "D2 Año DUA", "D3 N° Correlativo",
@@ -120,6 +120,10 @@ def importar_hoja_csv(db: Session, decl: Declaracion, hoja: str, contenido: byte
     filas = [f for f in _leer_csv(contenido) if any(f)]
     if len(filas) < 2:
         raise ValueError("El archivo debe tener encabezados y al menos una fila de datos.")
+    if hoja == "HISTORIAL_TC":
+        return registrar_tc_historial(db, _parsear_tc(filas[1:]))     # agrega/actualiza, no borra
+    if hoja == "TC":
+        registrar_tc_historial(db, _parsear_tc(filas[1:]))
     for f in [f for f in decl.filas if f.hoja == hoja]:
         decl.filas.remove(f)
     db.flush()
@@ -134,8 +138,62 @@ def _txt_fecha(d) -> str:
     return _ddmmyyyy(d)
 
 
+def _tc_a_filas(registros) -> list[list[str]]:
+    return [[_ddmmyyyy(r.fecha), f"{r.compra:.3f}", f"{r.venta:.3f}"] for r in registros]
+
+
+def _parsear_tc(filas: list[list[str]]) -> list[tuple]:
+    """[fecha, compra, venta] en texto → [(date, Decimal, Decimal)]; ValueError con N° de fila."""
+    salida = []
+    for n, f in enumerate(filas, start=1):
+        f = (list(f) + ["", "", ""])[:3]
+        try:
+            fecha = _fecha(f[0])
+            if not fecha:
+                raise ValueError("falta la fecha")
+            compra, venta = _dec(f[1]), _dec(f[2])
+            if compra <= 0 or venta <= 0:
+                raise ValueError("el tipo de cambio debe ser mayor que cero")
+        except ValueError as e:
+            raise ValueError(f"Fila {n}: {e}") from None
+        salida.append((fecha, compra, venta))
+    return salida
+
+
+def registrar_tc_historial(db: Session, registros: list[tuple]) -> int:
+    """Agrega o actualiza fechas en el historial común de tipo de cambio."""
+    for fecha, compra, venta in registros:
+        fila = db.get(TipoCambioDia, fecha)
+        if fila:
+            fila.compra, fila.venta = compra, venta
+        else:
+            db.add(TipoCambioDia(fecha=fecha, compra=compra, venta=venta))
+    db.flush()
+    return len(registros)
+
+
+def sembrar_historial(db: Session) -> None:
+    """Al arrancar: copia al historial los TC que ya estaban en declaraciones (solo fechas faltantes)."""
+    existentes = {r[0] for r in db.query(TipoCambioDia.fecha).all()}
+    nuevos = []
+    for f in db.query(HojaFila).filter(HojaFila.hoja == "TC").all():
+        try:
+            (fecha, c, v), = _parsear_tc([f.celdas])
+        except ValueError:
+            continue
+        if fecha not in existentes:
+            existentes.add(fecha)
+            nuevos.append((fecha, c, v))
+    if nuevos:
+        registrar_tc_historial(db, nuevos)
+        db.commit()
+
+
 def filas_bloque(decl: Declaracion, bloque: str) -> list[list[str]]:
     """Filas de un bloque como listas de texto, para mostrar/editar en la grilla."""
+    if bloque == "HISTORIAL_TC":
+        db = object_session(decl)
+        return _tc_a_filas(db.query(TipoCambioDia).order_by(TipoCambioDia.fecha).all())
     if bloque == "DUAS_D":
         return [[d.codigo_aduana, d.anio_dua, d.correlativo, _txt_fecha(d.fecha_embarque),
                  _txt_fecha(d.fecha_regularizacion), f"{d.fob_usd:.2f}"] for d in decl.duas]
@@ -151,6 +209,12 @@ def guardar_grilla(db: Session, decl: Declaracion, bloque: str, filas: list[list
     Lanza ValueError con el N° de fila si un dato no es válido."""
     ncols = len(COLUMNAS_TODAS[bloque])
     filas = [([str(c).strip() for c in f] + [""] * ncols)[:ncols] for f in filas if any(str(c).strip() for c in f)]
+    if bloque == "HISTORIAL_TC":
+        registros = _parsear_tc(filas)
+        db.query(TipoCambioDia).delete()
+        db.flush()
+        registrar_tc_historial(db, registros)
+        return len(registros)
     if bloque == "DUAS_D":
         nuevas = []
         for n, f in enumerate(filas, start=1):
@@ -177,6 +241,8 @@ def guardar_grilla(db: Session, decl: Declaracion, bloque: str, filas: list[list
         db.flush()
         decl.cdps.extend(nuevas)
     else:
+        if bloque == "TC":
+            registrar_tc_historial(db, _parsear_tc(filas))
         for f in [f for f in decl.filas if f.hoja == bloque]:
             decl.filas.remove(f)
         db.flush()
@@ -293,7 +359,6 @@ def duas_a_csv(decl: Declaracion) -> str:
 def hoja_a_csv(decl: Declaracion, hoja: str) -> str:
     buf = io.StringIO()
     w = csv.writer(buf, delimiter=";", lineterminator="\r\n")
-    for f in decl.filas:
-        if f.hoja == hoja:
-            w.writerow(f.celdas)
+    for celdas in filas_bloque(decl, hoja):
+        w.writerow(celdas)
     return buf.getvalue()

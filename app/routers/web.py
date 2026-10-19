@@ -167,7 +167,7 @@ async def importar_hoja(decl_id: int, db: Db, usuario: User, hoja: Annotated[str
 
 
 PESTANA_DE_CARGA = {"tc": "tc", "ventas": "ventas", "compras": "compras", "pagos": "compras",
-                    "pagos_bancos": "compras", "duas": "duas"}
+                    "pagos_bancos": "compras", "duas": "duas", "historial": "historial_tc", "tc_historial": "tc"}
 
 
 @router.post("/declaraciones/{decl_id}/cargar/{tipo}")
@@ -181,12 +181,20 @@ async def cargar(decl_id: int, tipo: str, db: Db, usuario: User,
     try:
         if tipo == "pagos":
             n, avisos = cargas.generar_pagos_desde_compras(db, decl)
+        elif tipo == "tc_historial":
+            n, avisos = cargas.traer_tc_del_historial(db, decl)
         else:
             subidos = [(a.filename or "archivo", await a.read()) for a in archivos if a.filename]
             if not subidos:
                 raise ValueError("Seleccione al menos un archivo.")
             if tipo == "tc":
                 n, avisos = cargas.cargar_tc_pdf(db, decl, subidos[0][1])
+            elif tipo == "historial":
+                n, avisos = 0, []
+                for _nombre, contenido in subidos:
+                    k, av = cargas.cargar_historial_pdf(db, contenido)
+                    n += k
+                    avisos += av
             elif tipo == "ventas":
                 n, avisos = cargas.cargar_ventas_xml(db, decl, subidos)
             elif tipo == "compras":

@@ -17,13 +17,16 @@ COLUMNAS_DUAS_E = [
     ("E7", "VALOR FOB FACTURADO EN US$", "0.00"), ("E8", "VALOR FOB PROPIETARIO", "0.00"),
     ("E9", "% DE PARTICIPACIÓN", "0.00"), ("E10", "RUC DEL OPERADOR", "@"),
 ]
-COLUMNAS_TODAS = {**COLUMNAS, "DUAS_D": COLUMNAS_DUAS_D, "DUAS_E": COLUMNAS_DUAS_E}
+COLUMNAS_TODAS = {**COLUMNAS, "DUAS_D": COLUMNAS_DUAS_D, "DUAS_E": COLUMNAS_DUAS_E,
+                  "HISTORIAL_TC": COLUMNAS["TC"]}
 
 # Pestañas en el orden del libro. `archivo` = (prefijo, extensión, lleva período en el nombre).
 PESTANAS = [
     {"clave": "resumen", "nombre": "INICIO", "bloques": []},
     {"clave": "tc", "nombre": "TC", "archivo": ("", ".tc", False),
      "bloques": [("TC", "Tipo de cambio del mes")]},
+    {"clave": "historial_tc", "nombre": "HISTORIAL_TC",
+     "bloques": [("HISTORIAL_TC", "Historial de tipo de cambio (todos los meses, común a todas las empresas)")]},
     {"clave": "compras", "nombre": "COMPRAS",
      "bloques": [("COMPRAS", "Comprobantes de compras"), ("COMPRAS_PAGO", "Forma de pago")]},
     {"clave": "ventas", "nombre": "VENTAS", "bloques": [("VENTAS", "Comprobantes de ventas")]},
@@ -47,4 +50,4 @@ ARCHIVO_BLOQUE = {
     "SIN_DETALLE": ("", ".exp", True), "TURISTAS": ("", ".pet", True),
 }
 TITULOS_BLOQUE = {b: t for p in PESTANAS for b, t in p["bloques"]}
-BLOQUES_TABULARES = list(ARCHIVO_BLOQUE)
+BLOQUES_TABULARES = list(ARCHIVO_BLOQUE) + ["HISTORIAL_TC"]

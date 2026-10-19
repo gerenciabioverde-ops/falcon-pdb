@@ -105,3 +105,11 @@ class HojaFila(Base):
     orden: Mapped[int] = mapped_column(Integer, default=0)
     celdas: Mapped[list] = mapped_column(JSON, default=list)
     declaracion: Mapped[Declaracion] = relationship(back_populates="filas")
+
+
+class TipoCambioDia(Base):
+    """Historial de tipo de cambio USD (hoja HISTORIAL_TC del libro), común a todas las empresas."""
+    __tablename__ = "tipo_cambio_dia"
+    fecha: Mapped[date] = mapped_column(Date, primary_key=True)
+    compra: Mapped[Decimal] = mapped_column(Numeric(8, 3), nullable=False)
+    venta: Mapped[Decimal] = mapped_column(Numeric(8, 3), nullable=False)
