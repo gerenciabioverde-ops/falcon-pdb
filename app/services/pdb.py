@@ -247,7 +247,8 @@ def filas_bloque(decl: Declaracion, bloque: str, mes: tuple[int, int] | None = N
     if bloque == "DUAS_D":
         facturas: dict[str, list[str]] = {}
         for c in decl.cdps:
-            facturas.setdefault(c.dua_key, []).append(f"{c.serie}-{c.numero}")
+            sin = not c.serie.strip() or not c.numero.strip()
+            facturas.setdefault(c.dua_key, []).append(MARCA_SIN_FACTURA if sin else f"{c.serie}-{c.numero}")
         return [[d.codigo_aduana, d.anio_dua, d.correlativo, _txt_fecha(d.fecha_embarque),
                  _txt_fecha(d.fecha_regularizacion), f"{d.fob_usd:.2f}",
                  f"{d.codigo_aduana}-{d.anio_dua}-40-{d.correlativo}",       # N° de DUA (solo seguimiento)
@@ -260,6 +261,7 @@ def filas_bloque(decl: Declaracion, bloque: str, mes: tuple[int, int] | None = N
     return [f.celdas for f in decl.filas if f.hoja == bloque]
 
 
+MARCA_SIN_FACTURA = "(sin factura)"
 _FACT = re.compile(r"^([A-Za-z0-9]{1,10})\s*-\s*0*(\d+)$")
 
 
@@ -268,8 +270,8 @@ def _parsear_facturas(texto: str, n_fila: int) -> list[tuple[str, str]]:
     salida: list[tuple[str, str]] = []
     for trozo in re.split(r"[;,\n]+", texto or ""):
         trozo = trozo.strip()
-        if not trozo:
-            continue
+        if not trozo or trozo.startswith("(") or not trozo.strip("-–— "):
+            continue                                   # vacío, «(sin factura)» o un guion suelto
         m = _FACT.match(trozo)
         if not m:
             raise ValueError(f"Fila {n_fila}: factura «{trozo}» no válida; use SERIE-NÚMERO (ej.: FFF1-651), separadas por coma.")
@@ -280,18 +282,26 @@ def _parsear_facturas(texto: str, n_fila: int) -> list[tuple[str, str]]:
 
 
 def _enlazar_facturas(db: Session, decl: Declaracion, dua: Dua, deseadas: list[tuple[str, str]]) -> None:
-    """Deja en el bloque E exactamente las facturas indicadas para esa DUA: conserva las que ya estaban
-    (con sus importes), crea las nuevas y quita las que ya no figuran. Las filas sin serie/número no se tocan."""
+    """Deja en el bloque E las facturas indicadas para esa DUA: conserva las que ya estaban (con sus importes),
+    quita las que ya no figuran y agrega las nuevas. Las filas SIN serie/número (factura que no se pudo leer
+    de la DAM) se llenan primero con las nuevas, conservando su FOB; las que sobren quedan para completarse."""
     clave = dua.clave
-    existentes = [c for c in decl.cdps if c.dua_key == clave and c.serie.strip() and c.numero.strip()]
-    por_par = {(c.serie.strip().upper(), c.numero.strip().lstrip("0")): c for c in existentes}
-    for par, c in por_par.items():
+    propias = [c for c in decl.cdps if c.dua_key == clave]
+    vacias = [c for c in propias if not c.serie.strip() or not c.numero.strip()]
+    por_par = {(c.serie.strip().upper(), c.numero.strip().lstrip("0")): c
+               for c in propias if c.serie.strip() and c.numero.strip()}
+    for par, c in list(por_par.items()):
         if par not in deseadas:
             decl.cdps.remove(c)
     nuevas = [par for par in deseadas if par not in por_par]
+    for serie, numero in list(nuevas):
+        if vacias:                                   # completar una fila vacía (conserva su FOB)
+            c = vacias.pop(0)
+            c.serie, c.numero = serie, numero
+            nuevas.remove((serie, numero))
     if not nuevas:
         return
-    fob_asignado = sum((c.fob_facturado or Decimal("0")) for par, c in por_par.items() if par in deseadas)
+    fob_asignado = sum((c.fob_facturado or Decimal("0")) for c in propias if c in decl.cdps)
     pendiente = (dua.fob_usd or Decimal("0")) - fob_asignado
     fob = pendiente if (len(nuevas) == 1 and pendiente > 0) else Decimal("0")
     periodo = dua.fecha_embarque.strftime("%Y%m") if dua.fecha_embarque else decl.periodo
