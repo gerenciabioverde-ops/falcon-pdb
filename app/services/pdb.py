@@ -475,6 +475,19 @@ def validar(decl: Declaracion) -> list[dict]:
         otras_ventas |= {clave(f.celdas[3], f.celdas[4]) for f in d.filas
                          if f.hoja == "VENTAS" and len(f.celdas) > 4 and not es_anulado(f.celdas)}
         otras_dam |= {clave(c.serie, c.numero) for c in d.cdps}
+    # SUNAT: la factura de exportación debe emitirse antes del embarque (el aplicativo valida esa fecha).
+    emision = dict(ventas)
+    for d in decl.empresa.declaraciones:
+        if d.id != decl.id:
+            emision.update({clave(f.celdas[3], f.celdas[4]): f.celdas for f in d.filas
+                            if f.hoja == "VENTAS" and len(f.celdas) > 4 and not es_anulado(f.celdas)})
+    for k, c in sorted(en_dam.items(), key=lambda kv: (kv[1].periodo_cdp or "", kv[0])):
+        dua, venta = claves.get(c.dua_key), emision.get(k)
+        fe = _safe_fecha(venta[2]) if venta else None
+        if dua and dua.fecha_embarque and fe and fe > dua.fecha_embarque:
+            avi(f"Factura {k[0]}-{k[1]} emitida el {_ddmmyyyy(fe)}, después del embarque de la DUA {c.dua_key} "
+                f"({_ddmmyyyy(dua.fecha_embarque)}): SUNAT exige emitirla antes del embarque; el aplicativo puede rechazarla.",
+                c.periodo_cdp or None)
     if ventas or otras_ventas:
         for k, c in sorted(en_dam.items(), key=lambda kv: (kv[1].periodo_cdp or "", kv[0])):
             if k not in ventas and k not in otras_ventas:
