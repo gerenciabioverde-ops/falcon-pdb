@@ -15,6 +15,7 @@ from decimal import ROUND_HALF_UP, Decimal
 
 from app.hojas import ARCHIVO_BLOQUE, COLUMNAS
 from app.models import Declaracion
+from app.services import pdb as _pdb
 from app.services.pdb import _fecha
 
 F = "FECHA"   # dd/mm/yyyy
@@ -71,7 +72,7 @@ def _linea(celdas, formatos: list[str]) -> str:
 
 
 def _filas_hoja(decl: Declaracion, hoja: str, formatos: list[str]) -> list[str]:
-    return [_linea(f.celdas, formatos) for f in decl.filas if f.hoja == hoja and any(f.celdas)]
+    return [_linea(c, formatos) for c in _pdb.filas_bloque(decl, hoja) if any(c)]
 
 
 def lineas_duas(decl: Declaracion) -> list[str]:

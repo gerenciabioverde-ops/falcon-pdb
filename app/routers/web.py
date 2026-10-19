@@ -95,19 +95,33 @@ def crear_declaracion(db: Db, usuario: User, empresa_id: Annotated[int, Form()],
     return RedirectResponse(f"/declaraciones/{decl.id}", status_code=303)
 
 
-def _volver(decl_id: int, hoja: str, msg: str = "") -> RedirectResponse:
-    return RedirectResponse(f"/declaraciones/{decl_id}?hoja={hoja}" + (f"&msg={msg}" if msg else ""),
-                            status_code=303)
+def _volver(decl_id: int, hoja: str, msg: str = "", mes: str = "") -> RedirectResponse:
+    return RedirectResponse(f"/declaraciones/{decl_id}?hoja={hoja}" + (f"&mes={mes}" if mes else "")
+                            + (f"&msg={msg}" if msg else ""), status_code=303)
+
+
+def _mes_tc(txt: str) -> tuple[int, int] | None:
+    """'2026-09' → (2026, 9); cualquier otra cosa → None (se usa el mes del período)."""
+    try:
+        a, m = txt.split("-")
+        a, m = int(a), int(m)
+        return (a, m) if 2000 <= a <= 2100 and 1 <= m <= 12 else None
+    except ValueError:
+        return None
 
 
 @router.get("/declaraciones/{decl_id}", response_class=HTMLResponse)
-def ver_declaracion(request: Request, decl_id: int, db: Db, usuario: User, hoja: str = "resumen", msg: str = ""):
+def ver_declaracion(request: Request, decl_id: int, db: Db, usuario: User, hoja: str = "resumen", msg: str = "",
+                    mes: str = ""):
     decl = _decl(db, decl_id)
     pestana = PESTANA.get(hoja) or PESTANA["resumen"]
     hallazgos = svc.validar(decl)
     cuentas = {p["clave"]: sum(len(svc.filas_bloque(decl, b)) for b, _ in p["bloques"]) for p in PESTANAS}
-    bloques = [{"clave": b, "titulo": t, "columnas": COLUMNAS_TODAS[b], "filas": svc.filas_bloque(decl, b)}
+    tc_sel = _mes_tc(mes) or (decl.anio, decl.mes)           # mes del TC que se está viendo
+    bloques = [{"clave": b, "titulo": t, "columnas": COLUMNAS_TODAS[b], "filas": svc.filas_bloque(decl, b, tc_sel)}
                for b, t in pestana["bloques"]]
+    if pestana["clave"] == "tc":
+        bloques[0]["titulo"] = f"Tipo de cambio · {MESES[tc_sel[1]]} {tc_sel[0]}"
     archivos = arch.archivos(decl)
     ruc, per = decl.empresa.ruc, decl.periodo
     nombre_de = {b: f"{p}{ruc}{per if cp else ''}{e}" for b, (p, e, cp) in ARCHIVO_BLOQUE.items()}
@@ -116,25 +130,26 @@ def ver_declaracion(request: Request, decl_id: int, db: Db, usuario: User, hoja:
     return _render(request, "declaracion.html", usuario=usuario, decl=decl, msg=msg, pestana=pestana, archivo_de=archivo_de,
                    pestanas=PESTANAS, cuentas=cuentas, bloques=bloques, hallazgos=hallazgos,
                    n_errores=sum(h["nivel"] == "error" for h in hallazgos), archivos=archivos,
-                   archivo_bloque=ARCHIVO_BLOQUE,
+                   archivo_bloque=ARCHIVO_BLOQUE, tc_sel=tc_sel,
+                   tc_meses=svc.meses_tc(db) if pestana["clave"] == "tc" else [],
                    ayuda={c[0]: AYUDA[c[0]] for b in bloques for c in b["columnas"] if c[0] in AYUDA})
 
 
 @router.post("/declaraciones/{decl_id}/bloque/{bloque}")
 def guardar_bloque(decl_id: int, bloque: str, db: Db, usuario: User, hoja: Annotated[str, Form()],
-                   datos: Annotated[str, Form()]):
+                   datos: Annotated[str, Form()], mes: Annotated[str, Form()] = ""):
     decl = _decl(db, decl_id)
     if bloque not in COLUMNAS_TODAS:
         raise HTTPException(404, "Bloque desconocido")
     try:
         filas = json.loads(datos)
-        n = svc.guardar_grilla(db, decl, bloque, filas)
+        n = svc.guardar_grilla(db, decl, bloque, filas, _mes_tc(mes))
         db.commit()
         msg = f"Guardado: {n} fila(s)."
     except (ValueError, TypeError) as e:
         db.rollback()
         msg = f"Error: {e}"
-    return _volver(decl_id, hoja, msg)
+    return _volver(decl_id, hoja, msg, mes)
 
 
 @router.post("/declaraciones/{decl_id}/importar-duas")
@@ -167,7 +182,7 @@ async def importar_hoja(decl_id: int, db: Db, usuario: User, hoja: Annotated[str
 
 
 PESTANA_DE_CARGA = {"tc": "tc", "ventas": "ventas", "compras": "compras", "pagos": "compras",
-                    "pagos_bancos": "compras", "duas": "duas", "historial": "historial_tc", "tc_historial": "tc"}
+                    "pagos_bancos": "compras", "duas": "duas"}
 
 
 @router.post("/declaraciones/{decl_id}/cargar/{tipo}")
@@ -176,25 +191,27 @@ async def cargar(decl_id: int, tipo: str, db: Db, usuario: User,
     """Llena una hoja desde los documentos de origen (PDF de TC, XML, PDF de DAM) o,
     para `pagos`, desde las compras ya cargadas."""
     decl = _decl(db, decl_id)
+    mes_ver = ""
     if tipo not in PESTANA_DE_CARGA:
         raise HTTPException(404, "Tipo de carga desconocido")
     try:
         if tipo == "pagos":
             n, avisos = cargas.generar_pagos_desde_compras(db, decl)
-        elif tipo == "tc_historial":
-            n, avisos = cargas.traer_tc_del_historial(db, decl)
         else:
             subidos = [(a.filename or "archivo", await a.read()) for a in archivos if a.filename]
             if not subidos:
                 raise ValueError("Seleccione al menos un archivo.")
             if tipo == "tc":
-                n, avisos = cargas.cargar_tc_pdf(db, decl, subidos[0][1])
-            elif tipo == "historial":
-                n, avisos = 0, []
-                for _nombre, contenido in subidos:
-                    k, av = cargas.cargar_historial_pdf(db, contenido)
+                n, avisos, ultimo = 0, [], None
+                for nombre, contenido in subidos:
+                    try:
+                        k, av, ultimo = cargas.cargar_tc_pdf(db, contenido)
+                    except ValueError as e:
+                        avisos.append(f"{nombre}: {e}")
+                        continue
                     n += k
-                    avisos += av
+                    avisos.append(f"{MESES[ultimo[1]]} {ultimo[0]}: {k} día(s).")
+                mes_ver = f"{ultimo[0]}-{ultimo[1]:02d}" if ultimo else ""
             elif tipo == "ventas":
                 n, avisos = cargas.cargar_ventas_xml(db, decl, subidos)
             elif tipo == "compras":
@@ -211,7 +228,7 @@ async def cargar(decl_id: int, tipo: str, db: Db, usuario: User,
     except ValueError as e:
         db.rollback()
         msg = f"Error: {e}"
-    return _volver(decl_id, PESTANA_DE_CARGA[tipo], msg)
+    return _volver(decl_id, PESTANA_DE_CARGA[tipo], msg, mes_ver)
 
 
 @router.post("/declaraciones/{decl_id}/estado")

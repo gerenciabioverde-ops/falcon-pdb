@@ -23,7 +23,7 @@ from app.lectores.dam_pdf import parsear_dam_pdf
 from app.lectores.tc_pdf import ImportadorTCError, parsear_pdf_sunat
 from app.lectores.xml_cpe import NS, parsear_xml_cpe
 from app.models import Cdp, Declaracion, Dua, HojaFila, TipoCambioDia
-from app.services.pdb import _dec, _fecha, _tc_a_filas, registrar_tc_historial
+from app.services.pdb import _dec, _fecha, registrar_tc_historial
 from sqlalchemy.orm import object_session
 
 CERO = Decimal("0")
@@ -58,39 +58,15 @@ def _reemplazar(db: Session, decl: Declaracion, hoja: str, filas: list[list[str]
 
 # ------------------------------------------------------------------ TC (PDF SUNAT)
 
-def cargar_tc_pdf(db: Session, decl: Declaracion, pdf: bytes) -> tuple[int, list[str]]:
-    """PDF mensual de SUNAT → hoja TC del período y, además, el historial común."""
-    try:
-        registros, meta = parsear_pdf_sunat(pdf, mes_override=decl.mes, anio_override=decl.anio)
-    except ImportadorTCError as e:
-        raise ValueError(str(e)) from None
-    registrar_tc_historial(db, [(r["fecha"], r["compra"], r["venta"]) for r in registros])
-    filas = [[_f(r["fecha"]), f"{r['compra']:.3f}", f"{r['venta']:.3f}"] for r in registros]
-    _reemplazar(db, decl, "TC", filas)
-    return len(filas), []
-
-
-def cargar_historial_pdf(db: Session, pdf: bytes) -> tuple[int, list[str]]:
-    """PDF de SUNAT de cualquier mes (el mes/año se lee del propio PDF) → solo el historial."""
+def cargar_tc_pdf(db: Session, pdf: bytes) -> tuple[int, list[str], tuple[int, int]]:
+    """PDF mensual de SUNAT → historial interno de tipo de cambio. El mes y el año se leen del
+    propio PDF. Devuelve (días, avisos, (año, mes))."""
     try:
         registros, meta = parsear_pdf_sunat(pdf)
     except ImportadorTCError as e:
         raise ValueError(str(e)) from None
     n = registrar_tc_historial(db, [(r["fecha"], r["compra"], r["venta"]) for r in registros])
-    return n, [f"Mes detectado: {meta['mes_detectado']:02d}/{meta['anio_detectado']}."]
-
-
-def traer_tc_del_historial(db: Session, decl: Declaracion) -> tuple[int, list[str]]:
-    """Copia a la hoja TC del período los días de su mes que estén en el historial."""
-    from datetime import date as _d
-    ini = _d(decl.anio, decl.mes, 1)
-    fin = _d(decl.anio + (decl.mes == 12), decl.mes % 12 + 1, 1)
-    reg = (db.query(TipoCambioDia).filter(TipoCambioDia.fecha >= ini, TipoCambioDia.fecha < fin)
-           .order_by(TipoCambioDia.fecha).all())
-    if not reg:
-        raise ValueError(f"El historial no tiene tipo de cambio de {decl.mes:02d}/{decl.anio}.")
-    _reemplazar(db, decl, "TC", _tc_a_filas(reg))
-    return len(reg), []
+    return n, [], (meta["anio_detectado"], meta["mes_detectado"])
 
 
 def tc_venta(decl: Declaracion, fecha: date | None) -> Decimal | None:

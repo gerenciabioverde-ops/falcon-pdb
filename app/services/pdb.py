@@ -120,10 +120,8 @@ def importar_hoja_csv(db: Session, decl: Declaracion, hoja: str, contenido: byte
     filas = [f for f in _leer_csv(contenido) if any(f)]
     if len(filas) < 2:
         raise ValueError("El archivo debe tener encabezados y al menos una fila de datos.")
-    if hoja == "HISTORIAL_TC":
-        return registrar_tc_historial(db, _parsear_tc(filas[1:]))     # agrega/actualiza, no borra
     if hoja == "TC":
-        registrar_tc_historial(db, _parsear_tc(filas[1:]))
+        return registrar_tc_historial(db, _parsear_tc(filas[1:]))     # agrega/actualiza, no borra
     for f in [f for f in decl.filas if f.hoja == hoja]:
         decl.filas.remove(f)
     db.flush()
@@ -189,11 +187,27 @@ def sembrar_historial(db: Session) -> None:
         db.commit()
 
 
-def filas_bloque(decl: Declaracion, bloque: str) -> list[list[str]]:
-    """Filas de un bloque como listas de texto, para mostrar/editar en la grilla."""
-    if bloque == "HISTORIAL_TC":
-        db = object_session(decl)
-        return _tc_a_filas(db.query(TipoCambioDia).order_by(TipoCambioDia.fecha).all())
+def _tc_del_mes(db: Session, anio: int, mes: int) -> list[TipoCambioDia]:
+    ini = date(anio, mes, 1)
+    fin = date(anio + (mes == 12), mes % 12 + 1, 1)
+    return (db.query(TipoCambioDia).filter(TipoCambioDia.fecha >= ini, TipoCambioDia.fecha < fin)
+            .order_by(TipoCambioDia.fecha).all())
+
+
+def meses_tc(db: Session) -> list[tuple[int, int, int]]:
+    """[(año, mes, n° de días)] de los meses con tipo de cambio guardado, del más reciente al más antiguo."""
+    cuenta: dict[tuple[int, int], int] = {}
+    for (f,) in db.query(TipoCambioDia.fecha).all():
+        cuenta[(f.year, f.month)] = cuenta.get((f.year, f.month), 0) + 1
+    return [(a, m, n) for (a, m), n in sorted(cuenta.items(), reverse=True)]
+
+
+def filas_bloque(decl: Declaracion, bloque: str, mes: tuple[int, int] | None = None) -> list[list[str]]:
+    """Filas de un bloque como listas de texto, para mostrar/editar en la grilla.
+    El tipo de cambio (TC) vive en el historial interno y se muestra por mes (por defecto el del período)."""
+    if bloque == "TC":
+        anio, m = mes or (decl.anio, decl.mes)
+        return _tc_a_filas(_tc_del_mes(object_session(decl), anio, m))
     if bloque == "DUAS_D":
         return [[d.codigo_aduana, d.anio_dua, d.correlativo, _txt_fecha(d.fecha_embarque),
                  _txt_fecha(d.fecha_regularizacion), f"{d.fob_usd:.2f}"] for d in decl.duas]
@@ -204,14 +218,17 @@ def filas_bloque(decl: Declaracion, bloque: str) -> list[list[str]]:
     return [f.celdas for f in decl.filas if f.hoja == bloque]
 
 
-def guardar_grilla(db: Session, decl: Declaracion, bloque: str, filas: list[list[str]]) -> int:
+def guardar_grilla(db: Session, decl: Declaracion, bloque: str, filas: list[list[str]],
+                   mes: tuple[int, int] | None = None) -> int:
     """Reemplaza el contenido de un bloque con las filas de la grilla (filas vacías se omiten).
     Lanza ValueError con el N° de fila si un dato no es válido."""
     ncols = len(COLUMNAS_TODAS[bloque])
     filas = [([str(c).strip() for c in f] + [""] * ncols)[:ncols] for f in filas if any(str(c).strip() for c in f)]
-    if bloque == "HISTORIAL_TC":
+    if bloque == "TC":
         registros = _parsear_tc(filas)
-        db.query(TipoCambioDia).delete()
+        anio, m = mes or (decl.anio, decl.mes)
+        for r in _tc_del_mes(db, anio, m):          # lo que se quitó de la grilla se borra del mes
+            db.delete(r)
         db.flush()
         registrar_tc_historial(db, registros)
         return len(registros)
@@ -241,8 +258,6 @@ def guardar_grilla(db: Session, decl: Declaracion, bloque: str, filas: list[list
         db.flush()
         decl.cdps.extend(nuevas)
     else:
-        if bloque == "TC":
-            registrar_tc_historial(db, _parsear_tc(filas))
         for f in [f for f in decl.filas if f.hoja == bloque]:
             decl.filas.remove(f)
         db.flush()
