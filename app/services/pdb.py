@@ -10,6 +10,9 @@ import io
 from datetime import date, datetime
 from decimal import Decimal, InvalidOperation
 
+import json
+from pathlib import Path
+
 from sqlalchemy.orm import Session, object_session
 
 from app.hojas import COLUMNAS_TODAS
@@ -35,6 +38,11 @@ def _dec(txt) -> Decimal:
         return Decimal(txt)
     except InvalidOperation:
         raise ValueError(f"Importe inválido: {txt!r}")
+
+
+# Códigos de aduana válidos (ayuda de D1 del libro de SUNAT).
+_AYUDA_D1 = json.loads((Path(__file__).resolve().parent.parent / "ayuda_sunat.json").read_text(encoding="utf-8"))["D1"]["texto"]
+ADUANAS = set(re.findall(r"^(\d{3})\s", _AYUDA_D1, re.M))
 
 
 def _fecha(txt) -> date | None:
@@ -449,6 +457,8 @@ def validar(decl: Declaracion) -> list[dict]:
             avi(f"Factura {id_cdp}: período CDP «{c.periodo_cdp}» no tiene formato AAAAMM.")
 
     for d in decl.duas:
+        if d.codigo_aduana not in ADUANAS:
+            err(f"DUA {d.codigo_aduana}-{d.anio_dua}-{d.correlativo}: el código de aduana «{d.codigo_aduana}» no está en la lista de SUNAT (ej.: 046 Paita, 118 Marítima del Callao).")
         if d.clave not in fob_cdp:
             err(f"DUA {d.clave} sin facturas en el bloque E.")
         elif abs(fob_cdp[d.clave] - (d.fob_usd or 0)) > TOLERANCIA_FOB:
