@@ -9,7 +9,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.lectores.detraccion import parsear_constancia
-from app.models import Declaracion, Detraccion, Empresa
+from app.models import Declaracion, Detraccion, DetraccionDecl, Empresa
 
 _AYUDA = json.loads((Path(__file__).resolve().parent.parent / "ayuda_sunat.json").read_text(encoding="utf-8"))
 # Códigos de la tasa (A22): «03501   1.5% Bienes Exonerados Del Igv» → ("03501", 1.5)
@@ -40,7 +40,9 @@ def codigo_tasa(bien: str, monto: Decimal, total: Decimal) -> str:
     return min(cands, key=lambda ct: abs(ct[1] - tasa))[0]
 
 
-def cargar_constancias(db: Session, empresa: Empresa, archivos: list[tuple[str, bytes]]) -> tuple[int, list[str]]:
+def cargar_constancias(db: Session, decl: Declaracion, archivos: list[tuple[str, bytes]]) -> tuple[int, list[str]]:
+    """Guarda las constancias y las deja visibles SOLO en la declaración (período) donde se subieron."""
+    empresa = decl.empresa
     n, avisos = 0, []
     for nombre, contenido in archivos:
         try:
@@ -57,7 +59,9 @@ def cargar_constancias(db: Session, empresa: Empresa, archivos: list[tuple[str, 
             db.add(fila)
         for k, v in d.items():
             setattr(fila, k, v)
-        db.flush()                       # la misma constancia repetida en el envío se actualiza, no se duplica
+        db.flush()
+        db.query(DetraccionDecl).filter(DetraccionDecl.detraccion_id == fila.id).delete()
+        db.add(DetraccionDecl(detraccion_id=fila.id, declaracion_id=decl.id))                       # la misma constancia repetida en el envío se actualiza, no se duplica
         n += 1
     return n, avisos
 
@@ -95,3 +99,17 @@ def enlazadas(db: Session, empresa: Empresa) -> dict[str, list[str]]:
             if f.hoja == "COMPRAS" and len(f.celdas) > 22 and f.celdas[22]:
                 r.setdefault(str(f.celdas[22]), []).append(d.periodo)
     return r
+
+
+def de_la_declaracion(db: Session, decl: Declaracion) -> list[Detraccion]:
+    """Constancias de ESTE período. Las anteriores, sin vínculo, se asignan a la declaración de su período tributario."""
+    empresa = decl.empresa
+    periodos = {d.periodo: d.id for d in empresa.declaraciones}
+    vinculadas = set(db.scalars(select(DetraccionDecl.detraccion_id)))
+    for d in db.scalars(select(Detraccion).where(Detraccion.empresa_id == empresa.id)):
+        if d.id not in vinculadas and d.periodo_tributario in periodos:
+            db.add(DetraccionDecl(detraccion_id=d.id, declaracion_id=periodos[d.periodo_tributario]))
+    db.flush()
+    return list(db.scalars(select(Detraccion).join(DetraccionDecl, DetraccionDecl.detraccion_id == Detraccion.id)
+                           .where(DetraccionDecl.declaracion_id == decl.id)
+                           .order_by(Detraccion.fecha_pago.desc(), Detraccion.id.desc())))

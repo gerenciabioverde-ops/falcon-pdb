@@ -156,3 +156,10 @@ class Form1662(Base):
     fecha_pago: Mapped[date | None] = mapped_column(Date, nullable=True)
     banco: Mapped[str] = mapped_column(String(80), default="")
     nro_operacion: Mapped[str] = mapped_column(String(30), default="")
+
+
+class DetraccionDecl(Base):
+    """Declaración (período) en la que se subió/ve una constancia de detracción. Tabla aparte para no alterar `detracciones`."""
+    __tablename__ = "detraccion_declaracion"
+    detraccion_id: Mapped[int] = mapped_column(ForeignKey("detracciones.id", ondelete="CASCADE"), primary_key=True)
+    declaracion_id: Mapped[int] = mapped_column(ForeignKey("declaraciones.id", ondelete="CASCADE"), primary_key=True)

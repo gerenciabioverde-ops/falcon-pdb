@@ -167,8 +167,8 @@ def ver_declaracion(request: Request, decl_id: int, db: Db, usuario: User, hoja:
         visibles = [(b, t) for b, t in pestana["bloques"] if b == sub_sel]
     detracciones, ligadas, forms1662, compras_1662, total_1662 = [], set(), [], set(), 0
     if pestana["clave"] == "compras":                   # 3.ª sub-pestaña: constancias de detracción (HTML SUNAT)
-        detracciones = list(db.scalars(select(Detraccion).where(Detraccion.empresa_id == decl.empresa_id)
-                                       .order_by(Detraccion.fecha_pago.desc(), Detraccion.id.desc())))
+        detracciones = detr.de_la_declaracion(db, decl)
+        db.commit()
         ligadas = detr.enlazadas(db, decl.empresa)
         subs.append({"clave": "DETRACCIONES", "titulo": "Detracciones", "n": len(detracciones)})
         forms1662 = list(db.scalars(select(Form1662).where(Form1662.empresa_id == decl.empresa_id)
@@ -228,7 +228,7 @@ async def subir_detracciones(decl_id: int, request: Request, db: Db, usuario: Us
     subidos = [(a.filename, await a.read()) for a in form.getlist("archivos") if getattr(a, "filename", None)]
     if not subidos:
         return _volver(decl_id, "compras", "Error: seleccione al menos una constancia HTML.", "", "DETRACCIONES")
-    n, avisos = detr.cargar_constancias(db, decl.empresa, subidos)
+    n, avisos = detr.cargar_constancias(db, decl, subidos)
     aplicadas = detr.aplicar_a_compras(db, decl.empresa)
     db.commit()
     msg = (f"Constancias cargadas: {n}. Compras actualizadas: {aplicadas} (en todos los períodos)."
