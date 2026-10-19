@@ -13,6 +13,16 @@
 </section>
 
 <section class="bg-white rounded shadow p-4 mt-4">
+  <div class="flex justify-between items-center mb-2">
+    <h2 class="font-semibold">Archivos para SUNAT (formato del aplicativo PDB)</h2>
+    {% if archivos %}<a class="text-sm text-blue-700" href="/declaraciones/{{ decl.id }}/archivos.zip">Descargar todos (ZIP)</a>{% endif %}
+  </div>
+  {% for nombre, lineas in archivos.items() %}
+    <p class="text-sm"><a class="text-blue-700 hover:underline" href="/declaraciones/{{ decl.id }}/archivos/{{ nombre }}">{{ nombre }}</a> <span class="text-slate-500">· {{ lineas|length }} línea(s)</span></p>
+  {% else %}<p class="text-sm text-slate-500">Aún no hay datos para generar archivos.</p>{% endfor %}
+</section>
+
+<section class="bg-white rounded shadow p-4 mt-4">
   <h2 class="font-semibold mb-2">Estado de la declaración</h2>
   <form method="post" action="/declaraciones/{{ decl.id }}/estado" class="grid md:grid-cols-5 gap-2 text-sm items-end">
     <label>Estado

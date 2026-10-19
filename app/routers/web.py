@@ -11,6 +11,7 @@ from app.core.deps import get_current_user
 from app.core.security import crear_token, verify_password
 from app.database import get_db
 from app.models import ESTADOS, HOJAS_TABULARES, Declaracion, Empresa, Usuario
+from app.services import archivos_sunat as arch
 from app.services import pdb as svc
 
 router = APIRouter()
@@ -95,7 +96,7 @@ def ver_declaracion(request: Request, decl_id: int, db: Db, usuario: User, msg: 
     decl = _decl(db, decl_id)
     hojas = {h: [f.celdas for f in decl.filas if f.hoja == h] for h in HOJAS_TABULARES}
     return _render(request, "declaracion.html", usuario=usuario, decl=decl, msg=msg,
-                   hallazgos=svc.validar(decl), hojas=hojas, hojas_nombres=HOJAS_TABULARES,
+                   hallazgos=svc.validar(decl), archivos=arch.archivos(decl), hojas=hojas, hojas_nombres=HOJAS_TABULARES,
                    dua_headers=svc.PDB_DUA_HEADERS, cdp_headers=svc.PDB_CDP_HEADERS)
 
 
@@ -156,6 +157,24 @@ def eliminar(decl_id: int, db: Db, usuario: User):
 
 def _csv_resp(contenido: str, nombre: str) -> Response:
     return Response(contenido.encode("utf-8-sig"), media_type="text/csv",
+                    headers={"Content-Disposition": f'attachment; filename="{nombre}"'})
+
+
+@router.get("/declaraciones/{decl_id}/archivos.zip")
+def archivos_zip(decl_id: int, db: Db, usuario: User):
+    d = _decl(db, decl_id)
+    return Response(arch.zip_archivos(d), media_type="application/zip",
+                    headers={"Content-Disposition": f'attachment; filename="PDB_{d.empresa.ruc}_{d.periodo}.zip"'})
+
+
+@router.get("/declaraciones/{decl_id}/archivos/{nombre}")
+def archivo_sunat(decl_id: int, nombre: str, db: Db, usuario: User):
+    d = _decl(db, decl_id)
+    lineas = arch.archivos(d).get(nombre)
+    if lineas is None:
+        from fastapi import HTTPException
+        raise HTTPException(404, "Archivo sin datos")
+    return Response(arch.contenido(lineas), media_type="text/plain; charset=windows-1252",
                     headers={"Content-Disposition": f'attachment; filename="{nombre}"'})
 
 
