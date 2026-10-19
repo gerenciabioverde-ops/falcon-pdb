@@ -150,7 +150,8 @@
   <section class="bg-white rounded shadow p-4">
     <h2 class="font-semibold mb-2">Validación</h2>
     {% for h in hallazgos %}
-      <p class="text-sm {{ 'text-red-700' if h.nivel == 'error' else 'text-amber-700' }}">{{ '✖' if h.nivel == 'error' else '▲' }} {{ h.texto }}</p>
+      <p class="text-sm {{ 'text-red-700' if h.nivel == 'error' else 'text-amber-700' }}">{{ '✖' if h.nivel == 'error' else '▲' }}
+        {% if h.periodo %}<span class="font-mono text-xs rounded bg-slate-100 text-slate-700 px-1.5 py-0.5 mr-1" title="Período en el que debe buscar este documento">{{ h.periodo }}</span>{% endif %}{{ h.texto }}</p>
     {% else %}<p class="text-sm text-green-700">✔ Sin observaciones.</p>{% endfor %}
   </section>
   <section class="bg-white rounded shadow p-4">

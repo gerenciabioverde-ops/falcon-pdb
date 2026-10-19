@@ -315,6 +315,15 @@ def guardar_grilla(db: Session, decl: Declaracion, bloque: str, filas: list[list
     return len(filas)
 
 
+def _fecha_periodo(txt) -> str:
+    """'28/09/2026' → '202609' (vacío si no es una fecha)."""
+    try:
+        d = _fecha(str(txt))
+    except ValueError:
+        return ""
+    return f"{d.year}{d.month:02d}" if d else ""
+
+
 def _safe_fecha(txt):
     try:
         return _fecha(txt)
@@ -328,8 +337,8 @@ def validar(decl: Declaracion) -> list[dict]:
     """Devuelve hallazgos [{nivel: 'error'|'aviso', texto}] antes de enviar el PDB."""
     h: list[dict] = []
 
-    def err(t): h.append({"nivel": "error", "texto": t})
-    def avi(t): h.append({"nivel": "aviso", "texto": t})
+    def err(t, periodo=None): h.append({"nivel": "error", "texto": t, "periodo": periodo})
+    def avi(t, periodo=None): h.append({"nivel": "aviso", "texto": t, "periodo": periodo})
 
     if not decl.duas:
         err("No hay DUAs cargadas (bloque D).")
@@ -342,10 +351,17 @@ def validar(decl: Declaracion) -> list[dict]:
 
     fob_cdp: dict[str, Decimal] = {}
     vistos = set()
+    sin_numero = [c for c in decl.cdps if not c.serie.strip() or not c.numero.strip()]
+    if sin_numero:
+        duas_afectadas = sorted({c.dua_key or "(sin DUA)" for c in sin_numero})
+        err(f"Bloque E: {len(sin_numero)} fila(s) sin serie o sin número de factura (DUA: {', '.join(duas_afectadas[:4])}"
+            f"{'…' if len(duas_afectadas) > 4 else ''}). Complételas o quítelas.")
     for c in decl.cdps:
         id_cdp = f"{c.serie}-{c.numero}"
+        if not c.serie.strip() or not c.numero.strip():
+            continue                                             # ya avisado arriba
         if (c.tipo_comprobante, c.serie, c.numero) in vistos:
-            err(f"Factura {id_cdp} duplicada.")
+            err(f"Factura {id_cdp} duplicada en el bloque E (DUA {c.dua_key}).", c.periodo_cdp or None)
         vistos.add((c.tipo_comprobante, c.serie, c.numero))
         if c.dua_key not in claves:
             err(f"Factura {id_cdp}: la DUA «{c.dua_key}» no existe en el bloque D.")
@@ -371,15 +387,26 @@ def validar(decl: Declaracion) -> list[dict]:
         elif d.fecha_embarque and d.fecha_regularizacion < d.fecha_embarque:
             err(f"DUA {d.clave}: regularización anterior al embarque.")
 
-    ventas = {(f.celdas[3].strip().upper(), f.celdas[4].strip().lstrip("0")): f.celdas
-              for f in decl.filas if f.hoja == "VENTAS" and len(f.celdas) > 4}
-    en_dam = {(c.serie.strip().upper(), c.numero.strip().lstrip("0")) for c in decl.cdps}
-    if ventas:
-        for serie, num in sorted(en_dam - set(ventas)):
-            avi(f"Factura {serie}-{num} de la DAM no figura en la hoja VENTAS.")
-        for (serie, num), celdas in sorted(ventas.items()):
-            if celdas[0] == "2" and (serie, num) not in en_dam and decl.cdps:
-                avi(f"Exportación {serie}-{num} de VENTAS no figura en las DUAS (bloque E).")
+    clave = lambda serie, num: (str(serie).strip().upper(), str(num).strip().lstrip("0"))  # noqa: E731
+    ventas = {clave(f.celdas[3], f.celdas[4]): f.celdas for f in decl.filas if f.hoja == "VENTAS" and len(f.celdas) > 4}
+    en_dam = {clave(c.serie, c.numero): c for c in decl.cdps if c.serie.strip() and c.numero.strip()}
+    # La factura puede emitirse en un mes y embarcarse en otro: se busca también en los demás períodos.
+    otras_ventas, otras_dam = set(), set()
+    for d in decl.empresa.declaraciones:
+        if d.id == decl.id:
+            continue
+        otras_ventas |= {clave(f.celdas[3], f.celdas[4]) for f in d.filas if f.hoja == "VENTAS" and len(f.celdas) > 4}
+        otras_dam |= {clave(c.serie, c.numero) for c in d.cdps}
+    if ventas or otras_ventas:
+        for k, c in sorted(en_dam.items(), key=lambda kv: (kv[1].periodo_cdp or "", kv[0])):
+            if k not in ventas and k not in otras_ventas:
+                avi(f"Factura {k[0]}-{k[1]} de la DAM (DUA {c.dua_key}) no figura en VENTAS de ningún período.",
+                    c.periodo_cdp or None)
+    if decl.cdps or otras_dam:
+        for k, celdas in sorted(ventas.items(), key=lambda kv: (_fecha_periodo(kv[1][2]), kv[0])):
+            if celdas[0].strip().lstrip("0") == "2" and k not in en_dam and k not in otras_dam:
+                avi(f"Exportación {k[0]}-{k[1]} (emitida el {celdas[2]}) sin DAM cargada en ningún período.",
+                    _fecha_periodo(celdas[2]) or None)
 
     for f in decl.filas:
         if f.hoja == "COMPRAS" and len(f.celdas) > 23 and f.celdas[20].strip() == "1":
