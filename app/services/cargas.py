@@ -213,8 +213,21 @@ def _cargar_xmls(db: Session, decl: Declaracion, archivos: list[tuple[str, bytes
     existentes = {_clave_fila(f.celdas, 1, 3, 4): f.celdas for f in _filas(decl, hoja) if len(f.celdas) > 4}
     existentes.update(nuevas)
     ordenadas = sorted(existentes.values(), key=lambda r: (_sin_cero_fecha(r[2]), r[3], r[4]))
+    _completar_referencias(ordenadas)
     _reemplazar(db, decl, hoja, ordenadas)
     return len(nuevas), avisos
+
+
+def _completar_referencias(filas: list[list[str]]) -> None:
+    """En las notas de crédito/débito, si el comprobante que modifican está en la misma hoja,
+    completa su fecha de emisión, base e IGV (el XML de la nota no los trae)."""
+    por_clave = {(_sin_ceros(f[1]), f[3].upper(), _sin_ceros(f[4])): f for f in filas}
+    for f in filas:
+        if f[1] not in ("7", "07", "8", "08") or not f[25]:
+            continue
+        orig = por_clave.get((_sin_ceros(f[24]) or "1", f[25].upper(), _sin_ceros(f[26])))
+        if orig:
+            f[27], f[28], f[29] = f[27] or orig[2], f[28] or orig[16], f[29] or orig[18]
 
 
 def _sin_cero_fecha(txt: str):

@@ -246,6 +246,13 @@ def validar(decl: Declaracion) -> list[dict]:
             if not f.celdas[21].strip() or not f.celdas[22].strip():
                 avi(f"Compra {f.celdas[3]}-{f.celdas[4]} con detracción: falta el código de la tasa (A22) o la constancia (A23).")
 
+    notas = {"COMPRAS": ("7", "8", "87", "88", "97", "98"), "VENTAS": ("7", "8")}
+    for f in decl.filas:
+        if f.hoja in notas and len(f.celdas) > 27 and f.celdas[1].strip().lstrip("0") in notas[f.hoja]:
+            if not all(x.strip() for x in f.celdas[24:28]):
+                avi(f"{'Compra' if f.hoja == 'COMPRAS' else 'Venta'} {f.celdas[3]}-{f.celdas[4]} (nota): "
+                    "complete el documento de referencia (tipo, serie, número y fecha).")
+
     hojas = {f.hoja for f in decl.filas}
     for hoja in ("VENTAS", "COMPRAS"):
         if hoja not in hojas:
