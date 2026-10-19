@@ -166,8 +166,8 @@ def _fila_venta(decl: Declaracion, c: dict, avisos: list[str]) -> list[str]:
     otros = c["icbper"] + (c["otros_cargos"] or CERO)
     rt, rs, rn = _referencia(c.get("raw_xml", "")) if c["tipo_comprobante"] in ("07", "08") else ("", "", "")
     doc_cli = c["ruc_receptor"]
-    if td in ("", "0", "-"):                         # no domiciliado sin documento: como en el libro
-        td, doc_cli = "-", (doc_cli if doc_cli.strip("0") else "00000001")
+    if td in ("", "0", "-"):                         # no domiciliado sin documento: «-» y N° en blanco (lo acepta SUNAT)
+        td, doc_cli = "-", (doc_cli if doc_cli.strip("0") else "")
     return [
         "2" if es_export else "1",                   # C1
         _sin_ceros(c["tipo_comprobante"]) or "1",    # C2
