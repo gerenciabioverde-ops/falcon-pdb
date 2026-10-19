@@ -496,11 +496,12 @@ def cargar_dam_pdf(db: Session, decl: Declaracion, archivos: list[tuple[str, byt
     sin_fecha: list[str] = []
     cargadas: list[str] = []
     sin_factura: list[str] = []
+    de_otra_fuente: list[str] = []
     for nombre, contenido in archivos:
         if not nombre.lower().endswith(".pdf"):
             continue
         try:
-            cab, series = parsear_dam_pdf(contenido)
+            cab, series = parsear_dam_pdf(contenido, nombre)
             if not cab or not series:
                 raise ValueError("no es DAM")
             dua, cdps = dam_a_filas(cab, series)
@@ -509,6 +510,9 @@ def cargar_dam_pdf(db: Session, decl: Declaracion, archivos: list[tuple[str, byt
             continue
         fe = dua.fecha_embarque
         nro = f"{dua.codigo_aduana}-{dua.anio_dua}-{dua.correlativo}"
+        for s_ in series:
+            if s_.get("factura_origen"):
+                de_otra_fuente.append(f"{nro} → {s_.get('factura_serie')}-{s_.get('factura_numero')} ({s_['factura_origen']})")
         for s_ in series:                       # series cuya factura no se pudo leer del PDF
             if not (s_.get("factura_serie") and s_.get("factura_numero")):
                 sin_factura.append(f"{nro} serie {s_.get('no_serie')} (FOB US$ {_fmt_money(s_.get('fob_usd'))})")
@@ -528,6 +532,8 @@ def cargar_dam_pdf(db: Session, decl: Declaracion, archivos: list[tuple[str, byt
         cargadas.append(nro)
     if cargadas:
         avisos.append(_resumen("DUA cargadas", cargadas, 6))
+    if de_otra_fuente:
+        avisos.append(_resumen("Factura tomada de otro lugar (el campo oficial 7.36 de la DAM venía vacío); verifíquela", de_otra_fuente, 4))
     if sin_factura:
         avisos.append(_resumen("Series sin factura legible en el PDF (complete serie y número en «Bloque E · Facturas»)",
                                sin_factura, 4))

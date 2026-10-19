@@ -199,6 +199,24 @@ def _parsear_contenedores(p1: str) -> list[dict]:
 
 # --------------------------------------------------------------------- series
 
+_FACTURA_DESC = re.compile(r"FACTURA\s*(?:N[°º.]*\s*)?([A-Za-z]{1,4}\d{0,4})\s*[-–]\s*(\d{1,12})", re.IGNORECASE)
+_NOMBRE_FACT = re.compile(r"^([A-Za-z]{1,4}\d{1,4})\s*-\s*(\d{1,12})((?:_\d{1,12})*)(?=_|\.|$)")
+
+
+def facturas_del_nombre(nombre: str | None) -> list[tuple[str, str]]:
+    """Facturas que indica el nombre del archivo: 'FFF1-000628_046-2026-40-034819.pdf' → [('FFF1','000628')];
+    'FFF1-000651_652_046-….pdf' → [('FFF1','000651'), ('FFF1','652')]."""
+    if not nombre:
+        return []
+    base = re.split(r"[\\/]", nombre)[-1].strip()
+    m = _NOMBRE_FACT.match(base)
+    if not m:
+        return []
+    serie = m.group(1).upper()
+    numeros = [m.group(2)] + [n for n in m.group(3).split("_") if n]
+    return [(serie, n) for n in numeros]
+
+
 _FACTURA = re.compile(r"\b([A-Za-z]{1,4}\d{0,4})\s*-\s*(\d{1,12})\b\s+(\d{2}/\d{2}/\d{4})")
 
 
@@ -259,10 +277,15 @@ def _parsear_serie(bloque: str) -> dict:
     s["ico_mark"] = _buscar(r"ICO MARK:\s*([\d\-]+)", bloque) or \
         _buscar(r"ICO MARK:\s*([\d\-]+)", bloque_desc)
     mfact = _buscar_factura(bloque)
+    if not mfact:                                 # la DAM la menciona en la descripción: «/ FACTURA FFF1-000628/»
+        md = _FACTURA_DESC.search(bloque)
+        if md:
+            mfact = (f"{md.group(1).upper()}-{md.group(2)}", None)
+            s["factura_origen"] = "descripción de la DAM"
     if mfact:
         raw = mfact[0]                             # ej. "FFF1-00000551"
         s["no_factura"] = raw
-        s["fecha_factura"] = _fecha(mfact[1])
+        s["fecha_factura"] = _fecha(mfact[1]) if mfact[1] else None
         # Desagregado para el PDB y el cruce con el Registro de Ventas.
         ser, num = raw.split("-", 1)
         s["factura_serie"] = ser.strip()
@@ -290,7 +313,7 @@ def _bloques_series(texto_total: str) -> list[str]:
 
 # ----------------------------------------------------------------- API pública
 
-def parsear_dam_pdf(origen) -> tuple[dict, list[dict]]:
+def parsear_dam_pdf(origen, nombre: str | None = None) -> tuple[dict, list[dict]]:
     """
     Parsea un PDF de DAM. `origen` = ruta (str), bytes o file-like.
     Devuelve (cabecera, series). Campos ausentes vienen como None.
@@ -308,6 +331,15 @@ def parsear_dam_pdf(origen) -> tuple[dict, list[dict]]:
     series = [_parsear_serie(b) for b in _bloques_series(texto_total)]
     series = [s for s in series if s.get("no_serie")]
     series.sort(key=lambda s: s["no_serie"])
+
+    # Series sin factura legible: se toma del nombre del archivo (convención «FFF1-000628_046-2026-40-034819.pdf»).
+    vacias = [s for s in series if not (s.get("factura_serie") and s.get("factura_numero"))]
+    nombres = facturas_del_nombre(nombre)
+    if vacias and nombres and (len(nombres) == len(vacias) or len(nombres) == 1):
+        for i, s in enumerate(vacias):
+            serie, numero = nombres[i] if len(nombres) == len(vacias) else nombres[0]
+            s.update({"no_factura": f"{serie}-{numero}", "factura_serie": serie, "factura_numero": numero,
+                      "factura_origen": "nombre del archivo"})
 
     # Refs -> cada serie (venta/pedido comunes; contrato por orden de serie)
     contratos = refs.get("contratos") or []
