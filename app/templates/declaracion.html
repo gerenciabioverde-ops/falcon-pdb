@@ -238,6 +238,32 @@ async function enviarXml(ev, form) {
   window.location = resp.url;
   return false;
 }
+function sinMiles(i) { i.value = i.value.replace(/,/g, ''); }
+function conMiles(i) {
+  const v = i.value.replace(/,/g, '').trim();
+  if (/^-?\d+(\.\d+)?$/.test(v)) i.value = Number(v).toLocaleString('en-US', {minimumFractionDigits: +i.dataset.dec, maximumFractionDigits: +i.dataset.dec});
+}
+document.addEventListener('focusin', e => { if (e.target.dataset && e.target.dataset.dec && !e.target.readOnly) sinMiles(e.target); });
+document.addEventListener('focusout', e => { if (e.target.dataset && e.target.dataset.dec && !e.target.readOnly) conMiles(e.target); });
+function abrirEdicion(fila) {
+  fila.querySelectorAll('input:not([data-calc])').forEach(i => i.readOnly = false);
+  fila.querySelectorAll('.btn-quitar').forEach(b => b.classList.remove('hidden'));
+}
+function alternarEdicion(chk) {
+  const sec = chk.closest('section');
+  if (!chk.checked) {                                   // volver a solo lectura
+    if (sec.dataset.cambios && !confirm('Hay cambios sin guardar. ¿Descartarlos?')) { chk.checked = true; return; }
+    location.reload();
+    return;
+  }
+  sec.dataset.editando = '1';
+  sec.querySelectorAll('tbody tr').forEach(abrirEdicion);
+  sec.querySelector('.barra-solo-lectura').classList.add('hidden');
+  sec.querySelector('.barra-edicion').classList.remove('hidden');
+  sec.querySelector('.overflow-auto').classList.add('ring-2', 'ring-amber-300');
+}
+function marcarCambio(el) { const s = el.closest('section'); if (s) s.dataset.cambios = '1'; }
+document.addEventListener('input', e => { if (e.target.closest && e.target.closest('tbody')) marcarCambio(e.target); });
 function agregarFila(btn) {
   const f = btn.closest('form');
   f.querySelector('tbody').insertAdjacentHTML('beforeend', f.querySelector('template').innerHTML);
