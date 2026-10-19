@@ -21,7 +21,7 @@ from app.services import pdb as svc
 
 AYUDA = json.loads((Path(__file__).resolve().parent.parent / "ayuda_sunat.json").read_text(encoding="utf-8"))
 router = APIRouter()
-templates = Jinja2Templates(directory="app/templates")
+templates = Jinja2Templates(directory=str(Path(__file__).resolve().parent.parent / "templates"))
 MESES = ["", "Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio",
          "Agosto", "Setiembre", "Octubre", "Noviembre", "Diciembre"]
 Db = Annotated[Session, Depends(get_db)]
