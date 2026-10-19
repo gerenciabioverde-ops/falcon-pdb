@@ -17,7 +17,7 @@ if not exist .git (
 )
 
 echo Cerrando el servidor si esta abierto...
-for /f "tokens=5" %%P in ('netstat -ano ^| findstr /R /C:":8001 .*LISTENING"') do taskkill /PID %%P /F >nul 2>&1
+for /f "tokens=5" %%P in ('netstat -ano ^| findstr /R /C:":8003 .*LISTENING"') do taskkill /PID %%P /F >nul 2>&1
 
 echo.
 echo Bajando la ultima version...
