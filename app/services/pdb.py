@@ -260,6 +260,10 @@ def guardar_grilla(db: Session, decl: Declaracion, bloque: str, filas: list[list
     Lanza ValueError con el N° de fila si un dato no es válido."""
     ncols = len(COLUMNAS_TODAS[bloque])
     filas = [([str(c).strip() for c in f] + [""] * ncols)[:ncols] for f in filas if any(str(c).strip() for c in f)]
+    for j, (_c, _t, fmt) in enumerate(COLUMNAS_TODAS[bloque]):
+        if fmt.startswith("0."):                     # importes: sin separador de miles
+            for f in filas:
+                f[j] = f[j].replace(",", "")
     if bloque == "VENTAS":
         for f in filas:
             if f[6] == "-":

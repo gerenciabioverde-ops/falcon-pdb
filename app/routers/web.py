@@ -1,5 +1,7 @@
 """Rutas HTTP de Falcon PDB: login, empresas, declaraciones por período."""
 import json
+import re
+from decimal import Decimal
 from pathlib import Path
 from datetime import date
 from typing import Annotated
@@ -21,11 +23,25 @@ from app.services import pdb as svc
 
 AYUDA = json.loads((Path(__file__).resolve().parent.parent / "ayuda_sunat.json").read_text(encoding="utf-8"))
 router = APIRouter()
+_NUM = re.compile(r"^-?\d+(\.\d+)?$")
+
+
+def _miles(valor, decimales: int = 2) -> str:
+    """12345.6 → '12,345.60' (solo para mostrar; lo guardado y los archivos no llevan comas)."""
+    txt = "" if valor is None else str(valor).strip()
+    if not _NUM.match(txt):
+        return txt
+    return f"{Decimal(txt):,.{decimales}f}"
+
+
 templates = Jinja2Templates(directory=str(Path(__file__).resolve().parent.parent / "templates"))
 MESES = ["", "Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio",
          "Agosto", "Setiembre", "Octubre", "Noviembre", "Diciembre"]
 Db = Annotated[Session, Depends(get_db)]
 User = Annotated[Usuario, Depends(get_current_user)]
+
+
+templates.env.filters["miles"] = _miles
 
 
 def _render(request: Request, nombre: str, **ctx):

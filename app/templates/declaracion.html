@@ -105,7 +105,7 @@
 <tr class="border-t hover:bg-amber-50">
   <td class="px-2 text-slate-400 text-right select-none">{{ n if n else '' }}</td>
   {% for cod, tit, fmt in cols %}
-  <td class="p-0 border-l border-slate-100 {{ 'bg-slate-50' if cod == 'REF' }}"><input readonly {{ 'data-calc' if cod == 'REF' }} data-cod="{{ cod }}" value="{{ fila[loop.index0] if fila and loop.index0 < fila|length else '' }}"
+  <td class="p-0 border-l border-slate-100 {{ 'bg-slate-50' if cod == 'REF' }}"><input readonly {{ 'data-calc' if cod == 'REF' }} data-cod="{{ cod }}" {% set v = fila[loop.index0] if fila and loop.index0 < fila|length else '' %}{% set dec = 2 if fmt in ('0.00', '0.00*') else (3 if fmt == '0.000' else 0) %}{% if dec %}data-dec="{{ dec }}" {% endif %}value="{{ v|miles(dec) if dec else v }}"
       class="w-full min-w-[7rem] px-2 py-1 bg-transparent focus:bg-white focus:outline focus:outline-2 focus:outline-emerald-500 {{ 'text-right' if fmt in ('0.00','0.00*','0.000') else '' }}"></td>
   {% endfor %}
   <td class="px-1"><button type="button" onclick="this.closest('tr').remove(); marcarCambio(this)" class="btn-quitar hidden text-slate-300 hover:text-red-600" title="Quitar fila">✕</button></td>
@@ -225,6 +225,13 @@ async function enviarXml(ev, form) {
   window.location = resp.url;
   return false;
 }
+function sinMiles(i) { i.value = i.value.replace(/,/g, ''); }
+function conMiles(i) {
+  const v = i.value.replace(/,/g, '').trim();
+  if (/^-?\d+(\.\d+)?$/.test(v)) i.value = Number(v).toLocaleString('en-US', {minimumFractionDigits: +i.dataset.dec, maximumFractionDigits: +i.dataset.dec});
+}
+document.addEventListener('focusin', e => { if (e.target.dataset && e.target.dataset.dec && !e.target.readOnly) sinMiles(e.target); });
+document.addEventListener('focusout', e => { if (e.target.dataset && e.target.dataset.dec && !e.target.readOnly) conMiles(e.target); });
 function abrirEdicion(fila) {
   fila.querySelectorAll('input:not([data-calc])').forEach(i => i.readOnly = false);
   fila.querySelectorAll('.btn-quitar').forEach(b => b.classList.remove('hidden'));
@@ -253,7 +260,7 @@ function agregarFila(btn) {
   fila.querySelector('input').focus();
 }
 function enviarGrilla(form) {
-  const filas = [...form.querySelectorAll('tbody tr')].map(tr => [...tr.querySelectorAll('input')].map(i => i.value));
+  const filas = [...form.querySelectorAll('tbody tr')].map(tr => [...tr.querySelectorAll('input')].map(i => i.dataset.dec ? i.value.replace(/,/g, '') : i.value));
   form.querySelector('[name=datos]').value = JSON.stringify(filas);
   return true;
 }
