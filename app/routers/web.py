@@ -14,6 +14,7 @@ from app.core.security import crear_token, verify_password
 from app.database import get_db
 from app.hojas import (ARCHIVO_BLOQUE, BLOQUES_TABULARES, COLUMNAS_TODAS, PESTANA, PESTANAS,
                        TITULOS_BLOQUE)
+from app.catalogos import DOC_SIN_DOCUMENTO, DOC_SIN_DOCUMENTO_DEFECTO
 from app.models import ESTADOS, Declaracion, Empresa, Usuario
 from app.services import archivos_sunat as arch
 from app.services import cargas
@@ -131,6 +132,8 @@ def ver_declaracion(request: Request, decl_id: int, db: Db, usuario: User, hoja:
                    pestanas=PESTANAS, cuentas=cuentas, bloques=bloques, hallazgos=hallazgos,
                    n_errores=sum(h["nivel"] == "error" for h in hallazgos), archivos=archivos,
                    archivo_bloque=ARCHIVO_BLOQUE, tc_sel=tc_sel,
+                   doc_sin_doc=svc.obtener_ajuste(db, "doc_sin_documento", DOC_SIN_DOCUMENTO_DEFECTO),
+                   opciones_sin_doc=DOC_SIN_DOCUMENTO,
                    tc_meses=svc.meses_tc(db) if pestana["clave"] == "tc" else [],
                    ayuda={c[0]: AYUDA[c[0]] for b in bloques for c in b["columnas"] if c[0] in AYUDA})
 
@@ -250,6 +253,15 @@ def cambiar_estado(decl_id: int, db: Db, usuario: User, estado: Annotated[str, F
     decl.observaciones = observaciones.strip() or None
     db.commit()
     return _volver(decl_id, "resumen", "Estado actualizado")
+
+
+@router.post("/declaraciones/{decl_id}/ajuste/doc-sin-documento")
+def ajuste_doc_sin_documento(decl_id: int, db: Db, usuario: User, valor: Annotated[str, Form()] = ""):
+    _decl(db, decl_id)
+    if valor in DOC_SIN_DOCUMENTO:
+        svc.guardar_ajuste(db, "doc_sin_documento", valor)
+        db.commit()
+    return _volver(decl_id, "ventas", "Ajuste guardado: se aplica al descargar el archivo de ventas.")
 
 
 @router.post("/declaraciones/{decl_id}/eliminar")

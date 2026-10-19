@@ -12,7 +12,7 @@ from decimal import Decimal, InvalidOperation
 from sqlalchemy.orm import Session, object_session
 
 from app.hojas import COLUMNAS_TODAS
-from app.models import Cdp, Declaracion, Dua, HojaFila, TipoCambioDia
+from app.models import Ajuste, Cdp, Declaracion, Dua, HojaFila, TipoCambioDia
 
 PDB_DUA_HEADERS = [
     "D1 Cod.Aduana", "D2 Año DUA", "D3 N° Correlativo",
@@ -387,3 +387,17 @@ def hoja_a_csv(decl: Declaracion, hoja: str) -> str:
     for celdas in filas_bloque(decl, hoja):
         w.writerow(celdas)
     return buf.getvalue()
+
+
+def obtener_ajuste(db: Session, clave: str, defecto: str = "") -> str:
+    a = db.get(Ajuste, clave)
+    return a.valor if a else defecto
+
+
+def guardar_ajuste(db: Session, clave: str, valor: str) -> None:
+    a = db.get(Ajuste, clave)
+    if a:
+        a.valor = valor
+    else:
+        db.add(Ajuste(clave=clave, valor=valor))
+    db.flush()

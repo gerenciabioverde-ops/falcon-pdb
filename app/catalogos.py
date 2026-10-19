@@ -17,3 +17,10 @@ BANCOS = {
     "BBVA": "11",
     "BCP": "02",
 }
+
+
+# N° de documento que se escribe en VENTAS (C8) cuando el cliente no tiene documento (tipo «-»).
+# SUNAT rechazó «00000001» ("El número de documento (sin documento) no es válido"); se prueba con
+# las alternativas desde la pestaña VENTAS. Clave → texto que ve el usuario.
+DOC_SIN_DOCUMENTO = {"00000000": "00000000 (ceros)", "00000001": "00000001", "": "En blanco"}
+DOC_SIN_DOCUMENTO_DEFECTO = "00000000"

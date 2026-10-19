@@ -13,7 +13,10 @@ import re
 import zipfile
 from decimal import ROUND_HALF_UP, Decimal
 
+from sqlalchemy.orm import object_session
+
 from app.hojas import ARCHIVO_BLOQUE, COLUMNAS
+from app.catalogos import DOC_SIN_DOCUMENTO_DEFECTO
 from app.models import Declaracion
 from app.services import pdb as _pdb
 from app.services.pdb import _fecha
@@ -86,13 +89,25 @@ def lineas_cdps(decl: Declaracion) -> list[str]:
                     c.ruc_operador], FMT_DU1) for c in decl.cdps]
 
 
+def _con_doc(celdas: list[str], sin_doc: str) -> list[str]:
+    celdas = list(celdas) + [""] * 30
+    if celdas[6].strip() == "-":
+        celdas[7] = sin_doc
+    return celdas
+
+
 def archivos(decl: Declaracion) -> dict[str, list[str]]:
     """{nombre_archivo: [líneas]} — solo los que tienen datos."""
     ruc, per = decl.empresa.ruc, decl.periodo
     todo = {f"{ruc}{per}.dua": lineas_duas(decl), f"{ruc}{per}.du1": lineas_cdps(decl)}
+    sin_doc = _pdb.obtener_ajuste(object_session(decl), "doc_sin_documento", DOC_SIN_DOCUMENTO_DEFECTO)
     for bloque, (pref, ext, con_per) in ARCHIVO_BLOQUE.items():
         nombre = f"{pref}{ruc}{per if con_per else ''}{ext}"
-        todo[nombre] = _filas_hoja(decl, bloque, [c[2] for c in COLUMNAS[bloque]])
+        formatos = [c[2] for c in COLUMNAS[bloque]]
+        if bloque == "VENTAS":                       # cliente sin documento («-»): N° según el ajuste
+            todo[nombre] = [_linea(_con_doc(c, sin_doc), formatos) for c in _pdb.filas_bloque(decl, bloque) if any(c)]
+        else:
+            todo[nombre] = _filas_hoja(decl, bloque, formatos)
     return {n: l for n, l in todo.items() if l}
 
 

@@ -113,3 +113,10 @@ class TipoCambioDia(Base):
     fecha: Mapped[date] = mapped_column(Date, primary_key=True)
     compra: Mapped[Decimal] = mapped_column(Numeric(8, 3), nullable=False)
     venta: Mapped[Decimal] = mapped_column(Numeric(8, 3), nullable=False)
+
+
+class Ajuste(Base):
+    """Ajustes sencillos de la aplicación (clave → valor)."""
+    __tablename__ = "ajustes"
+    clave: Mapped[str] = mapped_column(String(60), primary_key=True)
+    valor: Mapped[str] = mapped_column(String(200), default="")

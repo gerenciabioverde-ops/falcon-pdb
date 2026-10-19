@@ -10,7 +10,7 @@
                   'VENTAS': ('ventas', '.xml', 'XML de ventas', true, 'Agrega o reemplaza por tipo·serie·número; el resto de filas se conserva.'),
                   'COMPRAS': ('compras', '.xml', 'XML de compras', true, 'Agrega o reemplaza por tipo·serie·número; el resto de filas se conserva.'),
                   'DUAS_D': ('duas', '.pdf', 'PDF de DAM', true, 'Llena los bloques D y E de cada DAM (reemplaza la misma DUA si ya estaba).')}.get(b.clave) %}
-  {% if carga or b.clave == 'COMPRAS_PAGO' or (archivo_de.get(b.clave) and (b.clave != 'TC' or tc_sel == (decl.anio, decl.mes))) %}
+  {% if carga or b.clave in ('COMPRAS_PAGO', 'VENTAS') or (archivo_de.get(b.clave) and (b.clave != 'TC' or tc_sel == (decl.anio, decl.mes))) %}
   <div class="flex flex-wrap items-center gap-x-5 gap-y-2 px-4 py-2 bg-emerald-50 border-b text-sm">
     {% if carga and carga[0] in ('ventas', 'compras') %}
     <form method="post" action="/declaraciones/{{ decl.id }}/cargar/{{ carga[0] }}" enctype="multipart/form-data" class="flex flex-wrap items-center gap-2"
@@ -35,6 +35,15 @@
           title="Opción 2 · suba el libro de cada cuenta (MN y ME). Una fila por pago: medio, banco, N° de operación y fecha reales.">
       <input type="file" name="archivos" accept=".xls,.xlsx,.html" multiple required class="text-xs w-52">
       <button class="bg-emerald-700 text-white rounded px-3 py-1 whitespace-nowrap">Buscar en libros de bancos</button>
+    </form>
+    {% endif %}
+    {% if b.clave == 'VENTAS' %}
+    <form method="post" action="/declaraciones/{{ decl.id }}/ajuste/doc-sin-documento" class="flex items-center gap-1.5 text-xs text-slate-600"
+          title="Clientes con tipo de documento «-»: SUNAT rechazó 00000001. Pruebe otro valor, descargue y cargue el archivo en el aplicativo.">
+      <span>N° de documento si el cliente no tiene («-») en el archivo:</span>
+      <select name="valor" onchange="this.form.submit()" class="border rounded px-2 py-1 bg-white">
+        {% for k, v in opciones_sin_doc.items() %}<option value="{{ k }}" {{ 'selected' if k == doc_sin_doc }}>{{ v }}</option>{% endfor %}
+      </select>
     </form>
     {% endif %}
     {% if archivo_de.get(b.clave) and (b.clave != 'TC' or tc_sel == (decl.anio, decl.mes)) %}
