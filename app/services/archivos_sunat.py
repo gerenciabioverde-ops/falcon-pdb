@@ -88,10 +88,19 @@ def lineas_duas(decl: Declaracion) -> list[str]:
 
 
 def lineas_cdps(decl: Declaracion) -> list[str]:
-    return [_linea([c.periodo_cdp, c.tipo_comprobante, c.serie, c.numero, c.tipo_exportacion,
-                    c.dua_key, *((c.fob_facturado, c.fob_propietario, c.pct_participacion) if c.dua_key.strip() else ("", "", "")),
-                    c.ruc_operador], FMT_DU1) for c in decl.cdps
-            if c.dua_key not in _fuera_de_periodo(decl)]     # sin DUA: los FOB van vacíos (SUNAT)
+    """E8 (FOB propietario) solo para tipos de exportación 3 y 4; E9 (% participación) y E10 (RUC operador)
+    solo para el tipo 4. En los demás tipos SUNAT rechaza la fila si vienen llenos."""
+    filas = []
+    for c in decl.cdps:
+        if c.dua_key in _fuera_de_periodo(decl):
+            continue
+        t = str(c.tipo_exportacion).strip().lstrip("0")
+        filas.append(_linea([c.periodo_cdp, c.tipo_comprobante, c.serie, c.numero, c.tipo_exportacion, c.dua_key,
+                             c.fob_facturado,
+                             c.fob_propietario if t in ("3", "4") else "",
+                             c.pct_participacion if t == "4" else "",
+                             c.ruc_operador if t == "4" else ""], FMT_DU1))
+    return filas
 
 
 def _con_doc(celdas: list[str]) -> list[str]:
