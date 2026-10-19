@@ -214,6 +214,10 @@ def _clave_fila(celdas: list[str], i_tipo: int, i_serie: int, i_num: int) -> tup
     return (_sin_ceros(celdas[i_tipo]), celdas[i_serie], _sin_ceros(celdas[i_num]))
 
 
+def _fmt_money(x) -> str:
+    return f"{Decimal(x or 0):,.2f}"
+
+
 def _resumen(prefijo: str, items: list[str], ejemplos: int = 3) -> str:
     return f"{prefijo}: {len(items)} ({', '.join(items[:ejemplos])}{'…' if len(items) > ejemplos else ''})."
 
@@ -491,6 +495,7 @@ def cargar_dam_pdf(db: Session, decl: Declaracion, archivos: list[tuple[str, byt
     no_dam: list[str] = []
     sin_fecha: list[str] = []
     cargadas: list[str] = []
+    sin_factura: list[str] = []
     for nombre, contenido in archivos:
         if not nombre.lower().endswith(".pdf"):
             continue
@@ -504,6 +509,9 @@ def cargar_dam_pdf(db: Session, decl: Declaracion, archivos: list[tuple[str, byt
             continue
         fe = dua.fecha_embarque
         nro = f"{dua.codigo_aduana}-{dua.anio_dua}-{dua.correlativo}"
+        for s_ in series:                       # series cuya factura no se pudo leer del PDF
+            if not (s_.get("factura_serie") and s_.get("factura_numero")):
+                sin_factura.append(f"{nro} serie {s_.get('no_serie')} (FOB US$ {_fmt_money(s_.get('fob_usd'))})")
         if not fe:
             sin_fecha.append(nro)
             continue
@@ -520,6 +528,9 @@ def cargar_dam_pdf(db: Session, decl: Declaracion, archivos: list[tuple[str, byt
         cargadas.append(nro)
     if cargadas:
         avisos.append(_resumen("DUA cargadas", cargadas, 6))
+    if sin_factura:
+        avisos.append(_resumen("Series sin factura legible en el PDF (complete serie y número en «Bloque E · Facturas»)",
+                               sin_factura, 4))
     if fuera:
         avisos.append(_resumen(f"DAM omitidas: no se embarcaron en {decl.periodo}", fuera))
     if sin_fecha:

@@ -199,6 +199,19 @@ def _parsear_contenedores(p1: str) -> list[dict]:
 
 # --------------------------------------------------------------------- series
 
+_FACTURA = re.compile(r"\b([A-Za-z]{1,4}\d{0,4})\s*-\s*(\d{1,12})\b\s+(\d{2}/\d{2}/\d{4})")
+
+
+def _buscar_factura(bloque: str):
+    """(serie-número, fecha) de la factura de la serie. Busca en la zona «No Factura / Fecha» (7.36) cualquier
+    serie (FFF1, F001, E001…); si no la encuentra ahí, prueba en todo el bloque."""
+    i = bloque.find("No Factura")
+    for zona in ((bloque[i:i + 500],) if i >= 0 else ()) + (bloque,):
+        for m in _FACTURA.finditer(zona):
+            return f"{m.group(1).upper()}-{m.group(2)}", m.group(3)
+    return None
+
+
 def _parsear_serie(bloque: str) -> dict:
     lineas = [l for l in bloque.splitlines()]
     s: dict = {}
@@ -245,16 +258,15 @@ def _parsear_serie(bloque: str) -> dict:
     bloque_desc = "\n".join(desc)
     s["ico_mark"] = _buscar(r"ICO MARK:\s*([\d\-]+)", bloque) or \
         _buscar(r"ICO MARK:\s*([\d\-]+)", bloque_desc)
-    mfact = re.search(r"(FFF\d-\d+).*?(\d{2}/\d{2}/\d{4})", bloque)
+    mfact = _buscar_factura(bloque)
     if mfact:
-        raw = mfact.group(1)                       # ej. "FFF1-00000551"
+        raw = mfact[0]                             # ej. "FFF1-00000551"
         s["no_factura"] = raw
-        s["fecha_factura"] = _fecha(mfact.group(2))
+        s["fecha_factura"] = _fecha(mfact[1])
         # Desagregado para el PDB y el cruce con el Registro de Ventas.
-        if "-" in raw:
-            ser, num = raw.split("-", 1)
-            s["factura_serie"] = ser.strip()
-            s["factura_numero"] = num.strip()
+        ser, num = raw.split("-", 1)
+        s["factura_serie"] = ser.strip()
+        s["factura_numero"] = num.strip()
     # Comprobante de exportación: factura (tipo 01) en dólares (café).
     s.setdefault("factura_tipo", "01")
     s.setdefault("moneda", "USD")
