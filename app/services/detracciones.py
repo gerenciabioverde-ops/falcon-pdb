@@ -87,7 +87,11 @@ def aplicar_a_compras(db: Session, empresa: Empresa) -> int:
     return n
 
 
-def enlazadas(db: Session, empresa: Empresa) -> set[str]:
-    """Constancias que ya figuran en alguna compra."""
-    return {str(f.celdas[22]) for d in db.scalars(select(Declaracion).where(Declaracion.empresa_id == empresa.id))
-            for f in d.filas if f.hoja == "COMPRAS" and len(f.celdas) > 22 and f.celdas[22]}
+def enlazadas(db: Session, empresa: Empresa) -> dict[str, list[str]]:
+    """N° de constancia → períodos de declaración donde figura en COMPRAS (A23)."""
+    r: dict[str, list[str]] = {}
+    for d in db.scalars(select(Declaracion).where(Declaracion.empresa_id == empresa.id)):
+        for f in d.filas:
+            if f.hoja == "COMPRAS" and len(f.celdas) > 22 and f.celdas[22]:
+                r.setdefault(str(f.celdas[22]), []).append(d.periodo)
+    return r

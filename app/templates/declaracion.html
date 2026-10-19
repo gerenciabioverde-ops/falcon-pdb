@@ -223,7 +223,7 @@
     <div class="overflow-auto max-h-[28rem]">
       <table class="text-xs border-collapse w-full">
         <thead class="sticky top-0"><tr class="bg-emerald-100 text-emerald-900">
-          {% for t in ['N° constancia','Fecha de pago','Período','RUC proveedor','Proveedor','Comprobante','Bien/servicio','Monto S/','N° operación','En compras',''] %}<th class="px-2 py-1 text-left font-medium">{{ t }}</th>{% endfor %}
+          {% for t in ['N° constancia','Fecha de pago','Período','RUC proveedor','Proveedor','Comprobante','Bien/servicio','Monto S/','N° operación','Registrada en compras del período',''] %}<th class="px-2 py-1 text-left font-medium">{{ t }}</th>{% endfor %}
         </tr></thead>
         <tbody>
         {% for d in detracciones %}
@@ -237,7 +237,10 @@
             <td class="px-2">{{ d.bien_servicio }}</td>
             <td class="px-2 text-right">{{ d.monto|miles(2) }}</td>
             <td class="px-2">{{ d.nro_operacion }}</td>
-            <td class="px-2">{% if d.constancia in ligadas %}<span class="text-green-700">✔ enlazada</span>{% else %}<span class="text-amber-600">⏳ sin compra</span>{% endif %}</td>
+            <td class="px-2 whitespace-nowrap">{% set pr = ligadas.get(d.constancia, []) %}
+              {% if not pr %}<span class="text-amber-600">⏳ sin compra</span>
+              {% elif d.periodo_tributario in pr %}<span class="text-green-700">✔ {{ pr|join(', ') }}</span>
+              {% else %}<span class="text-red-600 font-medium" title="La constancia es del período {{ d.periodo_tributario }} pero la compra está registrada en {{ pr|join(', ') }}.">⚠ {{ pr|join(', ') }} · const. {{ d.periodo_tributario }}</span>{% endif %}</td>
             <td class="px-2"><form method="post" action="/declaraciones/{{ decl.id }}/detracciones/{{ d.id }}/eliminar" onsubmit="return confirm('¿Quitar esta constancia?')"><button class="text-slate-300 hover:text-red-600" title="Quitar">✕</button></form></td>
           </tr>
         {% else %}
@@ -269,7 +272,7 @@
     <div class="overflow-auto max-h-[28rem]">
       <table class="text-xs border-collapse w-full">
         <thead class="sticky top-0"><tr class="bg-emerald-100 text-emerald-900">
-          {% for t in ['N° de orden','Fecha de pago','Período','Comprobante','Base imponible S/ (IGV ÷ 18%)','IGV pagado S/','Banco','N° operación','En compras',''] %}<th class="px-2 py-1 text-left font-medium">{{ t }}</th>{% endfor %}
+          {% for t in ['N° de orden','Fecha de pago','Período','Comprobante','Base imponible S/ (IGV ÷ 18%)','IGV pagado S/','Banco','N° operación','Registrada en compras del período',''] %}<th class="px-2 py-1 text-left font-medium">{{ t }}</th>{% endfor %}
         </tr></thead>
         <tbody>
         {% for f in forms1662 %}
@@ -282,7 +285,10 @@
             <td class="px-2 text-right">{{ f.importe|miles(2) }}</td>
             <td class="px-2">{{ f.banco }}</td>
             <td class="px-2">{{ f.nro_operacion }}</td>
-            <td class="px-2">{% if (f.serie|upper|trim, (f.numero|trim|upper).lstrip('0') or f.numero) in compras_1662 %}<span class="text-green-700">✔ enlazada</span>{% else %}<span class="text-amber-600">⏳ sin compra</span>{% endif %}</td>
+            <td class="px-2 whitespace-nowrap">{% set pr = compras_1662.get((f.serie|upper|trim, (f.numero|trim|upper).lstrip('0') or f.numero), []) %}
+              {% if not pr %}<span class="text-amber-600">⏳ sin compra</span>
+              {% elif f.periodo in pr %}<span class="text-green-700">✔ {{ pr|join(', ') }}</span>
+              {% else %}<span class="text-red-600 font-medium" title="El pago es del período {{ f.periodo }} pero la compra está registrada en {{ pr|join(', ') }}.">⚠ {{ pr|join(', ') }} · pago {{ f.periodo }}</span>{% endif %}</td>
             <td class="px-2"><form method="post" action="/declaraciones/{{ decl.id }}/form1662/{{ f.id }}/eliminar" onsubmit="return confirm('¿Quitar este formulario?')"><button class="text-slate-300 hover:text-red-600" title="Quitar">✕</button></form></td>
           </tr>
         {% else %}

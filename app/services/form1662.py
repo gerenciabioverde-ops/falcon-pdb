@@ -66,6 +66,11 @@ def aplicar_a_compras(db: Session, empresa: Empresa) -> int:
     return n
 
 
-def enlazadas(db: Session, empresa: Empresa) -> set[tuple[str, str]]:
-    return {_clave(f.celdas[3], f.celdas[4]) for d in db.scalars(select(Declaracion).where(Declaracion.empresa_id == empresa.id))
-            for f in d.filas if f.hoja == "COMPRAS" and len(f.celdas) > 4}
+def enlazadas(db: Session, empresa: Empresa) -> dict[tuple[str, str], list[str]]:
+    """Comprobante → períodos de declaración donde está registrado en COMPRAS."""
+    r: dict[tuple[str, str], list[str]] = {}
+    for d in db.scalars(select(Declaracion).where(Declaracion.empresa_id == empresa.id)):
+        for f in d.filas:
+            if f.hoja == "COMPRAS" and len(f.celdas) > 4:
+                r.setdefault(_clave(f.celdas[3], f.celdas[4]), []).append(d.periodo)
+    return r
