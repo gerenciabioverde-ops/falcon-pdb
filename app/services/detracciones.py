@@ -57,8 +57,8 @@ def cargar_constancias(db: Session, empresa: Empresa, archivos: list[tuple[str, 
             db.add(fila)
         for k, v in d.items():
             setattr(fila, k, v)
+        db.flush()                       # la misma constancia repetida en el envío se actualiza, no se duplica
         n += 1
-    db.flush()
     return n, avisos
 
 

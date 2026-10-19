@@ -206,8 +206,13 @@
     <div class="px-4 py-2 border-b"><h2 class="font-semibold text-sm">Constancias de detracción <span class="text-slate-500 font-normal">· {{ detracciones|length }} constancia(s) · de la empresa, sin importar el período</span></h2></div>
     <div class="flex flex-wrap items-center gap-x-5 gap-y-2 px-4 py-2 bg-emerald-50 border-b text-sm">
       <form method="post" action="/declaraciones/{{ decl.id }}/detracciones" enctype="multipart/form-data" class="flex flex-wrap items-center gap-2"
+            data-ext=".html,.htm" data-etiqueta="HTML" onsubmit="return enviarXml(event, this)"
             title="Suba el HTML «Constancia de depósito» de SUNAT. Se enlaza por proveedor + comprobante y rellena A21 (indicador), A22 (código de tasa) y A23 (N° de constancia) en COMPRAS, de cualquier período.">
-        <input type="file" name="archivos" accept=".html,.htm" multiple required class="text-xs w-64">
+        <label class="border border-emerald-700 text-emerald-800 rounded px-3 py-1 cursor-pointer hover:bg-emerald-100 whitespace-nowrap">Elegir archivo(s)
+          <input type="file" accept=".html,.htm" multiple class="hidden" onchange="resumenXml(this.form)"></label>
+        <label class="border border-emerald-700 text-emerald-800 rounded px-3 py-1 cursor-pointer hover:bg-emerald-100 whitespace-nowrap">Elegir carpeta
+          <input type="file" webkitdirectory directory multiple class="hidden" onchange="resumenXml(this.form)"></label>
+        <span class="text-xs text-slate-600 min-w-[8rem]" data-resumen>Ninguna constancia seleccionada</span>
         <button class="bg-emerald-700 text-white rounded px-3 py-1 whitespace-nowrap">Leer constancias HTML</button>
       </form>
       <form method="post" action="/declaraciones/{{ decl.id }}/detracciones/aplicar">
@@ -279,7 +284,7 @@ function archivosDe(form) {
   const ext = form.dataset.ext || '.xml';
   const todos = [];
   form.querySelectorAll('input[type=file]').forEach(i => todos.push(...i.files));
-  const buenos = todos.filter(f => f.name.toLowerCase().endsWith(ext));
+  const exts = ext.split(','), buenos = todos.filter(f => exts.some(x => f.name.toLowerCase().endsWith(x)));
   const cdr = ext === '.xml' ? buenos.filter(f => /^R-/i.test(f.name)).length : 0;
   return {todos: todos.length, validos: ext === '.xml' ? buenos.filter(f => !/^R-/i.test(f.name)) : buenos, cdr, ext};
 }
