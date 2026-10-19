@@ -82,8 +82,8 @@ def lineas_duas(decl: Declaracion) -> list[str]:
 
 def lineas_cdps(decl: Declaracion) -> list[str]:
     return [_linea([c.periodo_cdp, c.tipo_comprobante, c.serie, c.numero, c.tipo_exportacion,
-                    c.dua_key, c.fob_facturado, c.fob_propietario, c.pct_participacion,
-                    c.ruc_operador], FMT_DU1) for c in decl.cdps]
+                    c.dua_key, *((c.fob_facturado, c.fob_propietario, c.pct_participacion) if c.dua_key.strip() else ("", "", "")),
+                    c.ruc_operador], FMT_DU1) for c in decl.cdps]     # sin DUA: los FOB van vacíos (SUNAT)
 
 
 def _con_doc(celdas: list[str]) -> list[str]:
