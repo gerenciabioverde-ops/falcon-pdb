@@ -53,17 +53,19 @@
         <thead class="sticky top-0 z-10">
           <tr class="bg-emerald-800 text-white">
             <th class="px-2 py-1 w-8"></th>
+            {% if b.extra is not none %}<th class="px-2 py-1 text-center font-semibold bg-sky-800">REF</th>{% endif %}
             {% for cod, tit, fmt in b.columnas %}<th class="px-2 py-1 text-center font-semibold border-l border-emerald-700">{{ cod }}</th>{% endfor %}
             <th class="w-8"></th>
           </tr>
           <tr class="bg-emerald-100 text-emerald-900">
             <th class="px-2"></th>
+            {% if b.extra is not none %}<th class="px-2 py-1 font-medium align-bottom bg-sky-100 text-sky-900 min-w-[11rem]">DAM REGULARIZADA<br><span class="font-normal">(seguimiento)</span></th>{% endif %}
             {% for cod, tit, fmt in b.columnas %}<th class="px-2 py-1 font-medium border-l border-emerald-200 min-w-[7rem] max-w-[11rem] align-bottom">{{ tit }}</th>{% endfor %}
             <th></th>
           </tr>
         </thead>
         <tbody>
-          {% for fila in b.filas %}{{ fila_html(b.columnas, fila, loop.index) }}{% endfor %}
+          {% for fila in b.filas %}{{ fila_html(b.columnas, fila, loop.index, b.extra[loop.index0] if b.extra is not none else none) }}{% endfor %}
         </tbody>
       </table>
     </div>
@@ -87,7 +89,7 @@
     </aside>
     {% endif %}
     </div>
-    <template>{{ fila_html(b.columnas, [], 0) }}</template>
+    <template>{{ fila_html(b.columnas, [], 0, {'estado': 'sin'} if b.extra is not none else none) }}</template>
     <div class="px-4 py-2 border-t">
       <div class="barra-solo-lectura text-xs text-slate-500">🔒 Solo lectura · marque <b>✎ Editar</b> para modificar, agregar o quitar filas.</div>
       <div class="barra-edicion hidden">
@@ -101,9 +103,17 @@
   </form>
 </section>
 {% endmacro %}
-{% macro fila_html(cols, fila, n) %}
+{% macro fila_html(cols, fila, n, extra=none) %}
 <tr class="border-t hover:bg-amber-50">
   <td class="px-2 text-slate-400 text-right select-none">{{ n if n else '' }}</td>
+  {% if extra is not none %}
+  <td class="px-2 py-1 whitespace-nowrap bg-sky-50 text-xs select-text">
+    {% if extra.estado == 'ok' %}<span class="text-green-700 font-medium" title="Embarcada el {{ extra.embarque.strftime('%d/%m/%Y') if extra.embarque }} · regularizada el {{ extra.regularizada.strftime('%d/%m/%Y') }} · PDB {{ extra.periodo }}">✔ {{ extra.dua }}</span>
+    {% elif extra.estado == 'pend' %}<span class="text-amber-600 font-medium" title="Aún sin fecha de regularización · PDB {{ extra.periodo }}">⏳ {{ extra.dua }}</span>
+    {% elif extra.estado == 'sin' %}<span class="text-slate-400">Sin DAM</span>
+    {% else %}<span class="text-slate-300">—</span>{% endif %}
+  </td>
+  {% endif %}
   {% for cod, tit, fmt in cols %}
   <td class="p-0 border-l border-slate-100 {{ 'bg-slate-50' if cod == 'REF' }}"><input readonly {{ 'data-calc' if cod == 'REF' }} data-cod="{{ cod }}" {% set v = fila[loop.index0] if fila and loop.index0 < fila|length else '' %}{% set dec = 2 if fmt in ('0.00', '0.00*') else (3 if fmt == '0.000' else 0) %}{% if dec %}data-dec="{{ dec }}" {% endif %}value="{{ v|miles(dec) if dec else v }}"
       class="w-full min-w-[7rem] px-2 py-1 bg-transparent focus:bg-white focus:outline focus:outline-2 focus:outline-emerald-500 {{ 'text-right' if fmt in ('0.00','0.00*','0.000') else '' }}"></td>

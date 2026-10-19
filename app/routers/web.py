@@ -151,6 +151,8 @@ def ver_declaracion(request: Request, decl_id: int, db: Db, usuario: User, hoja:
     tc_sel = _mes_tc(mes) or (decl.anio, decl.mes)           # mes del TC que se está viendo
     bloques = [{"clave": b, "titulo": t, "columnas": COLUMNAS_TODAS[b], "filas": svc.filas_bloque(decl, b, tc_sel)}
                for b, t in pestana["bloques"]]
+    for b in bloques:
+        b["extra"] = svc.dam_de_ventas(db, decl) if b["clave"] == "VENTAS" else None
     if pestana["clave"] == "tc":
         bloques[0]["titulo"] = f"Tipo de cambio · {MESES[tc_sel[1]]} {tc_sel[0]}"
     archivos = arch.archivos(decl)

@@ -454,3 +454,29 @@ def resumen_declaracion(decl: Declaracion) -> dict:
         "errores": sum(h["nivel"] == "error" for h in hallazgos),
         "avisos": sum(h["nivel"] == "aviso" for h in hallazgos),
     }
+
+
+def dam_de_ventas(db: Session, decl: Declaracion) -> list[dict]:
+    """Para cada fila de VENTAS, la DAM que la sustenta (si la hay), buscando en todos los períodos de
+    la empresa: la factura puede emitirse en un mes y embarcarse/regularizarse en otro. Solo para ver."""
+    por_factura: dict[tuple, dict] = {}
+    for d in decl.empresa.declaraciones:
+        duas = {u.clave: u for u in d.duas}
+        for c in d.cdps:
+            u = duas.get(c.dua_key)
+            if u:
+                por_factura[(c.serie.strip().upper(), c.numero.strip().lstrip("0"))] = {
+                    "dua": f"{u.codigo_aduana}-{u.anio_dua}-40-{u.correlativo}",
+                    "regularizada": u.fecha_regularizacion, "embarque": u.fecha_embarque, "periodo": d.periodo}
+    salida = []
+    for celdas in filas_bloque(decl, "VENTAS"):
+        c = (list(celdas) + [""] * 31)[:31]
+        if c[0].strip().lstrip("0") != "2":
+            salida.append({"estado": "na"})                          # venta interna: no lleva DAM
+            continue
+        info = por_factura.get((c[3].strip().upper(), c[4].strip().lstrip("0")))
+        if not info:
+            salida.append({"estado": "sin"})
+        else:
+            salida.append({"estado": "ok" if info["regularizada"] else "pend", **info})
+    return salida
