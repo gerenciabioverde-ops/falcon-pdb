@@ -185,6 +185,13 @@ def guardar_grilla(db: Session, decl: Declaracion, bloque: str, filas: list[list
     return len(filas)
 
 
+def _safe_fecha(txt):
+    try:
+        return _fecha(txt)
+    except ValueError:
+        return None
+
+
 # ------------------------------------------------------------------ validación
 
 def validar(decl: Declaracion) -> list[dict]:
@@ -249,6 +256,9 @@ def validar(decl: Declaracion) -> list[dict]:
     notas = {"COMPRAS": ("7", "8", "87", "88", "97", "98"), "VENTAS": ("7", "8")}
     for f in decl.filas:
         if f.hoja in notas and len(f.celdas) > 27 and f.celdas[1].strip().lstrip("0") in notas[f.hoja]:
+            fref, fnota = _safe_fecha(f.celdas[27]), _safe_fecha(f.celdas[2])
+            if fref and fnota and fref > fnota:
+                avi(f"{f.celdas[3]}-{f.celdas[4]}: la fecha del documento de referencia es posterior a la de la nota.")
             if not all(x.strip() for x in f.celdas[24:28]):
                 avi(f"{'Compra' if f.hoja == 'COMPRAS' else 'Venta'} {f.celdas[3]}-{f.celdas[4]} (nota): "
                     "complete el documento de referencia (tipo, serie, número y fecha).")

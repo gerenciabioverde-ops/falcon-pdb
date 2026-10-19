@@ -147,7 +147,8 @@ def _fila_venta(decl: Declaracion, c: dict, avisos: list[str]) -> list[str]:
         "1" if (not es_export and igv > 0) else "2", "1",   # C15-C16: 1 gravada con IGV · 2 no gravada (incl. exportación)
         _num(base), _num(isc), _num(igv), _num(otros),   # C17-C20
         "", "", "", "",                              # C21-C24
-        rt, rs, rn, "", "", "",                      # C25-C30
+        rt, rs, rn, "", _num(base) if rt else "",
+        _num(igv) if (rt and not es_export) else "",   # C25-C30 (29-30: importe de la nota; ventas externas sin IGV)
     ]
 
 
@@ -171,7 +172,7 @@ def _fila_compra(decl: Declaracion, c: dict, avisos: list[str]) -> list[str]:
         _num(base), _num(conv(c["isc"])), _num(conv(c["igv"])), _num(otros),   # A17-A20
         "1" if c["tiene_detraccion"] else "",        # A21
         "", "", "",                                  # A22-A24
-        rt, rs, rn, "", "", "",                      # A25-A30
+        rt, rs, rn, "", _num(base) if rt else "", _num(conv(c["igv"])) if rt else "",   # A25-A30 (29-30: importe de la nota)
     ]
 
 
@@ -220,14 +221,15 @@ def _cargar_xmls(db: Session, decl: Declaracion, archivos: list[tuple[str, bytes
 
 def _completar_referencias(filas: list[list[str]]) -> None:
     """En las notas de crédito/débito, si el comprobante que modifican está en la misma hoja,
-    completa su fecha de emisión, base e IGV (el XML de la nota no los trae)."""
+    completa su fecha de emisión (el XML de la nota no la trae). La base y el IGV de la
+    referencia (A29/A30) son los de la propia nota, no los del documento original."""
     por_clave = {(_sin_ceros(f[1]), f[3].upper(), _sin_ceros(f[4])): f for f in filas}
     for f in filas:
-        if f[1] not in ("7", "07", "8", "08") or not f[25]:
+        if f[1] not in ("7", "07", "8", "08") or not f[25] or f[27]:
             continue
         orig = por_clave.get((_sin_ceros(f[24]) or "1", f[25].upper(), _sin_ceros(f[26])))
         if orig:
-            f[27], f[28], f[29] = f[27] or orig[2], f[28] or orig[16], f[29] or orig[18]
+            f[27] = orig[2]
 
 
 def _sin_cero_fecha(txt: str):
