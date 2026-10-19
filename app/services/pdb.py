@@ -420,3 +420,14 @@ def guardar_ajuste(db: Session, clave: str, valor: str) -> None:
     else:
         db.add(Ajuste(clave=clave, valor=valor))
     db.flush()
+
+
+def resumen_declaracion(decl: Declaracion) -> dict:
+    """Cifras para la tarjeta del período en la pantalla de inicio."""
+    cuenta = lambda h: sum(1 for f in decl.filas if f.hoja == h and any(f.celdas))  # noqa: E731
+    hallazgos = validar(decl)
+    return {
+        "compras": cuenta("COMPRAS"), "ventas": cuenta("VENTAS"), "duas": len(decl.duas),
+        "errores": sum(h["nivel"] == "error" for h in hallazgos),
+        "avisos": sum(h["nivel"] == "aviso" for h in hallazgos),
+    }

@@ -66,19 +66,33 @@ def logout():
 # ---- empresas y declaraciones ---------------------------------------------------
 
 @router.get("/", response_class=HTMLResponse)
-def inicio(request: Request, db: Db, usuario: User):
+def inicio(request: Request, db: Db, usuario: User, empresa_id: int | None = None, anio: int | None = None):
     empresas = db.query(Empresa).order_by(Empresa.razon_social).all()
+    empresa = next((e for e in empresas if e.id == empresa_id), None) or (empresas[0] if len(empresas) == 1 else None)
     hoy = date.today()
-    return _render(request, "inicio.html", usuario=usuario, empresas=empresas,
-                   anio=hoy.year, mes=hoy.month)
+    anios, meses_info = [], []
+    if empresa:
+        existentes = {d.anio for d in empresa.declaraciones}
+        anios = sorted(existentes | {hoy.year}, reverse=True)
+        anio = anio if anio in anios else (hoy.year if hoy.year in anios else anios[0])
+        por_mes = {d.mes: d for d in empresa.declaraciones if d.anio == anio}
+        for m in range(1, 13):
+            d = por_mes.get(m)
+            meses_info.append({"mes": m, "decl": d, **(svc.resumen_declaracion(d) if d else {})})
+    return _render(request, "inicio.html", usuario=usuario, empresas=empresas, empresa=empresa, anio=anio,
+                   anios=anios, meses_info=meses_info, hoy=hoy,
+                   totales={e: sum(1 for m in meses_info if m["decl"] and m["decl"].estado == e) for e in ESTADOS},
+                   con_errores=sum(1 for m in meses_info if m.get("errores") and (m["compras"] or m["ventas"] or m["duas"])))
 
 
 @router.post("/empresas")
 def crear_empresa(db: Db, usuario: User, ruc: Annotated[str, Form()], razon_social: Annotated[str, Form()]):
     ruc = ruc.strip()
     if len(ruc) == 11 and ruc.isdigit() and not db.query(Empresa).filter_by(ruc=ruc).first():
-        db.add(Empresa(ruc=ruc, razon_social=razon_social.strip()))
+        e = Empresa(ruc=ruc, razon_social=razon_social.strip())
+        db.add(e)
         db.commit()
+        return RedirectResponse(f"/?empresa_id={e.id}", status_code=303)
     return RedirectResponse("/", status_code=303)
 
 

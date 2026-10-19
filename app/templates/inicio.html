@@ -1,34 +1,110 @@
 {% extends "base.html" %}
 {% block contenido %}
-<h1 class="text-2xl font-semibold mb-4">Declaraciones PDB Exportadores</h1>
-<div class="grid md:grid-cols-3 gap-6">
-  <div class="md:col-span-2 space-y-4">
-    {% for e in empresas %}
-    <section class="bg-white rounded shadow p-4">
-      <h2 class="font-semibold">{{ e.razon_social }} <span class="text-slate-500 font-normal text-sm">RUC {{ e.ruc }}</span></h2>
-      <table class="w-full text-sm mt-2">
-        {% for d in e.declaraciones|sort(attribute='periodo', reverse=true) %}
-        <tr class="border-t">
-          <td class="py-1"><a class="text-blue-700 hover:underline" href="/declaraciones/{{ d.id }}">{{ meses[d.mes] }} {{ d.anio }}</a></td>
-          <td>{{ estados[d.estado] }}</td>
-          <td class="text-slate-500">{{ d.nro_constancia or "" }}</td>
-        </tr>
-        {% else %}<tr><td class="text-slate-500 py-1">Sin declaraciones aún.</td></tr>{% endfor %}
-      </table>
-      <form method="post" action="/declaraciones" class="mt-3 flex gap-2 items-center text-sm">
-        <input type="hidden" name="empresa_id" value="{{ e.id }}">
-        <input name="anio" type="number" value="{{ anio }}" class="border rounded px-2 py-1 w-24">
-        <input name="mes" type="number" min="1" max="12" value="{{ mes }}" class="border rounded px-2 py-1 w-16">
-        <button class="bg-slate-900 text-white rounded px-3 py-1">Abrir / crear período</button>
-      </form>
-    </section>
-    {% else %}<p class="text-slate-500">Registre una empresa para empezar.</p>{% endfor %}
+<div class="flex items-end justify-between mb-5">
+  <div>
+    <h1 class="text-2xl font-semibold tracking-tight">Declaraciones PDB Exportadores</h1>
+    <p class="text-sm text-slate-500">Seleccione la empresa para ver sus informes por período.</p>
   </div>
-  <form method="post" action="/empresas" class="bg-white rounded shadow p-4 space-y-2 h-fit">
-    <h2 class="font-semibold">Nueva empresa</h2>
-    <input name="ruc" placeholder="RUC (11 dígitos)" pattern="\d{11}" required class="w-full border rounded px-3 py-2">
-    <input name="razon_social" placeholder="Razón social" required class="w-full border rounded px-3 py-2">
-    <button class="bg-slate-900 text-white rounded px-3 py-2">Agregar</button>
-  </form>
+</div>
+
+<div class="grid lg:grid-cols-[18rem_1fr] gap-6 items-start">
+  <!-- Empresas -->
+  <aside class="bg-white rounded-lg shadow-sm border border-slate-200">
+    <div class="px-4 py-3 border-b border-slate-200 flex items-center justify-between">
+      <h2 class="text-sm font-semibold text-slate-700">Empresas</h2>
+      <span class="text-xs text-slate-400">{{ empresas|length }}</span>
+    </div>
+    <nav class="p-2 space-y-1">
+      {% for e in empresas %}
+      <a href="/?empresa_id={{ e.id }}" class="block rounded-md px-3 py-2.5 border {{ 'bg-emerald-50 border-emerald-300' if empresa and empresa.id == e.id else 'border-transparent hover:bg-slate-50' }}">
+        <div class="text-sm font-medium {{ 'text-emerald-900' if empresa and empresa.id == e.id else 'text-slate-800' }}">{{ e.razon_social }}</div>
+        <div class="text-xs text-slate-500">RUC {{ e.ruc }} · {{ e.declaraciones|length }} período(s)</div>
+      </a>
+      {% else %}
+      <p class="px-3 py-4 text-sm text-slate-500">Aún no hay empresas. Agregue la primera abajo.</p>
+      {% endfor %}
+    </nav>
+    <details class="border-t border-slate-200" {{ 'open' if not empresas }}>
+      <summary class="px-4 py-3 text-sm text-emerald-800 font-medium cursor-pointer select-none hover:bg-slate-50">+ Nueva empresa</summary>
+      <form method="post" action="/empresas" class="px-4 pb-4 space-y-2">
+        <input name="ruc" placeholder="RUC (11 dígitos)" pattern="\d{11}" required class="w-full border border-slate-300 rounded-md px-3 py-2 text-sm">
+        <input name="razon_social" placeholder="Razón social" required class="w-full border border-slate-300 rounded-md px-3 py-2 text-sm">
+        <button class="w-full bg-emerald-700 hover:bg-emerald-800 text-white rounded-md px-3 py-2 text-sm font-medium">Agregar empresa</button>
+      </form>
+    </details>
+  </aside>
+
+  <!-- Informes de la empresa -->
+  <section>
+  {% if empresa %}
+    <div class="bg-white rounded-lg shadow-sm border border-slate-200 p-5">
+      <div class="flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <h2 class="text-lg font-semibold">{{ empresa.razon_social }}</h2>
+          <p class="text-sm text-slate-500">RUC {{ empresa.ruc }}</p>
+        </div>
+        <div class="flex items-center gap-1">
+          {% for a in anios %}
+          <a href="/?empresa_id={{ empresa.id }}&anio={{ a }}" class="px-3 py-1.5 text-sm rounded-md border {{ 'bg-emerald-700 text-white border-emerald-700' if a == anio else 'bg-white text-slate-700 border-slate-300 hover:bg-slate-50' }}">{{ a }}</a>
+          {% endfor %}
+        </div>
+      </div>
+      <dl class="mt-4 grid grid-cols-2 md:grid-cols-4 gap-3 text-center">
+        <div class="rounded-md bg-slate-50 py-3"><dd class="text-2xl font-semibold text-green-700">{{ totales.ENVIADO }}</dd><dt class="text-xs text-slate-500">Enviados</dt></div>
+        <div class="rounded-md bg-slate-50 py-3"><dd class="text-2xl font-semibold text-sky-700">{{ totales.LISTO }}</dd><dt class="text-xs text-slate-500">Listos para enviar</dt></div>
+        <div class="rounded-md bg-slate-50 py-3"><dd class="text-2xl font-semibold text-amber-600">{{ totales.PENDIENTE }}</dd><dt class="text-xs text-slate-500">Pendientes</dt></div>
+        <div class="rounded-md bg-slate-50 py-3"><dd class="text-2xl font-semibold {{ 'text-red-600' if con_errores else 'text-slate-400' }}">{{ con_errores }}</dd><dt class="text-xs text-slate-500">Con errores</dt></div>
+      </dl>
+    </div>
+
+    <h3 class="mt-6 mb-3 text-sm font-semibold text-slate-600 uppercase tracking-wide">Informes PDB {{ anio }}</h3>
+    <div class="grid sm:grid-cols-2 xl:grid-cols-3 gap-4">
+      {% for m in meses_info %}
+        {% set d = m.decl %}
+        {% if d %}
+        <a href="/declaraciones/{{ d.id }}" class="group block bg-white rounded-lg border border-slate-200 shadow-sm hover:shadow-md hover:border-emerald-400 transition p-4">
+          <div class="flex items-start justify-between">
+            <div>
+              <div class="font-semibold text-slate-900">{{ meses[m.mes] }}</div>
+              <div class="text-xs text-slate-500">Período {{ d.periodo }}</div>
+            </div>
+            <span class="text-xs font-medium rounded-full px-2.5 py-1
+              {{ {'ENVIADO': 'bg-green-100 text-green-800', 'LISTO': 'bg-sky-100 text-sky-800', 'PENDIENTE': 'bg-amber-100 text-amber-800'}[d.estado] }}">{{ estados[d.estado] }}</span>
+          </div>
+          <div class="mt-3 grid grid-cols-3 gap-2 text-center text-xs">
+            <div class="rounded bg-slate-50 py-1.5"><div class="font-semibold text-slate-800">{{ m.compras }}</div><div class="text-slate-500">Compras</div></div>
+            <div class="rounded bg-slate-50 py-1.5"><div class="font-semibold text-slate-800">{{ m.ventas }}</div><div class="text-slate-500">Ventas</div></div>
+            <div class="rounded bg-slate-50 py-1.5"><div class="font-semibold text-slate-800">{{ m.duas }}</div><div class="text-slate-500">DUAs</div></div>
+          </div>
+          <div class="mt-3 flex items-center justify-between text-xs">
+            <span>
+              {% if not (m.compras or m.ventas or m.duas) %}<span class="text-slate-400">Sin datos cargados</span>
+              {% elif m.errores %}<span class="text-red-600 font-medium">✖ {{ m.errores }} error(es)</span>
+              {% elif m.avisos %}<span class="text-amber-600">▲ {{ m.avisos }} aviso(s)</span>
+              {% else %}<span class="text-green-700">✔ Sin observaciones</span>{% endif %}
+            </span>
+            <span class="text-slate-400">{% if d.nro_constancia %}Const. {{ d.nro_constancia }}{% elif d.fecha_envio %}{{ d.fecha_envio.strftime('%d/%m/%Y') }}{% endif %}</span>
+          </div>
+          <div class="mt-3 text-sm text-emerald-700 font-medium group-hover:underline">Abrir informe →</div>
+        </a>
+        {% else %}
+        <form method="post" action="/declaraciones" class="rounded-lg border border-dashed border-slate-300 bg-slate-50/60 p-4 flex flex-col justify-between">
+          <input type="hidden" name="empresa_id" value="{{ empresa.id }}"><input type="hidden" name="anio" value="{{ anio }}"><input type="hidden" name="mes" value="{{ m.mes }}">
+          <div>
+            <div class="font-semibold text-slate-500">{{ meses[m.mes] }}</div>
+            <div class="text-xs text-slate-400">Sin informe</div>
+          </div>
+          <button class="mt-4 text-sm border border-slate-300 bg-white hover:bg-emerald-50 hover:border-emerald-400 text-slate-700 rounded-md px-3 py-1.5">+ Crear informe</button>
+        </form>
+        {% endif %}
+      {% endfor %}
+    </div>
+  {% else %}
+    <div class="bg-white rounded-lg shadow-sm border border-dashed border-slate-300 p-10 text-center">
+      <p class="text-slate-600 font-medium">{{ 'Seleccione una empresa' if empresas else 'Registre su primera empresa' }}</p>
+      <p class="text-sm text-slate-500 mt-1">{{ 'Al elegirla verá aquí los informes PDB de cada mes.' if empresas else 'Use «Nueva empresa» a la izquierda para empezar.' }}</p>
+    </div>
+  {% endif %}
+  </section>
 </div>
 {% endblock %}
