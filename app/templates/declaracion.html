@@ -65,13 +65,13 @@
           <tr class="bg-emerald-800 text-white">
             <th class="px-2 py-1 w-8"></th>
             {% if b.extra is not none %}<th class="px-2 py-1 text-center font-semibold bg-sky-800">REF</th>{% endif %}
-            {% for cod, tit, fmt in b.columnas %}<th class="px-2 py-1 text-center font-semibold border-l border-emerald-700">{{ cod }}</th>{% endfor %}
+            {% for cod, tit, fmt in b.columnas %}<th class="px-2 py-1 text-center font-semibold border-l border-emerald-700">{{ cod }}</th>{% if b.clave == 'COMPRAS' and cod == 'A20' %}<th class="px-2 py-1 text-center font-semibold bg-sky-800 border-l border-emerald-700">TOTAL</th>{% endif %}{% endfor %}
             <th class="w-8"></th>
           </tr>
           <tr class="bg-emerald-100 text-emerald-900">
             <th class="px-2"></th>
             {% if b.extra is not none %}<th class="px-2 py-1 font-medium align-bottom bg-sky-100 text-sky-900 min-w-[11rem]">DAM REGULARIZADA<br><span class="font-normal">(seguimiento)</span></th>{% endif %}
-            {% for cod, tit, fmt in b.columnas %}<th class="px-2 py-1 font-medium border-l border-emerald-200 min-w-[7rem] max-w-[11rem] align-bottom">{{ tit }}</th>{% endfor %}
+            {% for cod, tit, fmt in b.columnas %}<th class="px-2 py-1 font-medium border-l border-emerald-200 min-w-[7rem] max-w-[11rem] align-bottom">{{ tit }}</th>{% if b.clave == 'COMPRAS' and cod == 'A20' %}<th class="px-2 py-1 font-medium align-bottom bg-sky-100 text-sky-900 min-w-[7rem]">MONTO TOTAL<br><span class="font-normal">(solo visualizar)</span></th>{% endif %}{% endfor %}
             <th></th>
           </tr>
         </thead>
@@ -126,6 +126,7 @@
   </td>
   {% endif %}
   {% for cod, tit, fmt in cols %}
+  {% if cod == 'A21' and cols|length == 30 %}<td class="px-2 text-right bg-sky-50 font-medium select-text whitespace-nowrap" data-total></td>{% endif %}
   <td class="p-0 border-l border-slate-100 {{ 'bg-slate-50' if cod == 'REF' else ('bg-sky-50' if cod == 'FAC') }}"><input readonly {{ 'data-calc' if cod == 'REF' }} data-cod="{{ cod }}" {% set v = fila[loop.index0] if fila and loop.index0 < fila|length else '' %}{% set dec = 2 if fmt in ('0.00', '0.00*') else (3 if fmt == '0.000' else 0) %}{% if dec %}data-dec="{{ dec }}" {% endif %}value="{{ v|miles(dec) if dec else v }}"
       class="w-full min-w-[7rem] px-2 py-1 bg-transparent focus:bg-white focus:outline focus:outline-2 focus:outline-emerald-500 {{ 'text-right' if fmt in ('0.00','0.00*','0.000') else '' }}"></td>
   {% endfor %}
@@ -305,6 +306,15 @@ async function enviarXml(ev, form) {
   window.location = resp.url;
   return false;
 }
+function recalcularTotal(tr) {
+  const t = tr.querySelector('[data-total]'); if (!t) return;
+  let sum = 0;
+  ['A17', 'A18', 'A19', 'A20'].forEach(c => { const i = tr.querySelector('input[data-cod="' + c + '"]'); if (i) sum += parseFloat(i.value.replace(/,/g, '')) || 0; });
+  t.textContent = sum.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+}
+function recalcularTotales(raiz) { (raiz || document).querySelectorAll('tbody tr').forEach(recalcularTotal); }
+document.addEventListener('input', e => { const tr = e.target.closest && e.target.closest('tr'); if (tr) recalcularTotal(tr); });
+document.addEventListener('DOMContentLoaded', () => recalcularTotales());
 function filtrarIgv(sel) {
   const sec = sel.closest('section'), solo = sel.value === 'solo';
   let ocultas = 0;
