@@ -144,7 +144,7 @@ def _fila_venta(decl: Declaracion, c: dict, avisos: list[str]) -> list[str]:
         doc_cli, c["razon_social_receptor"],         # C8, C9
         "", "", "", "",                              # C10-C13
         "2" if usd else "1",                         # C14
-        "", "",                                      # C15-C16
+        "1" if (not es_export and igv > 0) else "2", "1",   # C15-C16: 1 gravada con IGV · 2 no gravada (incl. exportación)
         _num(base), _num(isc), _num(igv), _num(otros),   # C17-C20
         "", "", "", "",                              # C21-C24
         rt, rs, rn, "", "", "",                      # C25-C30
@@ -167,7 +167,7 @@ def _fila_compra(decl: Declaracion, c: dict, avisos: list[str]) -> list[str]:
         c["ruc_emisor"], c["razon_social_emisor"],   # A8, A9
         "", "", "", "",                              # A10-A13
         "2" if c["moneda"] != "PEN" else "1",        # A14
-        "", "",                                      # A15-A16
+        "1" if c["igv"] > 0 else "4", "1",           # A15-A16: 1 gravada→operaciones gravadas · 4 no gravada
         _num(base), _num(conv(c["isc"])), _num(conv(c["igv"])), _num(otros),   # A17-A20
         "1" if c["tiene_detraccion"] else "",        # A21
         "", "", "",                                  # A22-A24

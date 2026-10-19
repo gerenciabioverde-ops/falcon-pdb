@@ -241,6 +241,11 @@ def validar(decl: Declaracion) -> list[dict]:
             if celdas[0] == "2" and (serie, num) not in en_dam and decl.cdps:
                 avi(f"Exportación {serie}-{num} de VENTAS no figura en las DUAS (bloque E).")
 
+    for f in decl.filas:
+        if f.hoja == "COMPRAS" and len(f.celdas) > 23 and f.celdas[20].strip() == "1":
+            if not f.celdas[21].strip() or not f.celdas[22].strip():
+                avi(f"Compra {f.celdas[3]}-{f.celdas[4]} con detracción: falta el código de la tasa (A22) o la constancia (A23).")
+
     hojas = {f.hoja for f in decl.filas}
     for hoja in ("VENTAS", "COMPRAS"):
         if hoja not in hojas:
