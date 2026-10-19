@@ -3,6 +3,16 @@
 <section class="bg-white rounded shadow mt-3" data-grilla="{{ b.clave }}">
   <div class="flex flex-wrap items-center justify-between gap-2 px-4 py-2 border-b">
     <h2 class="font-semibold text-sm">{{ b.titulo }} <span class="text-slate-500 font-normal">· {{ b.filas|length }} fila(s)</span></h2>
+    {% if b.clave == 'COMPRAS' %}
+    <div class="flex items-center gap-2 text-sm" title="Solo cambia lo que se muestra; no modifica ni quita filas al guardar.">
+      <span class="text-slate-600">Mostrar:</span>
+      <select class="sel-igv border border-slate-300 rounded px-2 py-1 bg-white" onchange="filtrarIgv(this)">
+        <option value="todo">Todo (con IGV + sin IGV)</option>
+        <option value="solo">Solo con IGV</option>
+      </select>
+      <span class="text-xs text-slate-500" data-igv-n></span>
+    </div>
+    {% endif %}
     <label class="flex items-center gap-1.5 text-sm cursor-pointer select-none rounded border border-slate-300 px-3 py-1 hover:bg-slate-50" title="Las grillas están protegidas: marque «Editar» para modificar, agregar o quitar filas.">
       <input type="checkbox" class="chk-editar" onchange="alternarEdicion(this)"> ✎ Editar</label>
   </div>
@@ -249,6 +259,25 @@ async function enviarXml(ev, form) {
   window.location = resp.url;
   return false;
 }
+function filtrarIgv(sel) {
+  const sec = sel.closest('section'), solo = sel.value === 'solo';
+  let ocultas = 0;
+  sec.querySelectorAll('tbody tr').forEach(tr => {
+    const i = tr.querySelector('input[data-cod="A19"]');
+    const igv = i ? parseFloat(i.value.replace(/,/g, '')) || 0 : 0;
+    const ocultar = solo && !(igv > 0);
+    tr.style.display = ocultar ? 'none' : '';
+    if (ocultar) ocultas++;
+  });
+  sec.querySelector('[data-igv-n]').textContent = solo ? ocultas + ' fila(s) sin IGV ocultas' : '';
+  try { localStorage.setItem('pdb_igv', sel.value); } catch (e) {}
+}
+document.addEventListener('DOMContentLoaded', () => {
+  const sel = document.querySelector('.sel-igv');
+  if (!sel) return;
+  try { sel.value = localStorage.getItem('pdb_igv') || 'todo'; } catch (e) {}
+  filtrarIgv(sel);
+});
 function sinMiles(i) { i.value = i.value.replace(/,/g, ''); }
 function conMiles(i) {
   const v = i.value.replace(/,/g, '').trim();
