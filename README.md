@@ -31,4 +31,6 @@ pip install -r requirements.txt
 python seed.py                      # crea la BD y el usuario admin / admin123
 uvicorn app.main:app --reload       # http://localhost:8000
 ```
+En producción con PostgreSQL use `pip install -r requirements-prod.txt` (agrega `psycopg2-binary`; en local con SQLite no hace falta).
+
 Variables (`.env`): `DATABASE_URL` (SQLite por defecto; Postgres en producción), `JWT_SECRET_KEY` (definir una larga en producción).
