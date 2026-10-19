@@ -305,7 +305,11 @@ def cargar_ventas_xml(db, decl, archivos):
 
 
 def cargar_compras_xml(db, decl, archivos):
-    return _cargar_xmls(db, decl, archivos, "COMPRAS", "receptor")
+    from app.services.detracciones import aplicar_a_compras      # constancias ya cargadas rellenan A21-A23
+    r = _cargar_xmls(db, decl, archivos, "COMPRAS", "receptor")
+    db.flush()
+    aplicar_a_compras(db, decl.empresa)
+    return r
 
 
 # ------------------------------------------------------------------ Forma de pago (desde compras)

@@ -120,3 +120,23 @@ class Ajuste(Base):
     __tablename__ = "ajustes"
     clave: Mapped[str] = mapped_column(String(60), primary_key=True)
     valor: Mapped[str] = mapped_column(String(200), default="")
+
+
+class Detraccion(Base):
+    """Constancia de depósito de detracción (HTML de SUNAT). Es de la empresa, no de un período:
+    se enlaza a la compra por proveedor + comprobante, sea cual sea el período de la declaración."""
+    __tablename__ = "detracciones"
+    __table_args__ = (UniqueConstraint("empresa_id", "constancia", name="uq_detraccion_constancia"),)
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    empresa_id: Mapped[int] = mapped_column(ForeignKey("empresas.id", ondelete="CASCADE"), index=True)
+    constancia: Mapped[str] = mapped_column(String(20), nullable=False)
+    ruc_proveedor: Mapped[str] = mapped_column(String(11), default="")
+    proveedor: Mapped[str] = mapped_column(String(200), default="")
+    tipo_comprobante: Mapped[str] = mapped_column(String(2), default="")
+    serie: Mapped[str] = mapped_column(String(10), default="")
+    numero: Mapped[str] = mapped_column(String(20), default="")
+    bien_servicio: Mapped[str] = mapped_column(String(3), default="")
+    monto: Mapped[Decimal] = mapped_column(Numeric(14, 2), default=0)
+    fecha_pago: Mapped[date | None] = mapped_column(Date, nullable=True)
+    periodo_tributario: Mapped[str] = mapped_column(String(6), default="")
+    nro_operacion: Mapped[str] = mapped_column(String(20), default="")

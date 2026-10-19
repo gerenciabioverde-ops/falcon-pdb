@@ -201,6 +201,47 @@
     {% endfor %}
   </div>
   {% endif %}
+  {% if sub_sel == 'DETRACCIONES' %}
+  <section class="bg-white rounded shadow mt-3">
+    <div class="px-4 py-2 border-b"><h2 class="font-semibold text-sm">Constancias de detracción <span class="text-slate-500 font-normal">· {{ detracciones|length }} constancia(s) · de la empresa, sin importar el período</span></h2></div>
+    <div class="flex flex-wrap items-center gap-x-5 gap-y-2 px-4 py-2 bg-emerald-50 border-b text-sm">
+      <form method="post" action="/declaraciones/{{ decl.id }}/detracciones" enctype="multipart/form-data" class="flex flex-wrap items-center gap-2"
+            title="Suba el HTML «Constancia de depósito» de SUNAT. Se enlaza por proveedor + comprobante y rellena A21 (indicador), A22 (código de tasa) y A23 (N° de constancia) en COMPRAS, de cualquier período.">
+        <input type="file" name="archivos" accept=".html,.htm" multiple required class="text-xs w-64">
+        <button class="bg-emerald-700 text-white rounded px-3 py-1 whitespace-nowrap">Leer constancias HTML</button>
+      </form>
+      <form method="post" action="/declaraciones/{{ decl.id }}/detracciones/aplicar">
+        <button class="border border-emerald-700 text-emerald-800 rounded px-3 py-1 hover:bg-emerald-100 whitespace-nowrap" title="Vuelve a rellenar las compras con las constancias guardadas.">Aplicar a las compras</button>
+      </form>
+    </div>
+    <div class="overflow-auto max-h-[28rem]">
+      <table class="text-xs border-collapse w-full">
+        <thead class="sticky top-0"><tr class="bg-emerald-100 text-emerald-900">
+          {% for t in ['N° constancia','Fecha de pago','Período','RUC proveedor','Proveedor','Comprobante','Bien/servicio','Monto S/','N° operación','En compras',''] %}<th class="px-2 py-1 text-left font-medium">{{ t }}</th>{% endfor %}
+        </tr></thead>
+        <tbody>
+        {% for d in detracciones %}
+          <tr class="border-t hover:bg-amber-50">
+            <td class="px-2 py-1">{{ d.constancia }}</td>
+            <td class="px-2">{{ d.fecha_pago.strftime('%d/%m/%Y') if d.fecha_pago }}</td>
+            <td class="px-2">{{ d.periodo_tributario }}</td>
+            <td class="px-2">{{ d.ruc_proveedor }}</td>
+            <td class="px-2">{{ d.proveedor }}</td>
+            <td class="px-2 whitespace-nowrap">{{ d.tipo_comprobante }} · {{ d.serie }}-{{ d.numero|int }}</td>
+            <td class="px-2">{{ d.bien_servicio }}</td>
+            <td class="px-2 text-right">{{ d.monto|miles(2) }}</td>
+            <td class="px-2">{{ d.nro_operacion }}</td>
+            <td class="px-2">{% if d.constancia in ligadas %}<span class="text-green-700">✔ enlazada</span>{% else %}<span class="text-amber-600">⏳ sin compra</span>{% endif %}</td>
+            <td class="px-2"><form method="post" action="/declaraciones/{{ decl.id }}/detracciones/{{ d.id }}/eliminar" onsubmit="return confirm('¿Quitar esta constancia?')"><button class="text-slate-300 hover:text-red-600" title="Quitar">✕</button></form></td>
+          </tr>
+        {% else %}
+          <tr><td colspan="11" class="px-4 py-6 text-center text-slate-400">Aún no hay constancias. Suba los HTML de «Constancia de depósito» de SUNAT.</td></tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </section>
+  {% endif %}
   {% for b in bloques %}{{ grilla(b) }}{% endfor %}
   {% if pestana.clave == 'duas' and n_errores %}
   <section class="bg-white rounded shadow p-4 mt-3">

@@ -16,7 +16,9 @@ from app.core.security import crear_token, verify_password
 from app.database import get_db
 from app.hojas import (ARCHIVO_BLOQUE, TITULO_SUB, BLOQUES_TABULARES, COLUMNAS_TODAS, PESTANA, PESTANAS,
                        TITULOS_BLOQUE)
-from app.models import ESTADOS, Declaracion, Empresa, Usuario
+from sqlalchemy import select
+from app.models import ESTADOS, Declaracion, Detraccion, Empresa, Usuario
+from app.services import detracciones as detr
 from app.services import archivos_sunat as arch
 from app.services import cargas
 from app.services import pdb as svc
@@ -162,6 +164,14 @@ def ver_declaracion(request: Request, decl_id: int, db: Db, usuario: User, hoja:
         sub_sel = sub if sub in claves else claves[0]
         subs = [{"clave": b, "titulo": TITULO_SUB.get(b, t), "n": len(svc.filas_bloque(decl, b))} for b, t in pestana["bloques"]]
         visibles = [(b, t) for b, t in pestana["bloques"] if b == sub_sel]
+    detracciones, ligadas = [], set()
+    if pestana["clave"] == "compras":                   # 3.ª sub-pestaña: constancias de detracción (HTML SUNAT)
+        detracciones = list(db.scalars(select(Detraccion).where(Detraccion.empresa_id == decl.empresa_id)
+                                       .order_by(Detraccion.fecha_pago.desc(), Detraccion.id.desc())))
+        ligadas = detr.enlazadas(db, decl.empresa)
+        subs.append({"clave": "DETRACCIONES", "titulo": "Detracciones", "n": len(detracciones)})
+        if sub == "DETRACCIONES":
+            sub_sel, visibles = "DETRACCIONES", []
     bloques = [{"clave": b, "titulo": t, "columnas": COLUMNAS_TODAS[b], "filas": svc.filas_bloque(decl, b, tc_sel)}
                for b, t in visibles]
     for b in bloques:
@@ -177,6 +187,7 @@ def ver_declaracion(request: Request, decl_id: int, db: Db, usuario: User, hoja:
                    pestanas=PESTANAS, cuentas=cuentas, bloques=bloques, hallazgos=hallazgos,
                    n_errores=sum(h["nivel"] == "error" for h in hallazgos), archivos=archivos,
                    archivo_bloque=ARCHIVO_BLOQUE, tc_sel=tc_sel, subs=subs, sub_sel=sub_sel,
+                   detracciones=detracciones, ligadas=ligadas,
                    tc_meses=svc.meses_tc(db) if pestana["clave"] == "tc" else [],
                    ayuda={c[0]: AYUDA[c[0]] for b in bloques for c in b["columnas"] if c[0] in AYUDA})
 
@@ -200,6 +211,39 @@ def guardar_bloque(decl_id: int, bloque: str, db: Db, usuario: User, hoja: Annot
         db.rollback()
         msg = f"Error: {e}"
     return _volver(decl_id, hoja, msg, mes, sub)
+
+
+@router.post("/declaraciones/{decl_id}/detracciones")
+async def subir_detracciones(decl_id: int, request: Request, db: Db, usuario: User):
+    decl = _decl(db, decl_id)
+    form = await request.form(max_files=2000, max_fields=2000)
+    subidos = [(a.filename, await a.read()) for a in form.getlist("archivos") if getattr(a, "filename", None)]
+    if not subidos:
+        return _volver(decl_id, "compras", "Error: seleccione al menos una constancia HTML.", "", "DETRACCIONES")
+    n, avisos = detr.cargar_constancias(db, decl.empresa, subidos)
+    aplicadas = detr.aplicar_a_compras(db, decl.empresa)
+    db.commit()
+    msg = (f"Constancias cargadas: {n}. Compras actualizadas: {aplicadas} (en todos los períodos)."
+           + (f" Avisos ({len(avisos)}): " + " · ".join(avisos[:3]) if avisos else ""))
+    return _volver(decl_id, "compras", msg if n else "Error: " + " · ".join(avisos[:3]), "", "DETRACCIONES")
+
+
+@router.post("/declaraciones/{decl_id}/detracciones/aplicar")
+def aplicar_detracciones(decl_id: int, db: Db, usuario: User):
+    decl = _decl(db, decl_id)
+    n = detr.aplicar_a_compras(db, decl.empresa)
+    db.commit()
+    return _volver(decl_id, "compras", f"Compras actualizadas con su detracción: {n} (todos los períodos).", "", "DETRACCIONES")
+
+
+@router.post("/declaraciones/{decl_id}/detracciones/{det_id}/eliminar")
+def eliminar_detraccion(decl_id: int, det_id: int, db: Db, usuario: User):
+    decl = _decl(db, decl_id)
+    d = db.get(Detraccion, det_id)
+    if d and d.empresa_id == decl.empresa_id:
+        db.delete(d)
+        db.commit()
+    return _volver(decl_id, "compras", "Constancia eliminada (las compras ya rellenadas conservan sus datos).", "", "DETRACCIONES")
 
 
 @router.post("/declaraciones/{decl_id}/importar-duas")
