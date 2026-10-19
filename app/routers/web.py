@@ -1,8 +1,9 @@
 """Rutas HTTP de Falcon PDB: login, empresas, declaraciones por período."""
+import json
 from datetime import date
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, File, Form, Request, UploadFile
+from fastapi import APIRouter, Depends, File, Form, HTTPException, Request, UploadFile
 from fastapi.responses import HTMLResponse, RedirectResponse, Response
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
@@ -10,7 +11,9 @@ from sqlalchemy.orm import Session
 from app.core.deps import get_current_user
 from app.core.security import crear_token, verify_password
 from app.database import get_db
-from app.models import ESTADOS, HOJAS_TABULARES, Declaracion, Empresa, Usuario
+from app.hojas import (ARCHIVO_BLOQUE, BLOQUES_TABULARES, COLUMNAS_TODAS, PESTANA, PESTANAS,
+                       TITULOS_BLOQUE)
+from app.models import ESTADOS, Declaracion, Empresa, Usuario
 from app.services import archivos_sunat as arch
 from app.services import pdb as svc
 
@@ -30,7 +33,6 @@ def _render(request: Request, nombre: str, **ctx):
 def _decl(db: Session, decl_id: int) -> Declaracion:
     decl = db.get(Declaracion, decl_id)
     if not decl:
-        from fastapi import HTTPException
         raise HTTPException(404, "Declaración no encontrada")
     return decl
 
@@ -91,13 +93,40 @@ def crear_declaracion(db: Db, usuario: User, empresa_id: Annotated[int, Form()],
     return RedirectResponse(f"/declaraciones/{decl.id}", status_code=303)
 
 
+def _volver(decl_id: int, hoja: str, msg: str = "") -> RedirectResponse:
+    return RedirectResponse(f"/declaraciones/{decl_id}?hoja={hoja}" + (f"&msg={msg}" if msg else ""),
+                            status_code=303)
+
+
 @router.get("/declaraciones/{decl_id}", response_class=HTMLResponse)
-def ver_declaracion(request: Request, decl_id: int, db: Db, usuario: User, msg: str = ""):
+def ver_declaracion(request: Request, decl_id: int, db: Db, usuario: User, hoja: str = "resumen", msg: str = ""):
     decl = _decl(db, decl_id)
-    hojas = {h: [f.celdas for f in decl.filas if f.hoja == h] for h in HOJAS_TABULARES}
-    return _render(request, "declaracion.html", usuario=usuario, decl=decl, msg=msg,
-                   hallazgos=svc.validar(decl), archivos=arch.archivos(decl), hojas=hojas, hojas_nombres=HOJAS_TABULARES,
-                   dua_headers=svc.PDB_DUA_HEADERS, cdp_headers=svc.PDB_CDP_HEADERS)
+    pestana = PESTANA.get(hoja) or PESTANA["resumen"]
+    hallazgos = svc.validar(decl)
+    cuentas = {p["clave"]: sum(len(svc.filas_bloque(decl, b)) for b, _ in p["bloques"]) for p in PESTANAS}
+    bloques = [{"clave": b, "titulo": t, "columnas": COLUMNAS_TODAS[b], "filas": svc.filas_bloque(decl, b)}
+               for b, t in pestana["bloques"]]
+    return _render(request, "declaracion.html", usuario=usuario, decl=decl, msg=msg, pestana=pestana,
+                   pestanas=PESTANAS, cuentas=cuentas, bloques=bloques, hallazgos=hallazgos,
+                   n_errores=sum(h["nivel"] == "error" for h in hallazgos), archivos=arch.archivos(decl),
+                   archivo_bloque=ARCHIVO_BLOQUE)
+
+
+@router.post("/declaraciones/{decl_id}/bloque/{bloque}")
+def guardar_bloque(decl_id: int, bloque: str, db: Db, usuario: User, hoja: Annotated[str, Form()],
+                   datos: Annotated[str, Form()]):
+    decl = _decl(db, decl_id)
+    if bloque not in COLUMNAS_TODAS:
+        raise HTTPException(404, "Bloque desconocido")
+    try:
+        filas = json.loads(datos)
+        n = svc.guardar_grilla(db, decl, bloque, filas)
+        db.commit()
+        msg = f"Guardado: {n} fila(s)."
+    except (ValueError, TypeError) as e:
+        db.rollback()
+        msg = f"Error: {e}"
+    return _volver(decl_id, hoja, msg)
 
 
 @router.post("/declaraciones/{decl_id}/importar-duas")
@@ -110,23 +139,23 @@ async def importar_duas(decl_id: int, db: Db, usuario: User, archivo: Annotated[
     except ValueError as e:
         db.rollback()
         msg = f"Error: {e}"
-    return RedirectResponse(f"/declaraciones/{decl_id}?msg={msg}", status_code=303)
+    return _volver(decl_id, "duas", msg)
 
 
 @router.post("/declaraciones/{decl_id}/importar-hoja")
 async def importar_hoja(decl_id: int, db: Db, usuario: User, hoja: Annotated[str, Form()],
-                        archivo: Annotated[UploadFile, File()]):
+                        pestana: Annotated[str, Form()], archivo: Annotated[UploadFile, File()]):
     decl = _decl(db, decl_id)
-    if hoja not in HOJAS_TABULARES:
-        return RedirectResponse(f"/declaraciones/{decl_id}?msg=Hoja desconocida", status_code=303)
+    if hoja not in BLOQUES_TABULARES:
+        return _volver(decl_id, pestana, "Error: hoja desconocida")
     try:
         n = svc.importar_hoja_csv(db, decl, hoja, await archivo.read())
         db.commit()
-        msg = f"Hoja {hoja}: {n} fila(s) importadas."
+        msg = f"{TITULOS_BLOQUE[hoja]}: {n} fila(s) importadas."
     except ValueError as e:
         db.rollback()
         msg = f"Error: {e}"
-    return RedirectResponse(f"/declaraciones/{decl_id}?msg={msg}", status_code=303)
+    return _volver(decl_id, pestana, msg)
 
 
 @router.post("/declaraciones/{decl_id}/estado")
@@ -135,17 +164,15 @@ def cambiar_estado(decl_id: int, db: Db, usuario: User, estado: Annotated[str, F
                    observaciones: Annotated[str, Form()] = ""):
     decl = _decl(db, decl_id)
     if estado not in ESTADOS:
-        return RedirectResponse(f"/declaraciones/{decl_id}", status_code=303)
+        return _volver(decl_id, "resumen")
     if estado == "ENVIADO" and any(h["nivel"] == "error" for h in svc.validar(decl)):
-        return RedirectResponse(
-            f"/declaraciones/{decl_id}?msg=Error: corrija los errores de validación antes de marcar como enviado",
-            status_code=303)
+        return _volver(decl_id, "resumen", "Error: corrija los errores de validación antes de marcar como enviado")
     decl.estado = estado
     decl.fecha_envio = svc._fecha(fecha_envio) if (fecha_envio and estado == "ENVIADO") else None
     decl.nro_constancia = nro_constancia.strip() or None
     decl.observaciones = observaciones.strip() or None
     db.commit()
-    return RedirectResponse(f"/declaraciones/{decl_id}?msg=Estado actualizado", status_code=303)
+    return _volver(decl_id, "resumen", "Estado actualizado")
 
 
 @router.post("/declaraciones/{decl_id}/eliminar")
@@ -172,7 +199,6 @@ def archivo_sunat(decl_id: int, nombre: str, db: Db, usuario: User):
     d = _decl(db, decl_id)
     lineas = arch.archivos(d).get(nombre)
     if lineas is None:
-        from fastapi import HTTPException
         raise HTTPException(404, "Archivo sin datos")
     return Response(arch.contenido(lineas), media_type="text/plain; charset=windows-1252",
                     headers={"Content-Disposition": f'attachment; filename="{nombre}"'})
@@ -188,7 +214,6 @@ def exportar_duas(decl_id: int, db: Db, usuario: User):
 def exportar_hoja(decl_id: int, hoja: str, db: Db, usuario: User):
     d = _decl(db, decl_id)
     hoja = hoja.upper()
-    if hoja not in HOJAS_TABULARES:
-        from fastapi import HTTPException
+    if hoja not in BLOQUES_TABULARES:
         raise HTTPException(404, "Hoja desconocida")
     return _csv_resp(svc.hoja_a_csv(d, hoja), f"PDB_{hoja}_{d.empresa.ruc}_{d.periodo}.csv")

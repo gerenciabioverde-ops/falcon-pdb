@@ -1,27 +1,106 @@
 {% extends "base.html" %}
-{% block contenido %}
-<a href="/" class="text-sm text-blue-700">← Volver</a>
-<h1 class="text-2xl font-semibold mt-1">PDB {{ meses[decl.mes] }} {{ decl.anio }}
-  <span class="text-slate-500 text-base font-normal">{{ decl.empresa.razon_social }} · RUC {{ decl.empresa.ruc }}</span></h1>
-{% if msg %}<p class="mt-3 p-3 rounded {{ 'bg-red-100 text-red-800' if msg.startswith('Error') else 'bg-green-100 text-green-800' }}">{{ msg }}</p>{% endif %}
-
-<section class="bg-white rounded shadow p-4 mt-4">
-  <h2 class="font-semibold mb-2">Validación</h2>
-  {% for h in hallazgos %}
-    <p class="text-sm {{ 'text-red-700' if h.nivel == 'error' else 'text-amber-700' }}">{{ '✖' if h.nivel == 'error' else '▲' }} {{ h.texto }}</p>
-  {% else %}<p class="text-sm text-green-700">✔ Sin observaciones.</p>{% endfor %}
-</section>
-
-<section class="bg-white rounded shadow p-4 mt-4">
-  <div class="flex justify-between items-center mb-2">
-    <h2 class="font-semibold">Archivos para SUNAT (formato del aplicativo PDB)</h2>
-    {% if archivos %}<a class="text-sm text-blue-700" href="/declaraciones/{{ decl.id }}/archivos.zip">Descargar todos (ZIP)</a>{% endif %}
+{% macro grilla(b) %}
+<section class="bg-white rounded shadow mt-3" data-grilla="{{ b.clave }}">
+  <div class="flex flex-wrap items-center justify-between gap-2 px-4 py-2 border-b">
+    <h2 class="font-semibold text-sm">{{ b.titulo }} <span class="text-slate-500 font-normal">· {{ b.filas|length }} fila(s)</span></h2>
+    <div class="flex flex-wrap items-center gap-3 text-sm">
+      {% if b.clave == 'DUAS_D' %}
+      <form method="post" action="/declaraciones/{{ decl.id }}/importar-duas" enctype="multipart/form-data" class="flex items-center gap-1">
+        <input type="file" name="archivo" accept=".csv" required class="text-xs w-44">
+        <button class="border rounded px-2 py-1 hover:bg-slate-50">Importar CSV (DUAS)</button>
+      </form>
+      <a class="text-emerald-700" href="/declaraciones/{{ decl.id }}/exportar/duas.csv">Exportar CSV</a>
+      {% elif b.clave != 'DUAS_E' %}
+      <form method="post" action="/declaraciones/{{ decl.id }}/importar-hoja" enctype="multipart/form-data" class="flex items-center gap-1">
+        <input type="hidden" name="hoja" value="{{ b.clave }}"><input type="hidden" name="pestana" value="{{ pestana.clave }}">
+        <input type="file" name="archivo" accept=".csv" required class="text-xs w-44">
+        <button class="border rounded px-2 py-1 hover:bg-slate-50">Importar CSV</button>
+      </form>
+      <a class="text-emerald-700" href="/declaraciones/{{ decl.id }}/exportar/{{ b.clave }}.csv">Exportar CSV</a>
+      {% endif %}
+    </div>
   </div>
-  {% for nombre, lineas in archivos.items() %}
-    <p class="text-sm"><a class="text-blue-700 hover:underline" href="/declaraciones/{{ decl.id }}/archivos/{{ nombre }}">{{ nombre }}</a> <span class="text-slate-500">· {{ lineas|length }} línea(s)</span></p>
-  {% else %}<p class="text-sm text-slate-500">Aún no hay datos para generar archivos.</p>{% endfor %}
+  <form method="post" action="/declaraciones/{{ decl.id }}/bloque/{{ b.clave }}" onsubmit="return enviarGrilla(this)">
+    <input type="hidden" name="hoja" value="{{ pestana.clave }}">
+    <input type="hidden" name="datos" value="">
+    <div class="overflow-auto max-h-[28rem]">
+      <table class="text-xs border-collapse">
+        <thead class="sticky top-0 z-10">
+          <tr class="bg-emerald-800 text-white">
+            <th class="px-2 py-1 w-8"></th>
+            {% for cod, tit, fmt in b.columnas %}<th class="px-2 py-1 text-center font-semibold border-l border-emerald-700">{{ cod }}</th>{% endfor %}
+            <th class="w-8"></th>
+          </tr>
+          <tr class="bg-emerald-100 text-emerald-900">
+            <th class="px-2"></th>
+            {% for cod, tit, fmt in b.columnas %}<th class="px-2 py-1 font-medium border-l border-emerald-200 min-w-[7rem] max-w-[11rem] align-bottom">{{ tit }}</th>{% endfor %}
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for fila in b.filas %}{{ fila_html(b.columnas, fila, loop.index) }}{% endfor %}
+        </tbody>
+      </table>
+    </div>
+    <template>{{ fila_html(b.columnas, [], 0) }}</template>
+    <div class="flex items-center gap-2 px-4 py-2 border-t">
+      <button type="button" onclick="agregarFila(this)" class="text-sm border rounded px-3 py-1 hover:bg-slate-50">+ Agregar fila</button>
+      <button class="text-sm bg-emerald-700 text-white rounded px-4 py-1">Guardar {{ b.clave|replace('_',' ') }}</button>
+      <span class="text-xs text-slate-500">Fechas dd/mm/aaaa · se guarda toda la grilla.</span>
+    </div>
+  </form>
 </section>
+{% endmacro %}
+{% macro fila_html(cols, fila, n) %}
+<tr class="border-t hover:bg-amber-50">
+  <td class="px-2 text-slate-400 text-right select-none">{{ n if n else '' }}</td>
+  {% for cod, tit, fmt in cols %}
+  <td class="p-0 border-l border-slate-100"><input value="{{ fila[loop.index0] if fila and loop.index0 < fila|length else '' }}"
+      class="w-full min-w-[7rem] px-2 py-1 bg-transparent focus:bg-white focus:outline focus:outline-2 focus:outline-emerald-500 {{ 'text-right' if fmt in ('0.00','0.00*','0.000') else '' }}"></td>
+  {% endfor %}
+  <td class="px-1"><button type="button" onclick="this.closest('tr').remove()" class="text-slate-300 hover:text-red-600" title="Quitar fila">✕</button></td>
+</tr>
+{% endmacro %}
 
+{% block contenido %}
+<a href="/" class="text-sm text-blue-700">← Declaraciones</a>
+<div class="flex flex-wrap items-baseline justify-between gap-2 mt-1">
+  <h1 class="text-2xl font-semibold">PDB {{ meses[decl.mes] }} {{ decl.anio }}
+    <span class="text-slate-500 text-base font-normal">{{ decl.empresa.razon_social }} · RUC {{ decl.empresa.ruc }}</span></h1>
+  <span class="text-sm px-2 py-0.5 rounded {{ 'bg-green-100 text-green-800' if decl.estado == 'ENVIADO' else 'bg-amber-100 text-amber-800' }}">{{ estados[decl.estado] }}</span>
+</div>
+
+<nav class="mt-4 flex gap-1 overflow-x-auto border-b-2 border-emerald-800">
+  {% for p in pestanas %}
+  <a href="/declaraciones/{{ decl.id }}?hoja={{ p.clave }}"
+     class="whitespace-nowrap px-4 py-2 text-sm rounded-t {{ 'bg-emerald-800 text-white font-semibold' if p.clave == pestana.clave else 'bg-emerald-50 text-emerald-900 hover:bg-emerald-100' }}">
+    {{ p.nombre }}
+    {% if p.clave == 'resumen' and n_errores %}<span class="ml-1 text-xs bg-red-600 text-white rounded-full px-1.5">{{ n_errores }}</span>
+    {% elif cuentas[p.clave] %}<span class="ml-1 text-xs {{ 'bg-emerald-600 text-white' if p.clave != pestana.clave else 'bg-white text-emerald-800' }} rounded-full px-1.5">{{ cuentas[p.clave] }}</span>{% endif %}
+  </a>
+  {% endfor %}
+</nav>
+
+{% if msg %}<p class="mt-3 p-3 rounded text-sm {{ 'bg-red-100 text-red-800' if msg.startswith('Error') else 'bg-green-100 text-green-800' }}">{{ msg }}</p>{% endif %}
+
+{% if pestana.clave == 'resumen' %}
+<div class="grid md:grid-cols-2 gap-4 mt-3">
+  <section class="bg-white rounded shadow p-4">
+    <h2 class="font-semibold mb-2">Validación</h2>
+    {% for h in hallazgos %}
+      <p class="text-sm {{ 'text-red-700' if h.nivel == 'error' else 'text-amber-700' }}">{{ '✖' if h.nivel == 'error' else '▲' }} {{ h.texto }}</p>
+    {% else %}<p class="text-sm text-green-700">✔ Sin observaciones.</p>{% endfor %}
+  </section>
+  <section class="bg-white rounded shadow p-4">
+    <div class="flex justify-between items-center mb-2">
+      <h2 class="font-semibold">Archivos para SUNAT</h2>
+      {% if archivos %}<a class="text-sm text-emerald-700" href="/declaraciones/{{ decl.id }}/archivos.zip">Descargar todos (ZIP)</a>{% endif %}
+    </div>
+    {% for nombre, lineas in archivos.items() %}
+      <p class="text-sm"><a class="text-blue-700 hover:underline" href="/declaraciones/{{ decl.id }}/archivos/{{ nombre }}">{{ nombre }}</a> <span class="text-slate-500">· {{ lineas|length }} línea(s)</span></p>
+    {% else %}<p class="text-sm text-slate-500">Aún no hay datos para generar archivos.</p>{% endfor %}
+  </section>
+</div>
 <section class="bg-white rounded shadow p-4 mt-4">
   <h2 class="font-semibold mb-2">Estado de la declaración</h2>
   <form method="post" action="/declaraciones/{{ decl.id }}/estado" class="grid md:grid-cols-5 gap-2 text-sm items-end">
@@ -32,49 +111,31 @@
     <label>Fecha de envío <input name="fecha_envio" type="date" value="{{ decl.fecha_envio or '' }}" class="block w-full border rounded px-2 py-1"></label>
     <label>N° constancia <input name="nro_constancia" value="{{ decl.nro_constancia or '' }}" class="block w-full border rounded px-2 py-1"></label>
     <label>Observaciones <input name="observaciones" value="{{ decl.observaciones or '' }}" class="block w-full border rounded px-2 py-1"></label>
-    <button class="bg-slate-900 text-white rounded px-3 py-1">Guardar</button>
+    <button class="bg-emerald-700 text-white rounded px-3 py-1">Guardar</button>
+  </form>
+  <form method="post" action="/declaraciones/{{ decl.id }}/eliminar" class="mt-4" onsubmit="return confirm('¿Eliminar esta declaración y todos sus datos?')">
+    <button class="text-sm text-red-700">Eliminar declaración</button>
   </form>
 </section>
+{% else %}
+  {% for b in bloques %}{{ grilla(b) }}{% endfor %}
+  {% if pestana.clave == 'duas' and n_errores %}
+  <section class="bg-white rounded shadow p-4 mt-3">
+    {% for h in hallazgos if h.nivel == 'error' %}<p class="text-sm text-red-700">✖ {{ h.texto }}</p>{% endfor %}
+  </section>
+  {% endif %}
+{% endif %}
 
-<section class="bg-white rounded shadow p-4 mt-4">
-  <div class="flex justify-between items-center mb-2">
-    <h2 class="font-semibold">DUAS · bloque D ({{ decl.duas|length }}) y bloque E ({{ decl.cdps|length }})</h2>
-    <a class="text-sm text-blue-700" href="/declaraciones/{{ decl.id }}/exportar/duas.csv">Exportar CSV</a>
-  </div>
-  <form method="post" action="/declaraciones/{{ decl.id }}/importar-duas" enctype="multipart/form-data" class="flex gap-2 text-sm mb-3">
-    <input type="file" name="archivo" accept=".csv" required>
-    <button class="bg-slate-900 text-white rounded px-3 py-1">Importar CSV de Falcon Contable</button>
-  </form>
-  <div class="overflow-x-auto"><table class="w-full text-xs">
-    <thead class="bg-slate-100"><tr>{% for h in dua_headers %}<th class="text-left p-1">{{ h }}</th>{% endfor %}</tr></thead>
-    {% for d in decl.duas %}<tr class="border-t"><td class="p-1">{{ d.codigo_aduana }}</td><td>{{ d.anio_dua }}</td><td>{{ d.correlativo }}</td>
-      <td>{{ d.fecha_embarque.strftime('%d/%m/%Y') if d.fecha_embarque }}</td><td>{{ d.fecha_regularizacion.strftime('%d/%m/%Y') if d.fecha_regularizacion }}</td><td>{{ '%.2f'|format(d.fob_usd) }}</td></tr>{% endfor %}
-  </table></div>
-  <div class="overflow-x-auto mt-3"><table class="w-full text-xs">
-    <thead class="bg-slate-100"><tr>{% for h in cdp_headers %}<th class="text-left p-1">{{ h }}</th>{% endfor %}</tr></thead>
-    {% for c in decl.cdps %}<tr class="border-t"><td class="p-1">{{ c.periodo_cdp }}</td><td>{{ c.tipo_comprobante }}</td><td>{{ c.serie }}</td><td>{{ c.numero }}</td>
-      <td>{{ c.tipo_exportacion }}</td><td>{{ c.dua_key }}</td><td>{{ '%.2f'|format(c.fob_facturado) }}</td><td>{{ '%.2f'|format(c.fob_propietario) }}</td><td>{{ c.pct_participacion }}</td><td>{{ c.ruc_operador }}</td></tr>{% endfor %}
-  </table></div>
-</section>
-
-{% for clave, nombre in hojas_nombres.items() %}
-<section class="bg-white rounded shadow p-4 mt-4">
-  <div class="flex justify-between items-center mb-2">
-    <h2 class="font-semibold">{{ nombre }} ({{ hojas[clave]|length }} filas)</h2>
-    <a class="text-sm text-blue-700" href="/declaraciones/{{ decl.id }}/exportar/{{ clave }}.csv">Exportar CSV</a>
-  </div>
-  <form method="post" action="/declaraciones/{{ decl.id }}/importar-hoja" enctype="multipart/form-data" class="flex gap-2 text-sm">
-    <input type="hidden" name="hoja" value="{{ clave }}">
-    <input type="file" name="archivo" accept=".csv" required>
-    <button class="bg-slate-900 text-white rounded px-3 py-1">Importar CSV</button>
-  </form>
-  {% if hojas[clave] %}<div class="overflow-x-auto mt-2 max-h-64"><table class="text-xs">
-    {% for fila in hojas[clave][:50] %}<tr class="border-t">{% for c in fila %}<td class="p-1 whitespace-nowrap">{{ c }}</td>{% endfor %}</tr>{% endfor %}
-  </table></div>{% endif %}
-</section>
-{% endfor %}
-
-<form method="post" action="/declaraciones/{{ decl.id }}/eliminar" class="mt-6" onsubmit="return confirm('¿Eliminar esta declaración y todos sus datos?')">
-  <button class="text-sm text-red-700">Eliminar declaración</button>
-</form>
+<script>
+function agregarFila(btn) {
+  const f = btn.closest('form');
+  f.querySelector('tbody').insertAdjacentHTML('beforeend', f.querySelector('template').innerHTML);
+  f.querySelector('tbody tr:last-child input').focus();
+}
+function enviarGrilla(form) {
+  const filas = [...form.querySelectorAll('tbody tr')].map(tr => [...tr.querySelectorAll('input')].map(i => i.value));
+  form.querySelector('[name=datos]').value = JSON.stringify(filas);
+  return true;
+}
+</script>
 {% endblock %}

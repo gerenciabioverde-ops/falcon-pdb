@@ -10,7 +10,10 @@ App independiente (FastAPI + Jinja2 + HTMX) para preparar y llevar el control de
   `C{ruc}{AAAAMM}.txt` compras · `F…txt` formas de pago · `V…txt` ventas · `{ruc}{AAAAMM}.dua` DUAS bloque D · `.du1` bloque E · `{ruc}.tc` tipo de cambio. Descarga individual o ZIP.
 - También exporta los CSV (`;`, UTF-8 con BOM) de DUAS y de cada hoja.
 
-Las hojas COMPRAS (30 col. A1..A30), COMPRAS_PAGO (12 col.), VENTAS (30 col. C1..C30) y TC (fecha, compra, venta) se importan por CSV con encabezado. Las columnas extra (tipo de cambio automático, C31) se ignoran al generar.
+Las columnas y formatos de cada hoja salen de `app/hojas_cols.py` (extraído del libro). Los CSV de las hojas llevan encabezado (se omite al importar). Extensiones: `.swp`, `.ser`, `.hos`, `.t12` (EXP. DEF.), `.exp` (SIN DETALLE), `.pet` (TURISTAS).
+
+## Pantalla
+Una declaración se ve como el libro Excel: pestañas INICIO (validación, archivos, estado), TC, COMPRAS, VENTAS, DUAS, SWAP, SERVICIOS, HOSPEDAJE, SIN DETALLE, EXP. DEF. y TURISTAS. Cada pestaña es una grilla editable con los códigos y títulos de columna del libro (importar/exportar CSV, agregar/quitar filas, guardar).
 
 ## Uso local
 ```

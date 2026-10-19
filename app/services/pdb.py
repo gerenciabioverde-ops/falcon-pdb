@@ -11,6 +11,7 @@ from decimal import Decimal, InvalidOperation
 
 from sqlalchemy.orm import Session
 
+from app.hojas import COLUMNAS_TODAS
 from app.models import Cdp, Declaracion, Dua, HojaFila
 
 PDB_DUA_HEADERS = [
@@ -125,6 +126,63 @@ def importar_hoja_csv(db: Session, decl: Declaracion, hoja: str, contenido: byte
     for i, celdas in enumerate(filas[1:]):
         decl.filas.append(HojaFila(hoja=hoja, orden=i, celdas=celdas))
     return len(filas) - 1
+
+
+# ------------------------------------------------------------------ grillas (pestañas)
+
+def _txt_fecha(d) -> str:
+    return _ddmmyyyy(d)
+
+
+def filas_bloque(decl: Declaracion, bloque: str) -> list[list[str]]:
+    """Filas de un bloque como listas de texto, para mostrar/editar en la grilla."""
+    if bloque == "DUAS_D":
+        return [[d.codigo_aduana, d.anio_dua, d.correlativo, _txt_fecha(d.fecha_embarque),
+                 _txt_fecha(d.fecha_regularizacion), f"{d.fob_usd:.2f}"] for d in decl.duas]
+    if bloque == "DUAS_E":
+        return [[c.periodo_cdp, c.tipo_comprobante, c.serie, c.numero, c.tipo_exportacion, c.dua_key,
+                 f"{c.fob_facturado:.2f}", f"{c.fob_propietario:.2f}", f"{c.pct_participacion:.2f}",
+                 c.ruc_operador] for c in decl.cdps]
+    return [f.celdas for f in decl.filas if f.hoja == bloque]
+
+
+def guardar_grilla(db: Session, decl: Declaracion, bloque: str, filas: list[list[str]]) -> int:
+    """Reemplaza el contenido de un bloque con las filas de la grilla (filas vacías se omiten).
+    Lanza ValueError con el N° de fila si un dato no es válido."""
+    ncols = len(COLUMNAS_TODAS[bloque])
+    filas = [([str(c).strip() for c in f] + [""] * ncols)[:ncols] for f in filas if any(str(c).strip() for c in f)]
+    if bloque == "DUAS_D":
+        nuevas = []
+        for n, f in enumerate(filas, start=1):
+            try:
+                nuevas.append(Dua(codigo_aduana=f[0], anio_dua=f[1], correlativo=f[2],
+                                  fecha_embarque=_fecha(f[3]), fecha_regularizacion=_fecha(f[4]),
+                                  fob_usd=_dec(f[5])))
+            except ValueError as e:
+                raise ValueError(f"Fila {n}: {e}") from None
+        decl.duas.clear()
+        db.flush()
+        decl.duas.extend(nuevas)
+    elif bloque == "DUAS_E":
+        nuevas = []
+        for n, f in enumerate(filas, start=1):
+            try:
+                nuevas.append(Cdp(periodo_cdp=f[0], tipo_comprobante=f[1], serie=f[2], numero=f[3],
+                                  tipo_exportacion=f[4], dua_key=f[5], fob_facturado=_dec(f[6]),
+                                  fob_propietario=_dec(f[7]), pct_participacion=_dec(f[8]) or Decimal("100"),
+                                  ruc_operador=f[9]))
+            except ValueError as e:
+                raise ValueError(f"Fila {n}: {e}") from None
+        decl.cdps.clear()
+        db.flush()
+        decl.cdps.extend(nuevas)
+    else:
+        for f in [f for f in decl.filas if f.hoja == bloque]:
+            decl.filas.remove(f)
+        db.flush()
+        for i, celdas in enumerate(filas):
+            decl.filas.append(HojaFila(hoja=bloque, orden=i, celdas=celdas))
+    return len(filas)
 
 
 # ------------------------------------------------------------------ validación

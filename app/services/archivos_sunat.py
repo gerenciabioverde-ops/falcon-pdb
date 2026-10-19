@@ -13,30 +13,28 @@ import re
 import zipfile
 from decimal import ROUND_HALF_UP, Decimal
 
+from app.hojas import ARCHIVO_BLOQUE, COLUMNAS
 from app.models import Declaracion
 from app.services.pdb import _fecha
 
 F = "FECHA"   # dd/mm/yyyy
-# Formato por columna (fila 1 del libro). '*' = reglas especiales de DarFormato.
-FMT_COMPRAS = ["00", "00", F, "0000***", "0000000000", "00", "0", "00000000", "@", "@", "@", "@", "@",
-               "0", "0", "0", "0.00*", "0.00", "0.00", "0.00", "0**", "00000", "000000000000000", "0**",
-               "00", "0000", "000000", F, "0.00", "0.00"]
-FMT_PAGO = ["00", "00", "0000***", "0000000000", "00", "0", "00000000", "000", "00", "@", F, "0.00"]
-FMT_VENTAS = ["00", "00", F, "0000", "0000000000", "00", "0", "00000000", "@", "@", "@", "@", "@",
-              "0", "0", "0", "0.00", "0.00", "0.00", "0.00", "0**", "00", "0000", "0000000000",
-              "00", "0000", "000000", F, "0.00", "0.00"]
 FMT_DUA = ["000", "0000", "000000", F, F, "0.00"]
 FMT_DU1 = ["@", "00", "0000", "0000000000", "00", "0000000000000", "0.00", "0.00", "0.00", "@"]
-FMT_TC = [F, "0.000", "0.000"]
 
 _NUM = re.compile(r"^-?\d+(\.\d+)?$")
 
 
 def dar_formato(valor, fmt: str) -> str:
     """Equivalente a DarFormato() del libro."""
-    if fmt == F and hasattr(valor, "strftime"):
-        return valor.strftime("%d/%m/%Y")
+    if fmt in (F, "FECHA8") and hasattr(valor, "strftime"):
+        return valor.strftime("%d/%m/%Y" if fmt == F else "%Y%m%d")
     txt = "" if valor is None else str(valor).strip()
+    if fmt == "FECHA8":
+        try:
+            d = _fecha(txt)
+        except ValueError:
+            return txt
+        return d.strftime("%Y%m%d") if d else ""
     if fmt == F:
         try:
             d = _fecha(txt)
@@ -90,14 +88,10 @@ def lineas_cdps(decl: Declaracion) -> list[str]:
 def archivos(decl: Declaracion) -> dict[str, list[str]]:
     """{nombre_archivo: [líneas]} — solo los que tienen datos."""
     ruc, per = decl.empresa.ruc, decl.periodo
-    todo = {
-        f"C{ruc}{per}.txt": _filas_hoja(decl, "COMPRAS", FMT_COMPRAS),
-        f"F{ruc}{per}.txt": _filas_hoja(decl, "COMPRAS_PAGO", FMT_PAGO),
-        f"V{ruc}{per}.txt": _filas_hoja(decl, "VENTAS", FMT_VENTAS),
-        f"{ruc}{per}.dua": lineas_duas(decl),
-        f"{ruc}{per}.du1": lineas_cdps(decl),
-        f"{ruc}.tc": _filas_hoja(decl, "TC", FMT_TC),
-    }
+    todo = {f"{ruc}{per}.dua": lineas_duas(decl), f"{ruc}{per}.du1": lineas_cdps(decl)}
+    for bloque, (pref, ext, con_per) in ARCHIVO_BLOQUE.items():
+        nombre = f"{pref}{ruc}{per if con_per else ''}{ext}"
+        todo[nombre] = _filas_hoja(decl, bloque, [c[2] for c in COLUMNAS[bloque]])
     return {n: l for n, l in todo.items() if l}
 
 
