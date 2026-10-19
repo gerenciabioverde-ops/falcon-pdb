@@ -4,45 +4,37 @@
   <div class="flex flex-wrap items-center justify-between gap-2 px-4 py-2 border-b">
     <h2 class="font-semibold text-sm">{{ b.titulo }} <span class="text-slate-500 font-normal">· {{ b.filas|length }} fila(s)</span></h2>
   </div>
-  {% set carga = {'TC': ('tc', '.pdf', 'PDF de tipo de cambio de SUNAT', false), 'HISTORIAL_TC': ('historial', '.pdf', 'PDF de tipo de cambio de SUNAT (cualquier mes)', true), 'VENTAS': ('ventas', '.xml', 'XML de comprobantes emitidos', true),
-                  'COMPRAS': ('compras', '.xml', 'XML de comprobantes recibidos', true), 'DUAS_D': ('duas', '.pdf', 'PDF de la DAM (uno o varios)', true)}.get(b.clave) %}
-  {% if carga %}
-  <form method="post" action="/declaraciones/{{ decl.id }}/cargar/{{ carga[0] }}" enctype="multipart/form-data"
-        class="flex flex-wrap items-center gap-2 px-4 py-2 bg-emerald-50 border-b text-sm">
-    <span class="font-medium text-emerald-900">Cargar automático:</span>
-    <input type="file" name="archivos" accept="{{ carga[1] }}" {{ 'multiple' if carga[3] }} required class="text-xs">
-    <button class="bg-emerald-700 text-white rounded px-3 py-1">Leer {{ carga[2] }}</button>
-    {% if carga[0] == 'historial' %}<span class="text-xs text-slate-500">Agrega o actualiza los días en el historial (el mes se lee del PDF).</span>
-    {% elif carga[0] in ('ventas', 'compras') %}<span class="text-xs text-slate-500">Agrega o reemplaza por tipo·serie·número; el resto de filas se conserva.</span>
-    {% elif carga[0] == 'duas' %}<span class="text-xs text-slate-500">Llena los bloques D y E de cada DAM (reemplaza la misma DUA si ya estaba).</span>
-    {% else %}<span class="text-xs text-slate-500">Reemplaza el tipo de cambio del mes.</span>{% endif %}
-  </form>
-  {% if b.clave == 'TC' %}
-  <div class="flex flex-wrap items-center gap-3 px-4 py-2 bg-emerald-50 border-b text-sm">
-    <span class="font-medium text-emerald-900">Desde el historial:</span>
-    <form method="post" action="/declaraciones/{{ decl.id }}/cargar/tc_historial"><button class="bg-emerald-700 text-white rounded px-3 py-1">Traer los días de {{ meses[decl.mes] }} {{ decl.anio }}</button></form>
-    <span class="text-xs text-slate-500">Todo TC que cargue o guarde aquí también queda en HISTORIAL_TC.</span>
-  </div>
-  {% endif %}
-  {% elif b.clave == 'COMPRAS_PAGO' %}
-  <div class="flex flex-wrap items-center gap-3 px-4 py-2 bg-emerald-50 border-b text-sm">
-    <span class="font-medium text-emerald-900">Cargar automático:</span>
-    <form method="post" action="/declaraciones/{{ decl.id }}/cargar/pagos"><button class="bg-emerald-700 text-white rounded px-3 py-1">Generar desde las compras</button></form>
-    <span class="text-xs text-slate-500">Opción 1 · usa la fecha de emisión y el monto del comprobante; conserva lo que ya escribió.</span>
-  </div>
-  <form method="post" action="/declaraciones/{{ decl.id }}/cargar/pagos_bancos" enctype="multipart/form-data"
-        class="flex flex-wrap items-center gap-2 px-4 py-2 bg-emerald-50 border-b text-sm">
-    <span class="font-medium text-emerald-900">Opción 2:</span>
-    <input type="file" name="archivos" accept=".xls,.xlsx,.html" multiple required class="text-xs">
-    <button class="bg-emerald-700 text-white rounded px-3 py-1">Buscar pagos en libros de bancos</button>
-    <span class="text-xs text-slate-500">Suba el libro de cada cuenta (MN y ME). Una fila por pago: medio, banco, N° de operación y fecha reales.</span>
-  </form>
-  {% endif %}
-  {% if archivo_de.get(b.clave) %}
-  <div class="flex flex-wrap items-center gap-2 px-4 py-2 bg-amber-50 border-b text-sm">
-    <span class="font-medium text-amber-900">Archivo para SUNAT (PDT/PDB):</span>
-    <a class="bg-amber-600 text-white rounded px-3 py-1 hover:bg-amber-700" href="/declaraciones/{{ decl.id }}/archivos/{{ archivo_de[b.clave] }}">⬇ Descargar {{ archivo_de[b.clave] }}</a>
-    <span class="text-xs text-slate-500">Se genera con lo último guardado en esta grilla.</span>
+  {% set carga = {'TC': ('tc', '.pdf', 'PDF de SUNAT', false, 'Reemplaza el tipo de cambio del mes y lo registra en HISTORIAL_TC.'),
+                  'HISTORIAL_TC': ('historial', '.pdf', 'PDF de SUNAT', true, 'Agrega o actualiza los días en el historial (el mes se lee del PDF).'),
+                  'VENTAS': ('ventas', '.xml', 'XML de ventas', true, 'Agrega o reemplaza por tipo·serie·número; el resto de filas se conserva.'),
+                  'COMPRAS': ('compras', '.xml', 'XML de compras', true, 'Agrega o reemplaza por tipo·serie·número; el resto de filas se conserva.'),
+                  'DUAS_D': ('duas', '.pdf', 'PDF de DAM', true, 'Llena los bloques D y E de cada DAM (reemplaza la misma DUA si ya estaba).')}.get(b.clave) %}
+  {% if carga or b.clave == 'COMPRAS_PAGO' or archivo_de.get(b.clave) %}
+  <div class="flex flex-wrap items-center gap-x-5 gap-y-2 px-4 py-2 bg-emerald-50 border-b text-sm">
+    {% if carga %}
+    <form method="post" action="/declaraciones/{{ decl.id }}/cargar/{{ carga[0] }}" enctype="multipart/form-data" class="flex items-center gap-2" title="{{ carga[4] }}">
+      <input type="file" name="archivos" accept="{{ carga[1] }}" {{ 'multiple' if carga[3] }} required class="text-xs w-52">
+      <button class="bg-emerald-700 text-white rounded px-3 py-1 whitespace-nowrap">Leer {{ carga[2] }}</button>
+    </form>
+    {% if b.clave == 'TC' %}
+    <form method="post" action="/declaraciones/{{ decl.id }}/cargar/tc_historial" title="Copia a este período los días que ya están en HISTORIAL_TC.">
+      <button class="border border-emerald-700 text-emerald-800 rounded px-3 py-1 whitespace-nowrap hover:bg-emerald-100">Traer del historial ({{ meses[decl.mes] }} {{ decl.anio }})</button>
+    </form>
+    {% endif %}
+    {% elif b.clave == 'COMPRAS_PAGO' %}
+    <form method="post" action="/declaraciones/{{ decl.id }}/cargar/pagos" title="Opción 1 · usa la fecha de emisión y el monto del comprobante; conserva lo que ya escribió.">
+      <button class="bg-emerald-700 text-white rounded px-3 py-1 whitespace-nowrap">Generar desde las compras</button>
+    </form>
+    <form method="post" action="/declaraciones/{{ decl.id }}/cargar/pagos_bancos" enctype="multipart/form-data" class="flex items-center gap-2"
+          title="Opción 2 · suba el libro de cada cuenta (MN y ME). Una fila por pago: medio, banco, N° de operación y fecha reales.">
+      <input type="file" name="archivos" accept=".xls,.xlsx,.html" multiple required class="text-xs w-52">
+      <button class="bg-emerald-700 text-white rounded px-3 py-1 whitespace-nowrap">Buscar en libros de bancos</button>
+    </form>
+    {% endif %}
+    {% if archivo_de.get(b.clave) %}
+    <a class="ml-auto bg-amber-600 text-white rounded px-3 py-1 hover:bg-amber-700 whitespace-nowrap" title="Se genera con lo último guardado en esta grilla."
+       href="/declaraciones/{{ decl.id }}/archivos/{{ archivo_de[b.clave] }}">⬇ Descargar {{ archivo_de[b.clave] }}</a>
+    {% endif %}
   </div>
   {% endif %}
   <form method="post" action="/declaraciones/{{ decl.id }}/bloque/{{ b.clave }}" onsubmit="return enviarGrilla(this)">
@@ -105,7 +97,7 @@
   </a>
   {% endfor %}
   <label class="ml-auto self-center whitespace-nowrap pl-4 text-xs text-emerald-900 cursor-pointer">
-    <input type="checkbox" id="chk-ayuda" checked class="align-middle"> Ayuda de campos</label>
+    <input type="checkbox" id="chk-ayuda" checked class="align-middle"> Ayuda</label>
 </nav>
 
 {% if msg %}<p class="mt-3 p-3 rounded text-sm {{ 'bg-red-100 text-red-800' if msg.startswith('Error') else 'bg-green-100 text-green-800' }}">{{ msg }}</p>{% endif %}
