@@ -105,3 +105,61 @@ class HojaFila(Base):
     orden: Mapped[int] = mapped_column(Integer, default=0)
     celdas: Mapped[list] = mapped_column(JSON, default=list)
     declaracion: Mapped[Declaracion] = relationship(back_populates="filas")
+
+
+class TipoCambioDia(Base):
+    """Historial de tipo de cambio USD (hoja HISTORIAL_TC del libro), común a todas las empresas."""
+    __tablename__ = "tipo_cambio_dia"
+    fecha: Mapped[date] = mapped_column(Date, primary_key=True)
+    compra: Mapped[Decimal] = mapped_column(Numeric(8, 3), nullable=False)
+    venta: Mapped[Decimal] = mapped_column(Numeric(8, 3), nullable=False)
+
+
+class Ajuste(Base):
+    """Ajustes sencillos de la aplicación (clave → valor)."""
+    __tablename__ = "ajustes"
+    clave: Mapped[str] = mapped_column(String(60), primary_key=True)
+    valor: Mapped[str] = mapped_column(String(200), default="")
+
+
+class Detraccion(Base):
+    """Constancia de depósito de detracción (HTML de SUNAT). Es de la empresa, no de un período:
+    se enlaza a la compra por proveedor + comprobante, sea cual sea el período de la declaración."""
+    __tablename__ = "detracciones"
+    __table_args__ = (UniqueConstraint("empresa_id", "constancia", name="uq_detraccion_constancia"),)
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    empresa_id: Mapped[int] = mapped_column(ForeignKey("empresas.id", ondelete="CASCADE"), index=True)
+    constancia: Mapped[str] = mapped_column(String(20), nullable=False)
+    ruc_proveedor: Mapped[str] = mapped_column(String(11), default="")
+    proveedor: Mapped[str] = mapped_column(String(200), default="")
+    tipo_comprobante: Mapped[str] = mapped_column(String(2), default="")
+    serie: Mapped[str] = mapped_column(String(10), default="")
+    numero: Mapped[str] = mapped_column(String(20), default="")
+    bien_servicio: Mapped[str] = mapped_column(String(3), default="")
+    monto: Mapped[Decimal] = mapped_column(Numeric(14, 2), default=0)
+    fecha_pago: Mapped[date | None] = mapped_column(Date, nullable=True)
+    periodo_tributario: Mapped[str] = mapped_column(String(6), default="")
+    nro_operacion: Mapped[str] = mapped_column(String(20), default="")
+
+
+class Form1662(Base):
+    """Constancia del Formulario 1662 (pago de IGV por servicios de no domiciliados). De la empresa, no de un período."""
+    __tablename__ = "formularios_1662"
+    __table_args__ = (UniqueConstraint("empresa_id", "nro_orden", name="uq_f1662_orden"),)
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    empresa_id: Mapped[int] = mapped_column(ForeignKey("empresas.id", ondelete="CASCADE"), index=True)
+    nro_orden: Mapped[str] = mapped_column(String(20), nullable=False)
+    periodo: Mapped[str] = mapped_column(String(6), default="")
+    serie: Mapped[str] = mapped_column(String(20), default="")
+    numero: Mapped[str] = mapped_column(String(30), default="")
+    importe: Mapped[Decimal] = mapped_column(Numeric(14, 2), default=0)
+    fecha_pago: Mapped[date | None] = mapped_column(Date, nullable=True)
+    banco: Mapped[str] = mapped_column(String(80), default="")
+    nro_operacion: Mapped[str] = mapped_column(String(30), default="")
+
+
+class DetraccionDecl(Base):
+    """Declaración (período) en la que se subió/ve una constancia de detracción. Tabla aparte para no alterar `detracciones`."""
+    __tablename__ = "detraccion_declaracion"
+    detraccion_id: Mapped[int] = mapped_column(ForeignKey("detracciones.id", ondelete="CASCADE"), primary_key=True)
+    declaracion_id: Mapped[int] = mapped_column(ForeignKey("declaraciones.id", ondelete="CASCADE"), primary_key=True)

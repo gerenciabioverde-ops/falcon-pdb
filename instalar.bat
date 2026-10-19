@@ -52,7 +52,7 @@ if not exist .venv\Scripts\python.exe (
 
 echo Instalando dependencias ^(puede tardar unos minutos^)...
 .venv\Scripts\python.exe -m pip install --upgrade pip >nul 2>&1
-.venv\Scripts\python.exe -m pip install -r requirements.txt
+.venv\Scripts\python.exe -m pip install --prefer-binary -r requirements.txt
 if errorlevel 1 goto :FALLO
 
 echo Preparando la base de datos...

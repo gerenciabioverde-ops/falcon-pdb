@@ -78,6 +78,7 @@ COLUMNAS = {
         ("C28", "DOC. REF. FECHA DE EMISIÓN", "FECHA"),
         ("C29", "DOC. REF. BASE IMPONIBLE", "0.00"),
         ("C30", "DOC. REF. IGV", "0.00"),
+        ("C31", "TIPO DE EXPORTACION (Solo venta externa)", "00"),
     ],
     "TC": [
         ("L1", "FECHA", "FECHA"),

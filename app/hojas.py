@@ -5,10 +5,16 @@ viven en las tablas Dua/Cdp) y sus columnas (código, título, formato).
 """
 from app.hojas_cols import COLUMNAS
 
+# VENTAS: «ESTADO» va al final de la fila y solo es de seguimiento (no entra en el archivo de SUNAT).
+# Vacío o «VÁLIDO» = comprobante vigente; «ANULADO» = se excluye del archivo y de las validaciones.
+COLUMNAS = {**COLUMNAS, "VENTAS": COLUMNAS["VENTAS"] + [("ESTADO", "ESTADO DEL COMPROBANTE (seguimiento)", "@")]}
+
 COLUMNAS_DUAS_D = [
     ("D1", "CÓDIGO ADUANA", "000"), ("D2", "AÑO DE LA DUA", "0000"), ("D3", "N° CORRELATIVO", "000000"),
     ("D4", "FECHA DE EMBARQUE", "FECHA"), ("D5", "FECHA DE REGULARIZACIÓN DE LA DUA", "FECHA"),
     ("D6", "VALOR FOB EN US$", "0.00"),
+    ("REF", "N° DE DUA (seguimiento)", "@"),      # derivado de D1-D3: solo visualización
+    ("FAC", "FACTURA(S) DE LA DUA (enlace al bloque E)", "@"),   # editable: crea/quita filas del bloque E
 ]
 COLUMNAS_DUAS_E = [
     ("E1", "PERIODO DEL CDP", "@"), ("E2", "TIPO DE COMPROBANTE", "00"),
@@ -23,11 +29,11 @@ COLUMNAS_TODAS = {**COLUMNAS, "DUAS_D": COLUMNAS_DUAS_D, "DUAS_E": COLUMNAS_DUAS
 PESTANAS = [
     {"clave": "resumen", "nombre": "INICIO", "bloques": []},
     {"clave": "tc", "nombre": "TC", "archivo": ("", ".tc", False),
-     "bloques": [("TC", "Tipo de cambio del mes")]},
-    {"clave": "compras", "nombre": "COMPRAS",
+     "bloques": [("TC", "Tipo de cambio")]},
+    {"clave": "compras", "nombre": "COMPRAS", "subpestanas": True,
      "bloques": [("COMPRAS", "Comprobantes de compras"), ("COMPRAS_PAGO", "Forma de pago")]},
     {"clave": "ventas", "nombre": "VENTAS", "bloques": [("VENTAS", "Comprobantes de ventas")]},
-    {"clave": "duas", "nombre": "DUAS",
+    {"clave": "duas", "nombre": "DUAS", "subpestanas": True,
      "bloques": [("DUAS_D", "Bloque D · una fila por DUA"),
                  ("DUAS_E", "Bloque E · exportación con DUA's (01 al 05) · una fila por factura")]},
     {"clave": "swap", "nombre": "SWAP", "bloques": [("SWAP", "Tipo 06 · Constancia de ejecución SWAP")]},
@@ -36,6 +42,7 @@ PESTANAS = [
     {"clave": "sin_detalle", "nombre": "SIN DETALLE", "bloques": [("SIN_DETALLE", "Tipos 09, 10 y 11")]},
     {"clave": "exp_def", "nombre": "EXP. DEF.", "bloques": [("EXP_DEF", "Tipo 12 · Temporal a definitiva")]},
     {"clave": "turistas", "nombre": "TURISTAS", "bloques": [("TURISTAS", "Tipo 13 · Relación de turistas (TaxFree)")]},
+    {"clave": "reporte", "nombre": "REPORTE", "bloques": []},          # resumen de lo que se presenta a SUNAT
 ]
 PESTANA = {p["clave"]: p for p in PESTANAS}
 
@@ -48,3 +55,7 @@ ARCHIVO_BLOQUE = {
 }
 TITULOS_BLOQUE = {b: t for p in PESTANAS for b, t in p["bloques"]}
 BLOQUES_TABULARES = list(ARCHIVO_BLOQUE)
+
+# Títulos cortos para las pestañas internas (cuando una hoja se divide en bloques).
+TITULO_SUB = {"COMPRAS": "Comprobantes de compras", "COMPRAS_PAGO": "Forma de pago",
+              "DUAS_D": "Bloque D · DUA", "DUAS_E": "Bloque E · Facturas"}

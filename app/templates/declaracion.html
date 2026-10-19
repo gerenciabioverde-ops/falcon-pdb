@@ -3,81 +3,144 @@
 <section class="bg-white rounded shadow mt-3" data-grilla="{{ b.clave }}">
   <div class="flex flex-wrap items-center justify-between gap-2 px-4 py-2 border-b">
     <h2 class="font-semibold text-sm">{{ b.titulo }} <span class="text-slate-500 font-normal">· {{ b.filas|length }} fila(s)</span></h2>
-    <div class="flex flex-wrap items-center gap-3 text-sm">
-      {% if b.clave == 'DUAS_D' %}
-      <form method="post" action="/declaraciones/{{ decl.id }}/importar-duas" enctype="multipart/form-data" class="flex items-center gap-1">
-        <input type="file" name="archivo" accept=".csv" required class="text-xs w-44">
-        <button class="border rounded px-2 py-1 hover:bg-slate-50">Importar CSV (DUAS)</button>
-      </form>
-      <a class="text-emerald-700" href="/declaraciones/{{ decl.id }}/exportar/duas.csv">Exportar CSV</a>
-      {% elif b.clave != 'DUAS_E' %}
-      <form method="post" action="/declaraciones/{{ decl.id }}/importar-hoja" enctype="multipart/form-data" class="flex items-center gap-1">
-        <input type="hidden" name="hoja" value="{{ b.clave }}"><input type="hidden" name="pestana" value="{{ pestana.clave }}">
-        <input type="file" name="archivo" accept=".csv" required class="text-xs w-44">
-        <button class="border rounded px-2 py-1 hover:bg-slate-50">Importar CSV</button>
-      </form>
-      <a class="text-emerald-700" href="/declaraciones/{{ decl.id }}/exportar/{{ b.clave }}.csv">Exportar CSV</a>
-      {% endif %}
+    {% if b.clave == 'COMPRAS' %}
+    <div class="flex items-center gap-2 text-sm" title="Solo cambia lo que se muestra; no modifica ni quita filas al guardar.">
+      <span class="text-slate-600">Mostrar:</span>
+      <select class="sel-igv border border-slate-300 rounded px-2 py-1 bg-white" onchange="filtrarIgv(this)">
+        <option value="todo">Todo (con IGV + sin IGV)</option>
+        <option value="solo">Solo con IGV</option>
+      </select>
+      <span class="text-xs text-slate-500" data-igv-n></span>
     </div>
+    {% endif %}
+    <button type="button" class="btn-eliminar-sel text-sm rounded border border-red-300 text-red-700 px-3 py-1 hover:bg-red-50 disabled:opacity-40 disabled:cursor-not-allowed" disabled
+            onclick="eliminarSeleccionados(this)" title="Marque las filas con la casilla de la izquierda y elimínelas en bloque.">🗑 Eliminar seleccionados <span data-n-sel></span></button>
+    <label class="flex items-center gap-1.5 text-sm cursor-pointer select-none rounded border border-slate-300 px-3 py-1 hover:bg-slate-50" title="Las grillas están protegidas: marque «Editar» para modificar, agregar o quitar filas.">
+      <input type="checkbox" class="chk-editar" onchange="alternarEdicion(this)"> ✎ Editar</label>
   </div>
-  {% set carga = {'TC': ('tc', '.pdf', 'PDF de tipo de cambio de SUNAT', false), 'VENTAS': ('ventas', '.xml', 'XML de comprobantes emitidos', true),
-                  'COMPRAS': ('compras', '.xml', 'XML de comprobantes recibidos', true), 'DUAS_D': ('duas', '.pdf', 'PDF de la DAM (uno o varios)', true)}.get(b.clave) %}
-  {% if carga %}
-  <form method="post" action="/declaraciones/{{ decl.id }}/cargar/{{ carga[0] }}" enctype="multipart/form-data"
-        class="flex flex-wrap items-center gap-2 px-4 py-2 bg-emerald-50 border-b text-sm">
-    <span class="font-medium text-emerald-900">Cargar automático:</span>
-    <input type="file" name="archivos" accept="{{ carga[1] }}" {{ 'multiple' if carga[3] }} required class="text-xs">
-    <button class="bg-emerald-700 text-white rounded px-3 py-1">Leer {{ carga[2] }}</button>
-    {% if carga[0] in ('ventas', 'compras') %}<span class="text-xs text-slate-500">Agrega o reemplaza por tipo·serie·número; el resto de filas se conserva.</span>
-    {% elif carga[0] == 'duas' %}<span class="text-xs text-slate-500">Llena los bloques D y E de cada DAM (reemplaza la misma DUA si ya estaba).</span>
-    {% else %}<span class="text-xs text-slate-500">Reemplaza el tipo de cambio del mes.</span>{% endif %}
-  </form>
-  {% elif b.clave == 'COMPRAS_PAGO' %}
-  <div class="flex flex-wrap items-center gap-3 px-4 py-2 bg-emerald-50 border-b text-sm">
-    <span class="font-medium text-emerald-900">Cargar automático:</span>
-    <form method="post" action="/declaraciones/{{ decl.id }}/cargar/pagos"><button class="bg-emerald-700 text-white rounded px-3 py-1">Generar desde las compras</button></form>
-    <span class="text-xs text-slate-500">Completa tipo, serie, número, documento, fecha y monto S/.; conserva el medio de pago, banco y N° de operación que ya escribió.</span>
+  {% set carga = {'TC': ('tc', '.pdf', 'PDF de SUNAT', true, 'Agrega o actualiza los días en el historial interno; el mes se lee del propio PDF. Puede subir varios meses a la vez.'),
+                  'VENTAS': ('ventas', '.xml', 'XML de ventas', true, 'Agrega o reemplaza por tipo·serie·número; el resto de filas se conserva.'),
+                  'COMPRAS': ('compras', '.xml', 'XML de compras', true, 'Agrega o reemplaza por tipo·serie·número; el resto de filas se conserva.'),
+                  'DUAS_D': ('duas', '.pdf', 'PDF de DAM', true, 'Llena los bloques D y E de cada DAM (reemplaza la misma DUA si ya estaba).')}.get(b.clave) %}
+  {% if carga or b.clave == 'COMPRAS_PAGO' or (archivo_de.get(b.clave) and (b.clave != 'TC' or tc_sel == (decl.anio, decl.mes))) %}
+  <div class="flex flex-wrap items-center gap-x-5 gap-y-2 px-4 py-2 bg-emerald-50 border-b text-sm">
+    {% if carga and carga[0] in ('ventas', 'compras', 'duas') %}
+    <form method="post" action="/declaraciones/{{ decl.id }}/cargar/{{ carga[0] }}" enctype="multipart/form-data" class="flex flex-wrap items-center gap-2"
+          title="{{ carga[4] }}" data-ext="{{ carga[1] }}" data-etiqueta="{{ carga[1][1:]|upper }}" onsubmit="return enviarXml(event, this)">
+      <label class="border border-emerald-700 text-emerald-800 rounded px-3 py-1 cursor-pointer hover:bg-emerald-100 whitespace-nowrap">Elegir archivo(s)
+        <input type="file" accept="{{ carga[1] }}" multiple class="hidden" onchange="resumenXml(this.form)"></label>
+      <label class="border border-emerald-700 text-emerald-800 rounded px-3 py-1 cursor-pointer hover:bg-emerald-100 whitespace-nowrap">Elegir carpeta
+        <input type="file" webkitdirectory directory multiple class="hidden" onchange="resumenXml(this.form)"></label>
+      <span class="text-xs text-slate-600 min-w-[8rem]" data-resumen>Ningún {{ carga[1][1:]|upper }} seleccionado</span>
+      <button class="bg-emerald-700 text-white rounded px-3 py-1 whitespace-nowrap">Leer {{ carga[2] }}</button>
+    </form>
+    {% elif carga %}
+    <form method="post" action="/declaraciones/{{ decl.id }}/cargar/{{ carga[0] }}" enctype="multipart/form-data" class="flex items-center gap-2" title="{{ carga[4] }}">
+      <input type="file" name="archivos" accept="{{ carga[1] }}" {{ 'multiple' if carga[3] }} required class="text-xs w-52">
+      <button class="bg-emerald-700 text-white rounded px-3 py-1 whitespace-nowrap">Leer {{ carga[2] }}</button>
+    </form>
+    {% elif b.clave == 'COMPRAS_PAGO' %}
+    <form method="post" action="/declaraciones/{{ decl.id }}/cargar/pagos" title="Opción 1 · usa la fecha de emisión y el monto del comprobante; conserva lo que ya escribió.">
+      <button class="bg-emerald-700 text-white rounded px-3 py-1 whitespace-nowrap">Generar desde las compras</button>
+    </form>
+    <form method="post" action="/declaraciones/{{ decl.id }}/cargar/pagos_bancos" enctype="multipart/form-data" class="flex items-center gap-2"
+          title="Opción 2 · suba el libro de cada cuenta (MN y ME). Una fila por pago: medio, banco, N° de operación y fecha reales.">
+      <input type="file" name="archivos" accept=".xls,.xlsx,.html" multiple required class="text-xs w-52">
+      <button class="bg-emerald-700 text-white rounded px-3 py-1 whitespace-nowrap">Buscar en libros de bancos</button>
+    </form>
+    {% endif %}
+    {% if archivo_de.get(b.clave) and (b.clave != 'TC' or tc_sel == (decl.anio, decl.mes)) %}
+    <a class="ml-auto bg-amber-600 text-white rounded px-3 py-1 hover:bg-amber-700 whitespace-nowrap" title="Se genera con lo último guardado en esta grilla."
+       href="/declaraciones/{{ decl.id }}/archivos/{{ archivo_de[b.clave] }}">⬇ Descargar {{ archivo_de[b.clave] }}</a>
+    {% endif %}
   </div>
   {% endif %}
   <form method="post" action="/declaraciones/{{ decl.id }}/bloque/{{ b.clave }}" onsubmit="return enviarGrilla(this)">
     <input type="hidden" name="hoja" value="{{ pestana.clave }}">
     <input type="hidden" name="datos" value="">
+    {% if b.clave == 'TC' %}<input type="hidden" name="mes" value="{{ '%04d-%02d'|format(tc_sel[0], tc_sel[1]) }}">{% endif %}
+    <input type="hidden" name="sub" value="{{ b.clave }}">
+    <div class="flex items-start gap-6">
     <div class="overflow-auto max-h-[28rem]">
       <table class="text-xs border-collapse">
         <thead class="sticky top-0 z-10">
           <tr class="bg-emerald-800 text-white">
-            <th class="px-2 py-1 w-8"></th>
-            {% for cod, tit, fmt in b.columnas %}<th class="px-2 py-1 text-center font-semibold border-l border-emerald-700">{{ cod }}</th>{% endfor %}
+            <th class="px-2 py-1 w-8"><input type="checkbox" class="chk-todos" title="Seleccionar todos los visibles" onchange="seleccionarTodos(this)"></th>
+            {% if b.extra is not none %}<th class="px-2 py-1 text-center font-semibold bg-sky-800">REF</th>{% endif %}
+            {% if b.clave == 'VENTAS' %}<th class="px-2 py-1 text-center font-semibold bg-sky-800 border-l border-sky-700">ESTADO</th>{% endif %}
+            {% for cod, tit, fmt in b.columnas if cod != 'ESTADO' %}<th class="px-2 py-1 text-center font-semibold border-l border-emerald-700">{{ cod }}</th>{% if b.clave == 'COMPRAS' and cod == 'A20' %}<th class="px-2 py-1 text-center font-semibold bg-sky-800 border-l border-emerald-700">TOTAL</th>{% endif %}{% endfor %}
             <th class="w-8"></th>
           </tr>
           <tr class="bg-emerald-100 text-emerald-900">
             <th class="px-2"></th>
-            {% for cod, tit, fmt in b.columnas %}<th class="px-2 py-1 font-medium border-l border-emerald-200 min-w-[7rem] max-w-[11rem] align-bottom">{{ tit }}</th>{% endfor %}
+            {% if b.extra is not none %}<th class="px-2 py-1 font-medium align-bottom bg-sky-100 text-sky-900 min-w-[11rem]">DAM REGULARIZADA<br><span class="font-normal">(seguimiento)</span></th>{% endif %}
+            {% if b.clave == 'VENTAS' %}<th class="px-2 py-1 font-medium align-bottom bg-sky-100 text-sky-900 min-w-[7rem]">ESTADO<br><span class="font-normal">(VÁLIDO / ANULADO)</span></th>{% endif %}
+            {% for cod, tit, fmt in b.columnas if cod != 'ESTADO' %}<th class="px-2 py-1 font-medium border-l border-emerald-200 min-w-[7rem] max-w-[11rem] align-bottom">{{ tit }}</th>{% if b.clave == 'COMPRAS' and cod == 'A20' %}<th class="px-2 py-1 font-medium align-bottom bg-sky-100 text-sky-900 min-w-[7rem]">MONTO TOTAL<br><span class="font-normal">(solo visualizar)</span></th>{% endif %}{% endfor %}
             <th></th>
           </tr>
         </thead>
         <tbody>
-          {% for fila in b.filas %}{{ fila_html(b.columnas, fila, loop.index) }}{% endfor %}
+          {% for fila in b.filas %}{{ fila_html(b.columnas, fila, loop.index, b.extra[loop.index0] if b.extra is not none else none) }}{% endfor %}
         </tbody>
       </table>
     </div>
-    <template>{{ fila_html(b.columnas, [], 0) }}</template>
-    <div class="flex items-center gap-2 px-4 py-2 border-t">
-      <button type="button" onclick="agregarFila(this)" class="text-sm border rounded px-3 py-1 hover:bg-slate-50">+ Agregar fila</button>
-      <button class="text-sm bg-emerald-700 text-white rounded px-4 py-1">Guardar {{ b.clave|replace('_',' ') }}</button>
-      <span class="text-xs text-slate-500">Fechas dd/mm/aaaa · se guarda toda la grilla.</span>
+    {% if b.clave == 'TC' %}
+    <aside class="w-60 shrink-0 p-3">
+      <h3 class="text-xs font-semibold text-slate-600 mb-2">Meses con tipo de cambio</h3>
+      <div class="flex flex-col gap-1.5">
+        {% set meses_btn = tc_meses | list %}
+        {% if not (meses_btn | selectattr(0, 'equalto', decl.anio) | selectattr(1, 'equalto', decl.mes) | list) %}
+          {% set meses_btn = [(decl.anio, decl.mes, 0)] + meses_btn %}
+        {% endif %}
+        {% for a, m, n in meses_btn %}
+        <a href="/declaraciones/{{ decl.id }}?hoja=tc&mes={{ '%04d-%02d'|format(a, m) }}"
+           class="flex items-center justify-between rounded border px-3 py-1.5 text-sm {{ 'bg-emerald-700 text-white border-emerald-700' if (a, m) == tc_sel else 'bg-white text-emerald-900 border-emerald-300 hover:bg-emerald-50' }}">
+          <span>{{ meses[m] }} {{ a }}{% if a == decl.anio and m == decl.mes %} <span class="text-[10px] uppercase opacity-70">período</span>{% endif %}</span>
+          <span class="text-xs opacity-80">{{ n }}</span>
+        </a>
+        {% endfor %}
+      </div>
+      <p class="mt-2 text-xs text-slate-500">Los meses se guardan internamente al subir cada PDF. El archivo .tc usa el mes del período.</p>
+    </aside>
+    {% endif %}
+    </div>
+    <template>{{ fila_html(b.columnas, [], 0, {'estado': 'sin'} if b.extra is not none else none) }}</template>
+    <div class="px-4 py-2 border-t">
+      <div class="barra-solo-lectura text-xs text-slate-500">🔒 Solo lectura · marque <b>✎ Editar</b> para modificar, agregar o quitar filas.</div>
+      <div class="barra-edicion hidden">
+        <div class="flex items-center gap-2">
+          <button type="button" onclick="agregarFila(this)" class="text-sm border rounded px-3 py-1 hover:bg-slate-50">+ Agregar fila</button>
+          <button class="text-sm bg-emerald-700 text-white rounded px-4 py-1">Guardar {{ b.clave|replace('_',' ') }}</button>
+          <span class="text-xs text-slate-500">Fechas dd/mm/aaaa · se guarda toda la grilla. Si sale sin guardar, se descartan los cambios.</span>
+        </div>
+      </div>
     </div>
   </form>
 </section>
 {% endmacro %}
-{% macro fila_html(cols, fila, n) %}
+{% macro fila_html(cols, fila, n, extra=none) %}
 <tr class="border-t hover:bg-amber-50">
-  <td class="px-2 text-slate-400 text-right select-none">{{ n if n else '' }}</td>
-  {% for cod, tit, fmt in cols %}
-  <td class="p-0 border-l border-slate-100"><input value="{{ fila[loop.index0] if fila and loop.index0 < fila|length else '' }}"
-      class="w-full min-w-[7rem] px-2 py-1 bg-transparent focus:bg-white focus:outline focus:outline-2 focus:outline-emerald-500 {{ 'text-right' if fmt in ('0.00','0.00*','0.000') else '' }}"></td>
+  <td class="px-2 text-slate-400 text-right select-none whitespace-nowrap"><input type="checkbox" class="chk-fila mr-1 align-middle" onchange="contarSeleccion(this)"><span>{{ n if n else '' }}</span></td>
+  {% if extra is not none %}
+  <td class="px-2 py-1 whitespace-nowrap bg-sky-50 text-xs select-text">
+    {% if extra.estado == 'ok' %}<span class="text-green-700 font-medium" title="Embarcada el {{ extra.embarque.strftime('%d/%m/%Y') if extra.embarque }} · regularizada el {{ extra.regularizada.strftime('%d/%m/%Y') }} · PDB {{ extra.periodo }}">✔ {{ extra.dua }}</span>
+    {% elif extra.estado == 'pend' %}<span class="text-amber-600 font-medium" title="Aún sin fecha de regularización · PDB {{ extra.periodo }}">⏳ {{ extra.dua }}</span>
+    {% elif extra.estado == 'anu' %}<span class="text-red-600 font-semibold">✖ ANULADO</span>
+    {% elif extra.estado == 'sin' %}<span class="text-slate-400">Sin DAM</span>
+    {% else %}<span class="text-slate-300">—</span>{% endif %}
+  </td>
+  {% endif %}
+  {% if cols[-1][0] == 'ESTADO' %}{% set est = fila[cols|length - 1] if fila and fila|length >= cols|length else 'VÁLIDO' %}
+  <td class="p-0 border-l border-slate-100 bg-sky-50"><select disabled data-cod="ESTADO"
+      class="w-full min-w-[7rem] px-2 py-1 bg-transparent {{ 'text-red-600 font-semibold' if est == 'ANULADO' }} focus:bg-white focus:outline focus:outline-2 focus:outline-emerald-500">
+      <option value="VÁLIDO" {{ 'selected' if est != 'ANULADO' }}>VÁLIDO</option><option value="ANULADO" {{ 'selected' if est == 'ANULADO' }}>ANULADO</option></select></td>
+  {% endif %}
+  {% for cod, tit, fmt in cols if cod != 'ESTADO' %}
+  {% if cod == 'A21' and cols|length == 30 %}<td class="px-2 text-right bg-sky-50 font-medium select-text whitespace-nowrap" data-total></td>{% endif %}
+  <td class="p-0 border-l border-slate-100 {{ 'bg-slate-50' if cod == 'REF' else ('bg-sky-50' if cod == 'FAC') }}"><input readonly {{ 'data-calc' if cod == 'REF' }} data-cod="{{ cod }}" {% set v = fila[loop.index0] if fila and loop.index0 < fila|length else '' %}{% set dec = 2 if fmt in ('0.00', '0.00*') else (3 if fmt == '0.000' else 0) %}{% if dec %}data-dec="{{ dec }}" {% endif %}value="{{ v|miles(dec) if dec else v }}"
+      class="w-full min-w-[7rem] px-2 py-1 bg-transparent {{ 'text-red-600 font-semibold' if v == 'ANULADO' }} focus:bg-white focus:outline focus:outline-2 focus:outline-emerald-500 {{ 'text-right' if fmt in ('0.00','0.00*','0.000') else '' }}"></td>
   {% endfor %}
-  <td class="px-1"><button type="button" onclick="this.closest('tr').remove()" class="text-slate-300 hover:text-red-600" title="Quitar fila">✕</button></td>
+  <td class="px-1"><button type="button" onclick="this.closest('tr').remove(); marcarCambio(this)" class="btn-quitar hidden text-slate-300 hover:text-red-600" title="Quitar fila">✕</button></td>
 </tr>
 {% endmacro %}
 
@@ -89,7 +152,7 @@
   <span class="text-sm px-2 py-0.5 rounded {{ 'bg-green-100 text-green-800' if decl.estado == 'ENVIADO' else 'bg-amber-100 text-amber-800' }}">{{ estados[decl.estado] }}</span>
 </div>
 
-<nav class="mt-4 flex gap-1 overflow-x-auto border-b-2 border-emerald-800">
+<nav class="mt-4 flex gap-1 overflow-x-auto border-b-2 border-emerald-800 print:hidden">
   {% for p in pestanas %}
   <a href="/declaraciones/{{ decl.id }}?hoja={{ p.clave }}"
      class="whitespace-nowrap px-4 py-2 text-sm rounded-t {{ 'bg-emerald-800 text-white font-semibold' if p.clave == pestana.clave else 'bg-emerald-50 text-emerald-900 hover:bg-emerald-100' }}">
@@ -98,6 +161,8 @@
     {% elif cuentas[p.clave] %}<span class="ml-1 text-xs {{ 'bg-emerald-600 text-white' if p.clave != pestana.clave else 'bg-white text-emerald-800' }} rounded-full px-1.5">{{ cuentas[p.clave] }}</span>{% endif %}
   </a>
   {% endfor %}
+  <label class="ml-auto self-center whitespace-nowrap pl-4 text-xs text-emerald-900 cursor-pointer">
+    <input type="checkbox" id="chk-ayuda" checked class="align-middle"> Ayuda</label>
 </nav>
 
 {% if msg %}<p class="mt-3 p-3 rounded text-sm {{ 'bg-red-100 text-red-800' if msg.startswith('Error') else 'bg-green-100 text-green-800' }}">{{ msg }}</p>{% endif %}
@@ -107,7 +172,8 @@
   <section class="bg-white rounded shadow p-4">
     <h2 class="font-semibold mb-2">Validación</h2>
     {% for h in hallazgos %}
-      <p class="text-sm {{ 'text-red-700' if h.nivel == 'error' else 'text-amber-700' }}">{{ '✖' if h.nivel == 'error' else '▲' }} {{ h.texto }}</p>
+      <p class="text-sm {{ 'text-red-700' if h.nivel == 'error' else 'text-amber-700' }}">{{ '✖' if h.nivel == 'error' else '▲' }}
+        {% if h.periodo %}<span class="font-mono text-xs rounded bg-slate-100 text-slate-700 px-1.5 py-0.5 mr-1" title="Período en el que debe buscar este documento">{{ h.periodo }}</span>{% endif %}{{ h.texto }}</p>
     {% else %}<p class="text-sm text-green-700">✔ Sin observaciones.</p>{% endfor %}
   </section>
   <section class="bg-white rounded shadow p-4">
@@ -136,7 +202,244 @@
     <button class="text-sm text-red-700">Eliminar declaración</button>
   </form>
 </section>
+{% elif pestana.clave == 'reporte' %}
+<div class="mt-3 space-y-4">
+  <section class="bg-white rounded shadow p-5">
+    <div class="flex flex-wrap items-start justify-between gap-3">
+      <div>
+        <p class="text-xs uppercase tracking-wide text-slate-500">Reporte de la información a presentar a SUNAT · PDB Exportadores</p>
+        <h2 class="text-xl font-semibold mt-1">{{ decl.empresa.razon_social }} · RUC {{ decl.empresa.ruc }}</h2>
+        <p class="text-sm text-slate-600">Período <b>{{ decl.periodo }}</b> ({{ meses[decl.mes] }} {{ decl.anio }}) · Estado: {{ estados[decl.estado] }}</p>
+      </div>
+      <div class="text-right print:hidden">
+        <span class="inline-block text-sm px-3 py-1 rounded {{ 'bg-green-100 text-green-800' if not n_errores else 'bg-red-100 text-red-800' }}">
+          {{ '✔ Sin errores: listo para presentar' if not n_errores else '✖ ' ~ n_errores ~ ' error(es) por corregir' }}</span>
+        <div class="mt-2"><a href="/declaraciones/{{ decl.id }}/reporte.xlsx" class="border border-emerald-700 text-emerald-800 rounded px-3 py-1 text-sm hover:bg-emerald-50">⬇ Excel</a>
+        <a href="/declaraciones/{{ decl.id }}/reporte.pdf" class="border border-emerald-700 text-emerald-800 rounded px-3 py-1 text-sm hover:bg-emerald-50 ml-1">⬇ PDF</a>
+        <button type="button" onclick="window.print()" class="border border-emerald-700 text-emerald-800 rounded px-3 py-1 text-sm hover:bg-emerald-50 ml-1">🖨 Imprimir</button>
+        {% if archivos %}<a class="ml-2 bg-amber-600 text-white rounded px-3 py-1 text-sm hover:bg-amber-700" href="/declaraciones/{{ decl.id }}/archivos.zip">⬇ Descargar todos (ZIP)</a>{% endif %}</div>
+      </div>
+    </div>
+  </section>
+
+  <section class="bg-white rounded shadow p-5">
+    <h3 class="font-semibold mb-3">1. Resumen por hoja</h3>
+    <table class="w-full text-sm">
+      <thead><tr class="bg-emerald-100 text-emerald-900 text-left">
+        <th class="px-3 py-1.5">Hoja</th><th class="px-3 text-right">Filas</th><th class="px-3 text-right">Base imponible S/</th><th class="px-3 text-right">IGV S/</th><th class="px-3 text-right">Total S/ / US$</th><th class="px-3">Detalle</th></tr></thead>
+      <tbody class="divide-y">
+        <tr><td class="px-3 py-1.5 font-medium">Compras</td><td class="px-3 text-right">{{ rep.compras.n }}</td>
+          <td class="px-3 text-right">{{ rep.compras.base|miles(2) }}</td><td class="px-3 text-right">{{ rep.compras.igv|miles(2) }}</td><td class="px-3 text-right font-medium">{{ rep.compras.total|miles(2) }}</td>
+          <td class="px-3 text-slate-600">{{ rep.compras.con_igv }} con IGV · {{ rep.compras.sin_igv }} sin IGV · {{ rep.compras.con_detraccion }} con detracción</td></tr>
+        <tr><td class="px-3 py-1.5 font-medium">Forma de pago</td><td class="px-3 text-right">{{ rep.pagos.n }}</td><td></td><td></td><td class="px-3 text-right font-medium">{{ rep.pagos.monto|miles(2) }}</td><td class="px-3 text-slate-600">Monto de las operaciones S/</td></tr>
+        <tr><td class="px-3 py-1.5 font-medium">Ventas</td><td class="px-3 text-right">{{ rep.ventas.n }}</td>
+          <td class="px-3 text-right">{{ rep.ventas.base|miles(2) }}</td><td class="px-3 text-right">{{ rep.ventas.igv|miles(2) }}</td><td class="px-3 text-right font-medium">{{ rep.ventas.total|miles(2) }}</td>
+          <td class="px-3 text-slate-600">{{ rep.ventas.externas }} exportaciones · {{ rep.ventas.anuladas }} anulada(s) (en cero)</td></tr>
+        <tr><td class="px-3 py-1.5 font-medium">DUAS · bloque D</td><td class="px-3 text-right">{{ rep.duas.n }}</td><td></td><td></td><td class="px-3 text-right font-medium">US$ {{ rep.duas.fob|miles(2) }}</td>
+          <td class="px-3 text-slate-600">FOB de las DUAs{% if rep.duas.excluidas %} · <span class="text-amber-700">{{ rep.duas.excluidas }} excluida(s) por embarque fuera del período</span>{% endif %}{% if rep.duas.sin_regularizar %} · <span class="text-amber-700">{{ rep.duas.sin_regularizar }} sin fecha de regularización</span>{% endif %}</td></tr>
+        <tr><td class="px-3 py-1.5 font-medium">DUAS · bloque E</td><td class="px-3 text-right">{{ rep.cdps.n }}</td><td></td><td></td><td class="px-3 text-right font-medium">US$ {{ rep.cdps.fob|miles(2) }}</td>
+          <td class="px-3 text-slate-600">FOB facturado{% if (rep.duas.fob - rep.cdps.fob)|abs > 0.05 %} · <span class="text-red-700">difiere del bloque D en US$ {{ (rep.duas.fob - rep.cdps.fob)|miles(2) }}</span>{% else %} · <span class="text-green-700">cuadra con el bloque D</span>{% endif %}</td></tr>
+        <tr><td class="px-3 py-1.5 font-medium">Tipo de cambio</td><td class="px-3 text-right">{{ rep.tc }}</td><td></td><td></td><td></td><td class="px-3 text-slate-600">Días del mes en el archivo .tc</td></tr>
+        {% for nombre, n in rep.otras.items() %}<tr><td class="px-3 py-1.5 font-medium">{{ nombre }}</td><td class="px-3 text-right">{{ n }}</td><td></td><td></td><td></td><td></td></tr>{% endfor %}
+      </tbody>
+    </table>
+    <p class="text-xs text-slate-500 mt-2">Las notas de crédito restan. El total de compras suma base, ISC, IGV y otros cargos. Los comprobantes anulados cuentan con importes en cero.</p>
+  </section>
+
+  <section class="bg-white rounded shadow p-5">
+    <h3 class="font-semibold mb-3">2. Archivos que se presentan</h3>
+    <table class="w-full text-sm">
+      <thead><tr class="bg-emerald-100 text-emerald-900 text-left"><th class="px-3 py-1.5">Archivo</th><th class="px-3">Contenido</th><th class="px-3 text-right">Líneas</th><th class="px-3 print:hidden"></th></tr></thead>
+      <tbody class="divide-y">
+      {% for nombre, lineas in archivos.items() %}
+        <tr><td class="px-3 py-1.5 font-mono text-xs">{{ nombre }}</td>
+          <td class="px-3">{{ 'Tipo de cambio' if nombre.endswith('.tc') else ('DUAs · bloque D' if nombre.endswith('.dua') else ('Facturas de exportación · bloque E' if nombre.endswith('.du1') else ('Compras' if nombre.startswith('C') else ('Forma de pago' if nombre.startswith('F') else ('Ventas' if nombre.startswith('V') else 'Otros'))))) }}</td>
+          <td class="px-3 text-right">{{ lineas|length }}</td>
+          <td class="px-3 print:hidden"><a class="text-blue-700 hover:underline" href="/declaraciones/{{ decl.id }}/archivos/{{ nombre }}">Descargar</a></td></tr>
+      {% else %}<tr><td colspan="4" class="px-3 py-4 text-center text-slate-400">Aún no hay datos para generar archivos.</td></tr>{% endfor %}
+      </tbody>
+    </table>
+    <p class="text-xs text-slate-500 mt-2">Orden de importación en el aplicativo de SUNAT: primero el <b>.dua</b> (bloque D) y después el <b>.du1</b> (bloque E).</p>
+  </section>
+
+  <section class="bg-white rounded shadow p-5">
+    <h3 class="font-semibold mb-1">3. Relación de comprobantes de VENTAS <span class="text-slate-500 font-normal text-sm">· {{ rep.lista_ventas|length }}</span></h3>
+    <p class="text-xs text-slate-500 mb-2">Importes en soles. Los anulados van con importes en cero.</p>
+    <div class="overflow-x-auto"><table class="w-full text-xs">
+      <thead><tr class="bg-emerald-100 text-emerald-900 text-left">
+        <th class="px-2 py-1">N°</th><th class="px-2">Fecha</th><th class="px-2">Tipo</th><th class="px-2">Comprobante</th><th class="px-2">Cliente</th><th class="px-2">Moneda</th><th class="px-2">Venta</th>
+        <th class="px-2 text-right">Base S/</th><th class="px-2 text-right">IGV S/</th><th class="px-2 text-right">Total S/</th><th class="px-2">Estado</th></tr></thead>
+      <tbody class="divide-y">
+      {% for v in rep.lista_ventas %}
+        <tr class="{{ 'text-red-600' if v.anulado }}"><td class="px-2 py-1 text-slate-400">{{ loop.index }}</td><td class="px-2 whitespace-nowrap">{{ v.fecha }}</td><td class="px-2">{{ v.tipo }}</td>
+          <td class="px-2 whitespace-nowrap font-mono">{{ v.doc }}</td><td class="px-2">{{ v.nombre }}{% if v.ruc %} <span class="text-slate-400">· {{ v.ruc }}</span>{% endif %}</td><td class="px-2">{{ v.moneda }}</td>
+          <td class="px-2">{{ 'Exportación' if v.externa else 'Interna' }}</td>
+          <td class="px-2 text-right">{{ v.base|miles(2) }}</td><td class="px-2 text-right">{{ v.igv|miles(2) }}</td><td class="px-2 text-right">{{ v.total|miles(2) }}</td>
+          <td class="px-2">{{ '✖ ANULADO' if v.anulado else 'Válido' }}</td></tr>
+      {% else %}<tr><td colspan="11" class="px-2 py-4 text-center text-slate-400">Sin ventas.</td></tr>{% endfor %}
+      </tbody>
+      {% if rep.lista_ventas %}<tfoot><tr class="bg-emerald-50 font-semibold"><td colspan="7" class="px-2 py-1">TOTAL (las notas de crédito restan)</td>
+        <td class="px-2 text-right">{{ rep.ventas.base|miles(2) }}</td><td class="px-2 text-right">{{ rep.ventas.igv|miles(2) }}</td><td class="px-2 text-right">{{ rep.ventas.total|miles(2) }}</td><td></td></tr></tfoot>{% endif %}
+    </table></div>
+  </section>
+
+  <section class="bg-white rounded shadow p-5">
+    <h3 class="font-semibold mb-1">4. Relación de comprobantes de COMPRAS <span class="text-slate-500 font-normal text-sm">· {{ rep.lista_compras|length }}</span></h3>
+    <p class="text-xs text-slate-500 mb-2">Importes en soles (los comprobantes en dólares ya están convertidos con el tipo de cambio).</p>
+    <div class="overflow-x-auto"><table class="w-full text-xs">
+      <thead><tr class="bg-emerald-100 text-emerald-900 text-left">
+        <th class="px-2 py-1">N°</th><th class="px-2">Fecha</th><th class="px-2">Tipo</th><th class="px-2">Comprobante</th><th class="px-2">Proveedor</th><th class="px-2">Mon. orig.</th>
+        <th class="px-2 text-right">Base S/</th><th class="px-2 text-right">IGV S/</th><th class="px-2 text-right">Otros S/</th><th class="px-2 text-right">Total S/</th><th class="px-2">Detracción</th></tr></thead>
+      <tbody class="divide-y">
+      {% for c in rep.lista_compras %}
+        <tr><td class="px-2 py-1 text-slate-400">{{ loop.index }}</td><td class="px-2 whitespace-nowrap">{{ c.fecha }}</td><td class="px-2">{{ c.tipo }}</td>
+          <td class="px-2 whitespace-nowrap font-mono">{{ c.doc }}</td><td class="px-2">{{ c.nombre }}{% if c.ruc %} <span class="text-slate-400">· {{ c.ruc }}</span>{% endif %}</td><td class="px-2">{{ c.moneda }}</td>
+          <td class="px-2 text-right">{{ c.base|miles(2) }}</td><td class="px-2 text-right">{{ c.igv|miles(2) }}</td><td class="px-2 text-right">{{ c.otros|miles(2) }}</td><td class="px-2 text-right">{{ c.total|miles(2) }}</td>
+          <td class="px-2 whitespace-nowrap">{{ c.detraccion }}</td></tr>
+      {% else %}<tr><td colspan="11" class="px-2 py-4 text-center text-slate-400">Sin compras.</td></tr>{% endfor %}
+      </tbody>
+      {% if rep.lista_compras %}<tfoot><tr class="bg-emerald-50 font-semibold"><td colspan="6" class="px-2 py-1">TOTAL (las notas de crédito restan)</td>
+        <td class="px-2 text-right">{{ rep.compras.base|miles(2) }}</td><td class="px-2 text-right">{{ rep.compras.igv|miles(2) }}</td><td class="px-2 text-right">{{ rep.compras.otros|miles(2) }}</td><td class="px-2 text-right">{{ rep.compras.total|miles(2) }}</td><td></td></tr></tfoot>{% endif %}
+    </table></div>
+  </section>
+
+  <section class="bg-white rounded shadow p-5">
+    <h3 class="font-semibold mb-1">5. Relación de PAGOS (forma de pago de compras) <span class="text-slate-500 font-normal text-sm">· {{ rep.lista_pagos|length }}</span></h3>
+    <div class="overflow-x-auto"><table class="w-full text-xs">
+      <thead><tr class="bg-emerald-100 text-emerald-900 text-left">
+        <th class="px-2 py-1">N°</th><th class="px-2">Fecha de operación</th><th class="px-2">Comprobante pagado</th><th class="px-2">RUC / Doc.</th><th class="px-2">Medio de pago</th><th class="px-2">Banco</th><th class="px-2">N° de operación</th><th class="px-2 text-right">Monto S/</th></tr></thead>
+      <tbody class="divide-y">
+      {% for p in rep.lista_pagos %}
+        <tr><td class="px-2 py-1 text-slate-400">{{ loop.index }}</td><td class="px-2 whitespace-nowrap">{{ p.fecha }}</td><td class="px-2 whitespace-nowrap font-mono">{{ p.tipo }} · {{ p.doc }}</td><td class="px-2">{{ p.ruc }}</td>
+          <td class="px-2">{{ p.medio }}</td><td class="px-2">{{ p.banco }}</td><td class="px-2 font-mono">{{ p.operacion }}</td><td class="px-2 text-right">{{ p.monto|miles(2) }}</td></tr>
+      {% else %}<tr><td colspan="8" class="px-2 py-4 text-center text-slate-400">Sin pagos. Use «Generar desde las compras» o «Buscar en libros de bancos» en la sub-pestaña Forma de pago.</td></tr>{% endfor %}
+      </tbody>
+      {% if rep.lista_pagos %}<tfoot><tr class="bg-emerald-50 font-semibold"><td colspan="7" class="px-2 py-1">TOTAL</td><td class="px-2 text-right">{{ rep.pagos.monto|miles(2) }}</td></tr></tfoot>{% endif %}
+    </table></div>
+  </section>
+
+  <section class="bg-white rounded shadow p-5">
+    <h3 class="font-semibold mb-2">6. Observaciones de la validación</h3>
+    {% for h in hallazgos %}
+      <p class="text-sm {{ 'text-red-700' if h.nivel == 'error' else 'text-amber-700' }}">{{ '✖' if h.nivel == 'error' else '▲' }}
+        {% if h.periodo %}<span class="font-mono text-xs rounded bg-slate-100 text-slate-700 px-1.5 py-0.5 mr-1">{{ h.periodo }}</span>{% endif %}{{ h.texto }}</p>
+    {% else %}<p class="text-sm text-green-700">✔ Sin observaciones.</p>{% endfor %}
+  </section>
+</div>
 {% else %}
+  {% if subs %}
+  <div class="mt-3 flex gap-1 border-b border-slate-300">
+    {% for sb in subs %}
+    <a href="/declaraciones/{{ decl.id }}?hoja={{ pestana.clave }}&sub={{ sb.clave }}"
+       class="px-5 py-2 text-sm font-medium rounded-t-md border border-b-0 {{ 'bg-white text-emerald-900 border-slate-300 -mb-px' if sb.clave == sub_sel else 'bg-slate-100 text-slate-600 border-transparent hover:bg-slate-200' }}">
+      {{ sb.titulo }} <span class="ml-1 text-xs rounded-full px-1.5 {{ 'bg-emerald-600 text-white' if sb.n else 'bg-slate-300 text-slate-600' }}">{{ sb.n }}</span></a>
+    {% endfor %}
+  </div>
+  {% endif %}
+  {% if sub_sel == 'DETRACCIONES' %}
+  <section class="bg-white rounded shadow mt-3">
+    <div class="px-4 py-2 border-b"><h2 class="font-semibold text-sm">Constancias de detracción <span class="text-slate-500 font-normal">· {{ detracciones|length }} constancia(s) · <b class="text-slate-800">Total depositado S/ {{ detracciones|sum(attribute='monto')|miles(2) }}</b> · solo de este período ({{ decl.periodo }}); se enlazan a la compra donde esté registrada la factura</span></h2></div>
+    <div class="flex flex-wrap items-center gap-x-5 gap-y-2 px-4 py-2 bg-emerald-50 border-b text-sm">
+      <form method="post" action="/declaraciones/{{ decl.id }}/detracciones" enctype="multipart/form-data" class="flex flex-wrap items-center gap-2"
+            data-ext=".html,.htm" data-etiqueta="HTML" onsubmit="return enviarXml(event, this)"
+            title="Suba el HTML «Constancia de depósito» de SUNAT. Se enlaza por proveedor + comprobante y rellena A21 (indicador), A22 (código de tasa) y A23 (N° de constancia) en COMPRAS, de cualquier período.">
+        <label class="border border-emerald-700 text-emerald-800 rounded px-3 py-1 cursor-pointer hover:bg-emerald-100 whitespace-nowrap">Elegir archivo(s)
+          <input type="file" accept=".html,.htm" multiple class="hidden" onchange="resumenXml(this.form)"></label>
+        <label class="border border-emerald-700 text-emerald-800 rounded px-3 py-1 cursor-pointer hover:bg-emerald-100 whitespace-nowrap">Elegir carpeta
+          <input type="file" webkitdirectory directory multiple class="hidden" onchange="resumenXml(this.form)"></label>
+        <span class="text-xs text-slate-600 min-w-[8rem]" data-resumen>Ninguna constancia seleccionada</span>
+        <button class="bg-emerald-700 text-white rounded px-3 py-1 whitespace-nowrap">Leer constancias HTML</button>
+      </form>
+      <form method="post" action="/declaraciones/{{ decl.id }}/detracciones/aplicar">
+        <button class="border border-emerald-700 text-emerald-800 rounded px-3 py-1 hover:bg-emerald-100 whitespace-nowrap" title="Vuelve a rellenar las compras con las constancias guardadas.">Aplicar a las compras</button>
+      </form>
+    </div>
+    <div class="overflow-auto max-h-[28rem]">
+      <table class="text-xs border-collapse w-full">
+        <thead class="sticky top-0"><tr class="bg-emerald-100 text-emerald-900">
+          {% for t in ['N° constancia','Fecha de pago','Período','RUC proveedor','Proveedor','Comprobante','Bien/servicio','Monto S/','N° operación','Registrada en compras del período',''] %}<th class="px-2 py-1 text-left font-medium">{{ t }}</th>{% endfor %}
+        </tr></thead>
+        <tbody>
+        {% for d in detracciones %}
+          <tr class="border-t hover:bg-amber-50">
+            <td class="px-2 py-1">{{ d.constancia }}</td>
+            <td class="px-2">{{ d.fecha_pago.strftime('%d/%m/%Y') if d.fecha_pago }}</td>
+            <td class="px-2">{{ d.periodo_tributario }}</td>
+            <td class="px-2">{{ d.ruc_proveedor }}</td>
+            <td class="px-2">{{ d.proveedor }}</td>
+            <td class="px-2 whitespace-nowrap">{{ d.tipo_comprobante }} · {{ d.serie }}-{{ d.numero|int }}</td>
+            <td class="px-2">{{ d.bien_servicio }}</td>
+            <td class="px-2 text-right">{{ d.monto|miles(2) }}</td>
+            <td class="px-2">{{ d.nro_operacion }}</td>
+            <td class="px-2 whitespace-nowrap">{% set pr = ligadas.get(d.constancia, []) %}
+              {% if not pr %}<span class="text-amber-600">⏳ sin compra</span>
+              {% else %}<span class="text-green-700" title="El N° de constancia va en la compra, en el período donde está registrada la factura (depósito: {{ d.fecha_pago.strftime('%m/%Y') if d.fecha_pago }}).">✔ {{ pr|join(', ') }}</span>{% endif %}</td>
+            <td class="px-2"><form method="post" action="/declaraciones/{{ decl.id }}/detracciones/{{ d.id }}/eliminar" onsubmit="return confirm('¿Quitar esta constancia?')"><button class="text-slate-300 hover:text-red-600" title="Quitar">✕</button></form></td>
+          </tr>
+        {% else %}
+          <tr><td colspan="11" class="px-4 py-6 text-center text-slate-400">Aún no hay constancias. Suba los HTML de «Constancia de depósito» de SUNAT.</td></tr>
+        {% endfor %}
+        </tbody>
+        {% if detracciones %}<tfoot class="sticky bottom-0"><tr class="bg-emerald-100 font-semibold text-emerald-900">
+          <td class="px-2 py-1" colspan="7">TOTAL · {{ detracciones|length }} constancia(s)</td>
+          <td class="px-2 text-right">{{ detracciones|sum(attribute='monto')|miles(2) }}</td><td colspan="3"></td></tr></tfoot>{% endif %}
+      </table>
+    </div>
+  </section>
+  {% endif %}
+  {% if sub_sel == 'FORM1662' %}
+  <section class="bg-white rounded shadow mt-3">
+    <div class="px-4 py-2 border-b"><h2 class="font-semibold text-sm inline">Formulario 1662 · IGV de servicios de no domiciliados <span class="text-slate-500 font-normal">· {{ forms1662|length }} constancia(s) · <b class="text-slate-800">IGV total S/ {{ forms1662|sum(attribute='importe')|miles(2) }}</b> {{ 'de todos los períodos' if ver_todas else 'del período ' ~ decl.periodo }}</span></h2>
+      <span class="ml-3 text-xs">
+        <a href="/declaraciones/{{ decl.id }}?hoja=compras&sub=FORM1662" class="px-2 py-0.5 rounded {{ 'bg-emerald-700 text-white' if not ver_todas else 'text-emerald-800 border border-emerald-700' }}">Período {{ decl.periodo }}</a>
+        <a href="/declaraciones/{{ decl.id }}?hoja=compras&sub=FORM1662&todas=1" class="px-2 py-0.5 rounded {{ 'bg-emerald-700 text-white' if ver_todas else 'text-emerald-800 border border-emerald-700' }}">Todos ({{ total_1662 }})</a>
+      </span></div>
+    <div class="flex flex-wrap items-center gap-x-5 gap-y-2 px-4 py-2 bg-emerald-50 border-b text-sm">
+      <form method="post" action="/declaraciones/{{ decl.id }}/form1662" enctype="multipart/form-data" class="flex flex-wrap items-center gap-2"
+            data-ext=".pdf" data-etiqueta="PDF" onsubmit="return enviarXml(event, this)"
+            title="Suba el PDF «Constancia Formulario 1662». Se enlaza por serie y número del comprobante y pasa el IGV pagado a A19 y la base (IGV ÷ 18%) a A17 de la compra, de cualquier período.">
+        <label class="border border-emerald-700 text-emerald-800 rounded px-3 py-1 cursor-pointer hover:bg-emerald-100 whitespace-nowrap">Elegir archivo(s)
+          <input type="file" accept=".pdf" multiple class="hidden" onchange="resumenXml(this.form)"></label>
+        <span class="text-xs text-slate-600 min-w-[8rem]" data-resumen>Ningún PDF seleccionado</span>
+        <button class="bg-emerald-700 text-white rounded px-3 py-1 whitespace-nowrap">Leer Formulario 1662</button>
+      </form>
+      <form method="post" action="/declaraciones/{{ decl.id }}/form1662/aplicar">
+        <button class="border border-emerald-700 text-emerald-800 rounded px-3 py-1 hover:bg-emerald-100 whitespace-nowrap" title="Vuelve a pasar la base y el IGV pagado a las compras.">Aplicar a las compras</button>
+      </form>
+    </div>
+    <div class="overflow-auto max-h-[28rem]">
+      <table class="text-xs border-collapse w-full">
+        <thead class="sticky top-0"><tr class="bg-emerald-100 text-emerald-900">
+          {% for t in ['N° de orden','Fecha de pago','Período','Comprobante','Base imponible S/ (IGV ÷ 18%)','IGV pagado S/','Banco','N° operación','Registrada en compras del período',''] %}<th class="px-2 py-1 text-left font-medium">{{ t }}</th>{% endfor %}
+        </tr></thead>
+        <tbody>
+        {% for f in forms1662 %}
+          <tr class="border-t hover:bg-amber-50">
+            <td class="px-2 py-1">{{ f.nro_orden }}</td>
+            <td class="px-2">{{ f.fecha_pago.strftime('%d/%m/%Y') if f.fecha_pago }}</td>
+            <td class="px-2">{{ f.periodo }}</td>
+            <td class="px-2 whitespace-nowrap">{{ f.serie }}-{{ f.numero }}</td>
+            <td class="px-2 text-right" title="Calculada: IGV pagado ÷ 0.18 (pasa a A17 de la compra)">{{ (f.importe|float / 0.18)|round(2)|miles(2) }}</td>
+            <td class="px-2 text-right">{{ f.importe|miles(2) }}</td>
+            <td class="px-2">{{ f.banco }}</td>
+            <td class="px-2">{{ f.nro_operacion }}</td>
+            <td class="px-2 whitespace-nowrap">{% set pr = compras_1662.get((f.serie|upper|trim, (f.numero|trim|upper).lstrip('0') or f.numero), []) %}
+              {% if not pr %}<span class="text-amber-600">⏳ sin compra</span>
+              {% else %}<span class="text-green-700" title="El IGV y la base van en la compra, en el período donde está registrada la factura (pago: {{ f.fecha_pago.strftime('%m/%Y') if f.fecha_pago }}).">✔ {{ pr|join(', ') }}</span>{% endif %}</td>
+            <td class="px-2"><form method="post" action="/declaraciones/{{ decl.id }}/form1662/{{ f.id }}/eliminar" onsubmit="return confirm('¿Quitar este formulario?')"><button class="text-slate-300 hover:text-red-600" title="Quitar">✕</button></form></td>
+          </tr>
+        {% else %}
+          <tr><td colspan="10" class="px-4 py-6 text-center text-slate-400">Sin formularios{{ '' if ver_todas else ' de este período' }}. Suba los PDF «Constancia Formulario 1662» de SUNAT{{ ' o pulse «Todos»' if not ver_todas and total_1662 else '' }}.</td></tr>
+        {% endfor %}
+        </tbody>
+        {% if forms1662 %}<tfoot class="sticky bottom-0"><tr class="bg-emerald-100 font-semibold text-emerald-900">
+          <td class="px-2 py-1" colspan="4">TOTAL · {{ forms1662|length }} constancia(s)</td>
+          <td class="px-2 text-right">{{ (forms1662|sum(attribute='importe')|float / 0.18)|round(2)|miles(2) }}</td>
+          <td class="px-2 text-right">{{ forms1662|sum(attribute='importe')|miles(2) }}</td><td colspan="4"></td></tr></tfoot>{% endif %}
+      </table>
+    </div>
+  </section>
+  {% endif %}
   {% for b in bloques %}{{ grilla(b) }}{% endfor %}
   {% if pestana.clave == 'duas' and n_errores %}
   <section class="bg-white rounded shadow p-4 mt-3">
@@ -145,14 +448,165 @@
   {% endif %}
 {% endif %}
 
+<div id="panel-ayuda" class="hidden fixed bottom-3 right-3 z-50 w-[34rem] max-w-[95vw] max-h-[45vh] overflow-auto rounded shadow-xl bg-sky-700 text-white text-xs p-3">
+  <div id="ayuda-titulo" class="font-semibold mb-1"></div>
+  <pre id="ayuda-texto" class="whitespace-pre-wrap font-mono leading-snug"></pre>
+</div>
+<script id="datos-ayuda" type="application/json">{{ ayuda|tojson }}</script>
 <script>
+const AYUDA = JSON.parse(document.getElementById('datos-ayuda').textContent);
+const chkAyuda = document.getElementById('chk-ayuda');
+try { if (localStorage.getItem('pdbAyuda') === '0' && chkAyuda) chkAyuda.checked = false; } catch (e) {}
+if (chkAyuda) chkAyuda.addEventListener('change', () => {
+  try { localStorage.setItem('pdbAyuda', chkAyuda.checked ? '1' : '0'); } catch (e) {}
+  if (!chkAyuda.checked) document.getElementById('panel-ayuda').classList.add('hidden');
+});
+document.addEventListener('focusin', e => {
+  const panel = document.getElementById('panel-ayuda');
+  const cod = e.target.dataset && e.target.dataset.cod;
+  const a = cod && AYUDA[cod];
+  if (!a || !chkAyuda || !chkAyuda.checked) { panel.classList.add('hidden'); return; }
+  document.getElementById('ayuda-titulo').textContent =
+    cod + ' · ' + a.nombre + ' · ' + a.tipo + (a.largo ? ' · máx. ' + a.largo : '');
+  document.getElementById('ayuda-texto').textContent = a.texto;
+  panel.classList.remove('hidden');
+});
+// Archivos sueltos o una carpeta entera: solo se envían los de la extensión de la hoja (.xml o .pdf);
+// en XML se omiten además las constancias «R-…».
+function archivosDe(form) {
+  const ext = form.dataset.ext || '.xml';
+  const todos = [];
+  form.querySelectorAll('input[type=file]').forEach(i => todos.push(...i.files));
+  const exts = ext.split(','), buenos = todos.filter(f => exts.some(x => f.name.toLowerCase().endsWith(x)));
+  const cdr = ext === '.xml' ? buenos.filter(f => /^R-/i.test(f.name)).length : 0;
+  return {todos: todos.length, validos: ext === '.xml' ? buenos.filter(f => !/^R-/i.test(f.name)) : buenos, cdr, ext};
+}
+function resumenXml(form) {
+  const r = archivosDe(form), et = form.dataset.etiqueta || 'XML';
+  const otros = r.todos - r.validos.length - r.cdr;
+  form.querySelector('[data-resumen]').textContent = r.todos === 0 ? 'Ningún ' + et + ' seleccionado'
+    : r.validos.length + ' ' + et + (r.cdr ? ' (' + r.cdr + ' constancias R- omitidas)' : '') + (otros ? ' · ' + otros + ' otros archivos ignorados' : '');
+}
+async function enviarXml(ev, form) {
+  ev.preventDefault();
+  const r = archivosDe(form), et = form.dataset.etiqueta || 'XML';
+  if (!r.validos.length) { form.querySelector('[data-resumen]').textContent = 'Elija uno o más ' + et + ', o una carpeta con ' + et + '.'; return false; }
+  const btn = form.querySelector('button'); btn.disabled = true; btn.textContent = 'Leyendo ' + r.validos.length + ' ' + et + '…';
+  const fd = new FormData();
+  r.validos.forEach(f => fd.append('archivos', f, f.name));
+  const resp = await fetch(form.action, {method: 'POST', body: fd});
+  window.location = resp.url;
+  return false;
+}
+document.addEventListener('input', e => {
+  if (e.target.dataset && e.target.dataset.cod === 'ESTADO')
+  {
+    const anulado = e.target.value.trim().toUpperCase().startsWith('ANULAD');
+    e.target.classList.toggle('text-red-600', anulado);
+    if (anulado) {                                      // ANULADO → importes en cero
+      const tr = e.target.closest('tr');
+      ['C17', 'C18', 'C19', 'C20', 'C29', 'C30'].forEach(c => {
+        const i = tr.querySelector('input[data-cod="' + c + '"]');
+        if (i && (c < 'C21' || i.value.trim())) i.value = '0.00';
+      });
+    }
+  }
+});
+function recalcularTotal(tr) {
+  const t = tr.querySelector('[data-total]'); if (!t) return;
+  let sum = 0;
+  ['A17', 'A18', 'A19', 'A20'].forEach(c => { const i = tr.querySelector('input[data-cod="' + c + '"]'); if (i) sum += parseFloat(i.value.replace(/,/g, '')) || 0; });
+  t.textContent = sum.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+}
+function recalcularTotales(raiz) { (raiz || document).querySelectorAll('tbody tr').forEach(recalcularTotal); }
+document.addEventListener('input', e => { const tr = e.target.closest && e.target.closest('tr'); if (tr) recalcularTotal(tr); });
+document.addEventListener('DOMContentLoaded', () => recalcularTotales());
+function contarSeleccion(el) {
+  const sec = el.closest('section'), n = sec.querySelectorAll('tbody .chk-fila:checked').length;
+  const b = sec.querySelector('.btn-eliminar-sel');
+  b.disabled = n === 0;
+  b.querySelector('[data-n-sel]').textContent = n ? '(' + n + ')' : '';
+  const todos = sec.querySelector('.chk-todos');
+  if (todos) todos.checked = n > 0 && n === [...sec.querySelectorAll('tbody tr')].filter(tr => tr.style.display !== 'none').length;
+}
+function seleccionarTodos(chk) {
+  const sec = chk.closest('section');
+  sec.querySelectorAll('tbody tr').forEach(tr => { if (tr.style.display !== 'none') tr.querySelector('.chk-fila').checked = chk.checked; });
+  contarSeleccion(chk);
+}
+function eliminarSeleccionados(btn) {
+  const sec = btn.closest('section'), marcadas = [...sec.querySelectorAll('tbody .chk-fila:checked')];
+  if (!marcadas.length) return;
+  if (!confirm('¿Eliminar ' + marcadas.length + ' fila(s) seleccionada(s)? Se guarda al instante y no se puede deshacer.')) return;
+  marcadas.forEach(c => c.closest('tr').remove());
+  const form = sec.querySelector('form[action*="/bloque/"]');
+  if (form.requestSubmit) form.requestSubmit(); else form.submit();
+}
+function filtrarIgv(sel) {
+  const sec = sel.closest('section'), solo = sel.value === 'solo';
+  let ocultas = 0;
+  sec.querySelectorAll('tbody tr').forEach(tr => {
+    const i = tr.querySelector('input[data-cod="A19"]');
+    const igv = i ? parseFloat(i.value.replace(/,/g, '')) || 0 : 0;
+    const ocultar = solo && !(igv > 0);
+    tr.style.display = ocultar ? 'none' : '';
+    if (ocultar) ocultas++;
+  });
+  sec.querySelector('[data-igv-n]').textContent = solo ? ocultas + ' fila(s) sin IGV ocultas' : '';
+  try { localStorage.setItem('pdb_igv', sel.value); } catch (e) {}
+}
+document.addEventListener('DOMContentLoaded', () => {
+  const sel = document.querySelector('.sel-igv');
+  if (!sel) return;
+  try { sel.value = localStorage.getItem('pdb_igv') || 'todo'; } catch (e) {}
+  filtrarIgv(sel);
+});
+function sinMiles(i) { i.value = i.value.replace(/,/g, ''); }
+function conMiles(i) {
+  const v = i.value.replace(/,/g, '').trim();
+  if (/^-?\d+(\.\d+)?$/.test(v)) i.value = Number(v).toLocaleString('en-US', {minimumFractionDigits: +i.dataset.dec, maximumFractionDigits: +i.dataset.dec});
+}
+document.addEventListener('focusin', e => { if (e.target.dataset && e.target.dataset.dec && !e.target.readOnly) sinMiles(e.target); });
+// En «Factura(s)»: al entrar a la celda se selecciona «(sin factura)» para que lo que se escriba lo reemplace.
+document.addEventListener('focusin', e => {
+  const i = e.target, M = '(sin factura)';
+  if (i.dataset && i.dataset.cod === 'FAC' && !i.readOnly) {
+    const k = i.value.indexOf(M);
+    if (k >= 0) setTimeout(() => i.setSelectionRange(k, k + M.length), 0);
+  }
+});
+document.addEventListener('focusout', e => { if (e.target.dataset && e.target.dataset.dec && !e.target.readOnly) conMiles(e.target); });
+function abrirEdicion(fila) {
+  fila.querySelectorAll('input:not([data-calc])').forEach(i => i.readOnly = false);
+  fila.querySelectorAll('select').forEach(i => i.disabled = false);
+  fila.querySelectorAll('.btn-quitar').forEach(b => b.classList.remove('hidden'));
+}
+function alternarEdicion(chk) {
+  const sec = chk.closest('section');
+  if (!chk.checked) {                                   // volver a solo lectura
+    if (sec.dataset.cambios && !confirm('Hay cambios sin guardar. ¿Descartarlos?')) { chk.checked = true; return; }
+    location.reload();
+    return;
+  }
+  sec.dataset.editando = '1';
+  sec.querySelectorAll('tbody tr').forEach(abrirEdicion);
+  sec.querySelector('.barra-solo-lectura').classList.add('hidden');
+  sec.querySelector('.barra-edicion').classList.remove('hidden');
+  sec.querySelector('.overflow-auto').classList.add('ring-2', 'ring-amber-300');
+}
+function marcarCambio(el) { const s = el.closest('section'); if (s) s.dataset.cambios = '1'; }
+document.addEventListener('input', e => { if (e.target.closest && e.target.closest('tbody')) marcarCambio(e.target); });
 function agregarFila(btn) {
   const f = btn.closest('form');
   f.querySelector('tbody').insertAdjacentHTML('beforeend', f.querySelector('template').innerHTML);
-  f.querySelector('tbody tr:last-child input').focus();
+  const fila = f.querySelector('tbody tr:last-child');
+  abrirEdicion(fila);
+  marcarCambio(fila);
+  fila.querySelector('input:not(.chk-fila)').focus();
 }
 function enviarGrilla(form) {
-  const filas = [...form.querySelectorAll('tbody tr')].map(tr => [...tr.querySelectorAll('input')].map(i => i.value));
+  const filas = [...form.querySelectorAll('tbody tr')].map(tr => [...tr.querySelectorAll('input:not(.chk-fila), select')]
+    .sort((a, b) => (a.dataset.cod === 'ESTADO') - (b.dataset.cod === 'ESTADO')).map(i => i.dataset.dec ? i.value.replace(/,/g, '') : i.value));
   form.querySelector('[name=datos]').value = JSON.stringify(filas);
   return true;
 }

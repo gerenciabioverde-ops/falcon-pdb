@@ -5,13 +5,16 @@ from fastapi.responses import RedirectResponse
 
 from app import models  # noqa: F401  (registra los modelos en Base.metadata)
 from app.core.deps import NoAutenticado
-from app.database import Base, engine
+from app.database import Base, SessionLocal, engine
+from app.services.pdb import sembrar_historial
 from app.routers import web
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     Base.metadata.create_all(bind=engine)
+    with SessionLocal() as db:
+        sembrar_historial(db)
     yield
 
 

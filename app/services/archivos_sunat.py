@@ -15,6 +15,7 @@ from decimal import ROUND_HALF_UP, Decimal
 
 from app.hojas import ARCHIVO_BLOQUE, COLUMNAS
 from app.models import Declaracion
+from app.services import pdb as _pdb
 from app.services.pdb import _fecha
 
 F = "FECHA"   # dd/mm/yyyy
@@ -71,18 +72,44 @@ def _linea(celdas, formatos: list[str]) -> str:
 
 
 def _filas_hoja(decl: Declaracion, hoja: str, formatos: list[str]) -> list[str]:
-    return [_linea(f.celdas, formatos) for f in decl.filas if f.hoja == hoja and any(f.celdas)]
+    return [_linea(c, formatos) for c in _pdb.filas_bloque(decl, hoja) if any(c)]
+
+
+def _fuera_de_periodo(decl: Declaracion) -> set[str]:
+    """Claves de las DUAs cuyo mes de embarque no es el del período: SUNAT las rechaza (D4 debe ser del período)."""
+    return {d.clave for d in decl.duas
+            if d.fecha_embarque and (d.fecha_embarque.year, d.fecha_embarque.month) != (decl.anio, decl.mes)}
 
 
 def lineas_duas(decl: Declaracion) -> list[str]:
     return [_linea([d.codigo_aduana, d.anio_dua, d.correlativo, d.fecha_embarque,
-                    d.fecha_regularizacion, d.fob_usd], FMT_DUA) for d in decl.duas]
+                    d.fecha_regularizacion, d.fob_usd], FMT_DUA) for d in decl.duas
+            if d.clave not in _fuera_de_periodo(decl)]
 
 
 def lineas_cdps(decl: Declaracion) -> list[str]:
-    return [_linea([c.periodo_cdp, c.tipo_comprobante, c.serie, c.numero, c.tipo_exportacion,
-                    c.dua_key, c.fob_facturado, c.fob_propietario, c.pct_participacion,
-                    c.ruc_operador], FMT_DU1) for c in decl.cdps]
+    """E8 (FOB propietario) solo para tipos de exportación 3 y 4; E9 (% participación) y E10 (RUC operador)
+    solo para el tipo 4. En los demás tipos SUNAT rechaza la fila si vienen llenos."""
+    filas = []
+    for c in decl.cdps:
+        if c.dua_key in _fuera_de_periodo(decl):
+            continue
+        t = str(c.tipo_exportacion).strip().lstrip("0")
+        filas.append(_linea([c.periodo_cdp, c.tipo_comprobante, c.serie, c.numero, c.tipo_exportacion, c.dua_key,
+                             c.fob_facturado,
+                             c.fob_propietario if t in ("3", "4") else "",
+                             c.pct_participacion if t == "4" else "",
+                             c.ruc_operador if t == "4" else ""], FMT_DU1))
+    return filas
+
+
+def _con_doc(celdas: list[str]) -> list[str]:
+    """Cliente sin documento (tipo «-», típico de no domiciliados): el N° de documento va en blanco.
+    Con cualquier número SUNAT rechaza la venta («el número de documento (sin documento) no es válido»)."""
+    celdas = list(celdas) + [""] * 30
+    if celdas[6].strip() == "-":
+        celdas[7] = ""
+    return celdas
 
 
 def archivos(decl: Declaracion) -> dict[str, list[str]]:
@@ -91,7 +118,13 @@ def archivos(decl: Declaracion) -> dict[str, list[str]]:
     todo = {f"{ruc}{per}.dua": lineas_duas(decl), f"{ruc}{per}.du1": lineas_cdps(decl)}
     for bloque, (pref, ext, con_per) in ARCHIVO_BLOQUE.items():
         nombre = f"{pref}{ruc}{per if con_per else ''}{ext}"
-        todo[nombre] = _filas_hoja(decl, bloque, [c[2] for c in COLUMNAS[bloque]])
+        formatos = [c[2] for c in COLUMNAS[bloque]]
+        if bloque == "VENTAS":
+            formatos = formatos[:30]                 # C31 (tipo de exportación) no va en el archivo                       # cliente sin documento («-»): N° según el ajuste
+            todo[nombre] = [_linea(_pdb.anulado_en_cero(_con_doc(c)) if _pdb.es_anulado(c) else _con_doc(c), formatos)
+                            for c in _pdb.filas_bloque(decl, bloque) if any(c)]
+        else:
+            todo[nombre] = _filas_hoja(decl, bloque, formatos)
     return {n: l for n, l in todo.items() if l}
 
 
