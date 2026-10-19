@@ -374,7 +374,17 @@ async function enviarXml(ev, form) {
 }
 document.addEventListener('input', e => {
   if (e.target.dataset && e.target.dataset.cod === 'ESTADO')
-    e.target.classList.toggle('text-red-600', e.target.value.trim().toUpperCase().startsWith('ANULAD'));
+  {
+    const anulado = e.target.value.trim().toUpperCase().startsWith('ANULAD');
+    e.target.classList.toggle('text-red-600', anulado);
+    if (anulado) {                                      // ANULADO → importes en cero
+      const tr = e.target.closest('tr');
+      ['C17', 'C18', 'C19', 'C20', 'C29', 'C30'].forEach(c => {
+        const i = tr.querySelector('input[data-cod="' + c + '"]');
+        if (i && (c < 'C21' || i.value.trim())) i.value = '0.00';
+      });
+    }
+  }
 });
 function recalcularTotal(tr) {
   const t = tr.querySelector('[data-total]'); if (!t) return;

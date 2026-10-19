@@ -266,6 +266,14 @@ def filas_bloque(decl: Declaracion, bloque: str, mes: tuple[int, int] | None = N
     return [f.celdas for f in decl.filas if f.hoja == bloque]
 
 
+def anulado_en_cero(celdas: list[str]) -> list[str]:
+    """Comprobante ANULADO: C17-C20 en 0.00 y los importes de referencia de notas (C29-C30) en 0.00 si los tenían."""
+    c = list(celdas)
+    for i in (16, 17, 18, 19, 28, 29):
+        c[i] = "0.00" if i < 20 or str(c[i]).strip() else ""
+    return c
+
+
 def es_anulado(celdas) -> bool:
     return len(celdas) > 31 and str(celdas[31]).strip().upper() == "ANULADO"
 
@@ -336,6 +344,8 @@ def guardar_grilla(db: Session, decl: Declaracion, bloque: str, filas: list[list
             if f[6] == "-":
                 f[7] = ""                        # sin documento → N° de documento en blanco
             f[31] = "ANULADO" if f[31].strip().upper() in ("ANULADO", "ANULADA") else "VÁLIDO"
+            if f[31] == "ANULADO":
+                f[:] = anulado_en_cero(f)            # anulado → importes en cero también en la hoja
     if bloque == "TC":
         registros = _parsear_tc(filas)
         anio, m = mes or (decl.anio, decl.mes)

@@ -23,7 +23,7 @@ from app.lectores.dam_pdf import parsear_dam_pdf
 from app.lectores.tc_pdf import ImportadorTCError, parsear_pdf_sunat
 from app.lectores.xml_cpe import NS, parsear_xml_cpe
 from app.models import Cdp, Declaracion, Dua, HojaFila, TipoCambioDia
-from app.services.pdb import _dec, _fecha, purgar_tc_futuros, registrar_tc_historial
+from app.services.pdb import anulado_en_cero, _dec, _fecha, purgar_tc_futuros, registrar_tc_historial
 from sqlalchemy.orm import object_session
 
 CERO = Decimal("0")
@@ -275,6 +275,8 @@ def _cargar_xmls(db: Session, decl: Declaracion, archivos: list[tuple[str, bytes
         for k, f in nuevas.items():
             if k in existentes and len(existentes[k]) > 31:
                 nuevas[k] = (list(f) + [""] * 31)[:31] + [existentes[k][31]]
+                if str(existentes[k][31]).strip().upper() == "ANULADO":
+                    nuevas[k] = anulado_en_cero(nuevas[k])
     existentes.update(nuevas)
     ordenadas = sorted(existentes.values(), key=lambda r: (_sin_cero_fecha(r[2]), r[3], r[4]))
     _completar_referencias(ordenadas)
