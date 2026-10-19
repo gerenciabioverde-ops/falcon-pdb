@@ -66,13 +66,15 @@
           <tr class="bg-emerald-800 text-white">
             <th class="px-2 py-1 w-8"></th>
             {% if b.extra is not none %}<th class="px-2 py-1 text-center font-semibold bg-sky-800">REF</th>{% endif %}
-            {% for cod, tit, fmt in b.columnas %}<th class="px-2 py-1 text-center font-semibold border-l border-emerald-700">{{ cod }}</th>{% if b.clave == 'COMPRAS' and cod == 'A20' %}<th class="px-2 py-1 text-center font-semibold bg-sky-800 border-l border-emerald-700">TOTAL</th>{% endif %}{% endfor %}
+            {% if b.clave == 'VENTAS' %}<th class="px-2 py-1 text-center font-semibold bg-sky-800 border-l border-sky-700">ESTADO</th>{% endif %}
+            {% for cod, tit, fmt in b.columnas if cod != 'ESTADO' %}<th class="px-2 py-1 text-center font-semibold border-l border-emerald-700">{{ cod }}</th>{% if b.clave == 'COMPRAS' and cod == 'A20' %}<th class="px-2 py-1 text-center font-semibold bg-sky-800 border-l border-emerald-700">TOTAL</th>{% endif %}{% endfor %}
             <th class="w-8"></th>
           </tr>
           <tr class="bg-emerald-100 text-emerald-900">
             <th class="px-2"></th>
             {% if b.extra is not none %}<th class="px-2 py-1 font-medium align-bottom bg-sky-100 text-sky-900 min-w-[11rem]">DAM REGULARIZADA<br><span class="font-normal">(seguimiento)</span></th>{% endif %}
-            {% for cod, tit, fmt in b.columnas %}<th class="px-2 py-1 font-medium border-l border-emerald-200 min-w-[7rem] max-w-[11rem] align-bottom">{{ tit }}</th>{% if b.clave == 'COMPRAS' and cod == 'A20' %}<th class="px-2 py-1 font-medium align-bottom bg-sky-100 text-sky-900 min-w-[7rem]">MONTO TOTAL<br><span class="font-normal">(solo visualizar)</span></th>{% endif %}{% endfor %}
+            {% if b.clave == 'VENTAS' %}<th class="px-2 py-1 font-medium align-bottom bg-sky-100 text-sky-900 min-w-[7rem]">ESTADO<br><span class="font-normal">(VÁLIDO / ANULADO)</span></th>{% endif %}
+            {% for cod, tit, fmt in b.columnas if cod != 'ESTADO' %}<th class="px-2 py-1 font-medium border-l border-emerald-200 min-w-[7rem] max-w-[11rem] align-bottom">{{ tit }}</th>{% if b.clave == 'COMPRAS' and cod == 'A20' %}<th class="px-2 py-1 font-medium align-bottom bg-sky-100 text-sky-900 min-w-[7rem]">MONTO TOTAL<br><span class="font-normal">(solo visualizar)</span></th>{% endif %}{% endfor %}
             <th></th>
           </tr>
         </thead>
@@ -127,7 +129,11 @@
     {% else %}<span class="text-slate-300">—</span>{% endif %}
   </td>
   {% endif %}
-  {% for cod, tit, fmt in cols %}
+  {% if cols[-1][0] == 'ESTADO' %}{% set est = fila[cols|length - 1] if fila and fila|length >= cols|length else 'VÁLIDO' %}
+  <td class="p-0 border-l border-slate-100 bg-sky-50"><input readonly list="lst-estado" data-cod="ESTADO" value="{{ est }}"
+      class="w-full min-w-[7rem] px-2 py-1 bg-transparent {{ 'text-red-600 font-semibold' if est == 'ANULADO' }} focus:bg-white focus:outline focus:outline-2 focus:outline-emerald-500"></td>
+  {% endif %}
+  {% for cod, tit, fmt in cols if cod != 'ESTADO' %}
   {% if cod == 'A21' and cols|length == 30 %}<td class="px-2 text-right bg-sky-50 font-medium select-text whitespace-nowrap" data-total></td>{% endif %}
   <td class="p-0 border-l border-slate-100 {{ 'bg-slate-50' if cod == 'REF' else ('bg-sky-50' if cod == 'FAC') }}"><input readonly {{ 'data-calc' if cod == 'REF' }} {{ 'list=lst-estado' if cod == 'ESTADO' }} data-cod="{{ cod }}" {% set v = fila[loop.index0] if fila and loop.index0 < fila|length else '' %}{% set dec = 2 if fmt in ('0.00', '0.00*') else (3 if fmt == '0.000' else 0) %}{% if dec %}data-dec="{{ dec }}" {% endif %}value="{{ v|miles(dec) if dec else v }}"
       class="w-full min-w-[7rem] px-2 py-1 bg-transparent {{ 'text-red-600 font-semibold' if v == 'ANULADO' }} focus:bg-white focus:outline focus:outline-2 focus:outline-emerald-500 {{ 'text-right' if fmt in ('0.00','0.00*','0.000') else '' }}"></td>
@@ -441,7 +447,8 @@ function agregarFila(btn) {
   fila.querySelector('input').focus();
 }
 function enviarGrilla(form) {
-  const filas = [...form.querySelectorAll('tbody tr')].map(tr => [...tr.querySelectorAll('input')].map(i => i.dataset.dec ? i.value.replace(/,/g, '') : i.value));
+  const filas = [...form.querySelectorAll('tbody tr')].map(tr => [...tr.querySelectorAll('input')]
+    .sort((a, b) => (a.dataset.cod === 'ESTADO') - (b.dataset.cod === 'ESTADO')).map(i => i.dataset.dec ? i.value.replace(/,/g, '') : i.value));
   form.querySelector('[name=datos]').value = JSON.stringify(filas);
   return true;
 }
