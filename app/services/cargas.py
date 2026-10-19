@@ -16,6 +16,8 @@ from decimal import ROUND_HALF_UP, Decimal
 
 from sqlalchemy.orm import Session
 
+from app.catalogos import BANCOS, MEDIOS_PAGO
+from app.lectores.bancos import leer_libro_bancos
 from app.lectores.dam_pdf import parsear_dam_pdf
 from app.lectores.tc_pdf import ImportadorTCError, parsear_pdf_sunat
 from app.lectores.xml_cpe import NS, parsear_xml_cpe
@@ -256,6 +258,110 @@ def generar_pagos_desde_compras(db: Session, decl: Declaracion) -> tuple[int, li
     if sin_medio:
         avisos.append(f"{sin_medio} pago(s) sin medio de pago, banco ni N° de operación: complételos en la grilla.")
     return len(filas), avisos
+
+
+# ------------------------------------------------------------------ Forma de pago (desde libros de bancos)
+
+def _clave_cpe(texto: str) -> tuple[str, str]:
+    """'FN01 - 01161271' → ('FN01', '1161271'); sin serie reconocible → ('', '')."""
+    serie, sep, num = (texto or "").partition("-")
+    if not sep:
+        return "", ""
+    return serie.strip().upper(), _sin_ceros(num.strip())
+
+
+def _sin_tildes(t: str) -> str:
+    return t.lower().translate(str.maketrans("áéíóú", "aeiou")).strip()
+
+
+def cargar_pagos_bancos(db: Session, decl: Declaracion, archivos: list[tuple[str, bytes]]) -> tuple[int, list[str]]:
+    """Busca en los libros de bancos el pago de cada compra y llena la forma de pago:
+    medio de pago, banco, N° de operación (cheque o N° de movimiento) y fecha de operación.
+    Una fila por pago (los pagos parciales generan varias). Compras sin pago quedan con los
+    datos del comprobante y el medio/banco vacíos."""
+    compras = [(_filas_compra(f), f) for f in _filas(decl, "COMPRAS")]
+    compras = [(a, f) for a, f in compras if any(a)]
+    if not compras:
+        raise ValueError("No hay compras: cargue primero los XML de compras.")
+    avisos: list[str] = []
+
+    pagos: dict[tuple, list[dict]] = {}
+    egresos = 0
+    for nombre, contenido in archivos:
+        try:
+            libro = leer_libro_bancos(contenido)
+        except ValueError as e:
+            avisos.append(f"{nombre}: {e}")
+            continue
+        banco = BANCOS.get((libro["entidad"] or "").strip().upper(), "")
+        if not banco:
+            avisos.append(f"{nombre}: entidad «{libro['entidad']}» sin código de banco en app/catalogos.py.")
+        for m in libro["movimientos"]:
+            try:
+                egreso = _dec(m.get("egreso"))
+            except ValueError:
+                continue
+            serie, num = _clave_cpe(m.get("comprobante", ""))
+            if egreso <= 0 or not serie:
+                continue
+            egresos += 1
+            tipo = _sin_tildes(m.get("tipo_pago", ""))
+            medio = MEDIOS_PAGO.get(tipo, "")
+            if not medio:
+                avisos.append(f"Tipo de pago «{m.get('tipo_pago')}» sin código de medio de pago en app/catalogos.py.")
+            pagos.setdefault((serie, num), []).append({
+                "doc": (m.get("ruc") or "").strip(), "medio": medio, "banco": banco,
+                "operacion": (m.get("cheque") if tipo == "cheque" and m.get("cheque") else m.get("movimiento", "")),
+                "fecha": _fecha(m.get("fecha", "")), "egreso": egreso, "moneda": libro["moneda"],
+            })
+
+    filas: list[list[str]] = []
+    usados: set[tuple] = set()
+    sin_pago = 0
+    for a, _hf in compras:
+        serie, num = a[3].strip().upper(), _sin_ceros(a[4])
+        cand = pagos.get((serie, num), [])
+        mismos = [p for p in cand if not p["doc"] or not a[7] or p["doc"] == a[7].strip()]
+        if cand and not mismos:
+            avisos.append(f"{a[3]}-{a[4]}: hay pagos con ese número pero a otro RUC/documento; se omitieron.")
+        usados.add((serie, num))
+        base = [a[0], a[1], a[3], a[4], a[5], a[6], a[7]]
+        if not mismos:
+            sin_pago += 1
+            filas.append(base + ["", "", "", a[2], _num(_monto_compra(decl, a, [])) ])
+            continue
+        suma = CERO
+        for p in mismos:
+            monto = p["egreso"] if p["moneda"] == "PEN" else p["egreso"] * (tc_venta(decl, _sin_cero_fecha(a[2])) or CERO)
+            if p["moneda"] != "PEN" and monto == 0:
+                avisos.append(f"{a[3]}-{a[4]}: pago en USD sin tipo de cambio para {a[2]}; monto en cero.")
+            suma += monto
+            filas.append(base + [p["medio"], p["banco"], p["operacion"], _f(p["fecha"]) or a[2], _num(monto)])
+        esperado = _monto_compra(decl, a, avisos)
+        if esperado and abs(suma - esperado) > Decimal("1.00"):
+            avisos.append(f"{a[3]}-{a[4]}: pagos S/ {suma:.2f} ≠ comprobante S/ {esperado:.2f}.")
+    if sin_pago:
+        avisos.append(f"{sin_pago} compra(s) sin pago en los libros de bancos (quedan con medio/banco vacíos).")
+    ignorados = egresos - sum(len(v) for k, v in pagos.items() if k in usados)
+    if ignorados > 0:
+        avisos.append(f"{ignorados} egreso(s) del banco no corresponden a compras de esta declaración.")
+    _reemplazar(db, decl, "COMPRAS_PAGO", filas)
+    return len(filas), avisos
+
+
+def _filas_compra(f: HojaFila) -> list[str]:
+    return (f.celdas + [""] * 30)[:30]
+
+
+def _monto_compra(decl: Declaracion, a: list[str], avisos: list[str]) -> Decimal:
+    """Monto S/. del comprobante según la fórmula AR del libro."""
+    base, isc, igv, otros = (_dec(a[i]) for i in (16, 17, 18, 19))
+    if a[0] == "1" or (a[0] == "2" and a[15] == "5"):
+        return base + isc + igv + otros
+    tc = Decimal("1")
+    if a[13] not in ("", "1"):
+        tc = tc_venta(decl, _sin_cero_fecha(a[2])) or CERO
+    return (igv / Decimal("0.18") + isc + igv + otros) * tc
 
 
 # ------------------------------------------------------------------ DAM (PDF)

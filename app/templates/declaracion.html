@@ -36,8 +36,15 @@
   <div class="flex flex-wrap items-center gap-3 px-4 py-2 bg-emerald-50 border-b text-sm">
     <span class="font-medium text-emerald-900">Cargar automático:</span>
     <form method="post" action="/declaraciones/{{ decl.id }}/cargar/pagos"><button class="bg-emerald-700 text-white rounded px-3 py-1">Generar desde las compras</button></form>
-    <span class="text-xs text-slate-500">Completa tipo, serie, número, documento, fecha y monto S/.; conserva el medio de pago, banco y N° de operación que ya escribió.</span>
+    <span class="text-xs text-slate-500">Opción 1 · usa la fecha de emisión y el monto del comprobante; conserva lo que ya escribió.</span>
   </div>
+  <form method="post" action="/declaraciones/{{ decl.id }}/cargar/pagos_bancos" enctype="multipart/form-data"
+        class="flex flex-wrap items-center gap-2 px-4 py-2 bg-emerald-50 border-b text-sm">
+    <span class="font-medium text-emerald-900">Opción 2:</span>
+    <input type="file" name="archivos" accept=".xls,.xlsx,.html" multiple required class="text-xs">
+    <button class="bg-emerald-700 text-white rounded px-3 py-1">Buscar pagos en libros de bancos</button>
+    <span class="text-xs text-slate-500">Suba el libro de cada cuenta (MN y ME). Una fila por pago: medio, banco, N° de operación y fecha reales.</span>
+  </form>
   {% endif %}
   <form method="post" action="/declaraciones/{{ decl.id }}/bloque/{{ b.clave }}" onsubmit="return enviarGrilla(this)">
     <input type="hidden" name="hoja" value="{{ pestana.clave }}">

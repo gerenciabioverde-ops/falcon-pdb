@@ -159,7 +159,8 @@ async def importar_hoja(decl_id: int, db: Db, usuario: User, hoja: Annotated[str
     return _volver(decl_id, pestana, msg)
 
 
-PESTANA_DE_CARGA = {"tc": "tc", "ventas": "ventas", "compras": "compras", "pagos": "compras", "duas": "duas"}
+PESTANA_DE_CARGA = {"tc": "tc", "ventas": "ventas", "compras": "compras", "pagos": "compras",
+                    "pagos_bancos": "compras", "duas": "duas"}
 
 
 @router.post("/declaraciones/{decl_id}/cargar/{tipo}")
@@ -183,6 +184,8 @@ async def cargar(decl_id: int, tipo: str, db: Db, usuario: User,
                 n, avisos = cargas.cargar_ventas_xml(db, decl, subidos)
             elif tipo == "compras":
                 n, avisos = cargas.cargar_compras_xml(db, decl, subidos)
+            elif tipo == "pagos_bancos":
+                n, avisos = cargas.cargar_pagos_bancos(db, decl, subidos)
             else:
                 n, avisos = cargas.cargar_dam_pdf(db, decl, subidos)
         db.commit()

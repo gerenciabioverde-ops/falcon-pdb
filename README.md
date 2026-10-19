@@ -16,6 +16,7 @@ Las columnas y formatos de cada hoja salen de `app/hojas_cols.py` (extraído del
 - **TC** ← PDF mensual de tipo de cambio de SUNAT.
 - **VENTAS / COMPRAS** ← XML UBL de los comprobantes (varios a la vez). Ventas = la empresa es emisor; compras = receptor. Los montos en USD de compras/ventas internas se convierten a soles con el TC venta de la hoja TC; las exportaciones quedan en USD.
 - **Forma de pago** ← se genera desde COMPRAS (fecha de operación, monto S/. con las fórmulas del libro); conserva el medio de pago, banco y N° de operación ya escritos.
+- **Forma de pago (opción 2)** ← libros de bancos («Detalle de los movimientos», uno por cuenta, MN y ME): busca cada compra por serie-número y RUC y llena medio de pago, banco, N° de operación (N° de cheque, o N° de movimiento si es transferencia), fecha de operación y monto S/. (los pagos en USD se convierten con el TC venta de la fecha del comprobante). Una fila por pago. Los códigos de medio de pago y de banco están en `app/catalogos.py` y deben revisarse.
 - **DUAS** ← PDF de la DAM (Registro de Aduanas): llena el bloque D y una fila del bloque E por serie. Parsers portados de Falcon Contable (`app/lectores/`).
 
 ## Pantalla
