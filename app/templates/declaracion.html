@@ -150,7 +150,7 @@
   <span class="text-sm px-2 py-0.5 rounded {{ 'bg-green-100 text-green-800' if decl.estado == 'ENVIADO' else 'bg-amber-100 text-amber-800' }}">{{ estados[decl.estado] }}</span>
 </div>
 
-<nav class="mt-4 flex gap-1 overflow-x-auto border-b-2 border-emerald-800">
+<nav class="mt-4 flex gap-1 overflow-x-auto border-b-2 border-emerald-800 print:hidden">
   {% for p in pestanas %}
   <a href="/declaraciones/{{ decl.id }}?hoja={{ p.clave }}"
      class="whitespace-nowrap px-4 py-2 text-sm rounded-t {{ 'bg-emerald-800 text-white font-semibold' if p.clave == pestana.clave else 'bg-emerald-50 text-emerald-900 hover:bg-emerald-100' }}">
@@ -200,6 +200,72 @@
     <button class="text-sm text-red-700">Eliminar declaración</button>
   </form>
 </section>
+{% elif pestana.clave == 'reporte' %}
+<div class="mt-3 space-y-4">
+  <section class="bg-white rounded shadow p-5">
+    <div class="flex flex-wrap items-start justify-between gap-3">
+      <div>
+        <p class="text-xs uppercase tracking-wide text-slate-500">Reporte de la información a presentar a SUNAT · PDB Exportadores</p>
+        <h2 class="text-xl font-semibold mt-1">{{ decl.empresa.razon_social }} · RUC {{ decl.empresa.ruc }}</h2>
+        <p class="text-sm text-slate-600">Período <b>{{ decl.periodo }}</b> ({{ meses[decl.mes] }} {{ decl.anio }}) · Estado: {{ estados[decl.estado] }}</p>
+      </div>
+      <div class="text-right print:hidden">
+        <span class="inline-block text-sm px-3 py-1 rounded {{ 'bg-green-100 text-green-800' if not n_errores else 'bg-red-100 text-red-800' }}">
+          {{ '✔ Sin errores: listo para presentar' if not n_errores else '✖ ' ~ n_errores ~ ' error(es) por corregir' }}</span>
+        <div class="mt-2"><button type="button" onclick="window.print()" class="border border-emerald-700 text-emerald-800 rounded px-3 py-1 text-sm hover:bg-emerald-50">🖨 Imprimir</button>
+        {% if archivos %}<a class="ml-2 bg-amber-600 text-white rounded px-3 py-1 text-sm hover:bg-amber-700" href="/declaraciones/{{ decl.id }}/archivos.zip">⬇ Descargar todos (ZIP)</a>{% endif %}</div>
+      </div>
+    </div>
+  </section>
+
+  <section class="bg-white rounded shadow p-5">
+    <h3 class="font-semibold mb-3">1. Resumen por hoja</h3>
+    <table class="w-full text-sm">
+      <thead><tr class="bg-emerald-100 text-emerald-900 text-left">
+        <th class="px-3 py-1.5">Hoja</th><th class="px-3 text-right">Filas</th><th class="px-3 text-right">Base imponible S/</th><th class="px-3 text-right">IGV S/</th><th class="px-3 text-right">Total S/ / US$</th><th class="px-3">Detalle</th></tr></thead>
+      <tbody class="divide-y">
+        <tr><td class="px-3 py-1.5 font-medium">Compras</td><td class="px-3 text-right">{{ rep.compras.n }}</td>
+          <td class="px-3 text-right">{{ rep.compras.base|miles(2) }}</td><td class="px-3 text-right">{{ rep.compras.igv|miles(2) }}</td><td class="px-3 text-right font-medium">{{ rep.compras.total|miles(2) }}</td>
+          <td class="px-3 text-slate-600">{{ rep.compras.con_igv }} con IGV · {{ rep.compras.sin_igv }} sin IGV · {{ rep.compras.con_detraccion }} con detracción</td></tr>
+        <tr><td class="px-3 py-1.5 font-medium">Forma de pago</td><td class="px-3 text-right">{{ rep.pagos.n }}</td><td></td><td></td><td class="px-3 text-right font-medium">{{ rep.pagos.monto|miles(2) }}</td><td class="px-3 text-slate-600">Monto de las operaciones S/</td></tr>
+        <tr><td class="px-3 py-1.5 font-medium">Ventas</td><td class="px-3 text-right">{{ rep.ventas.n }}</td>
+          <td class="px-3 text-right">{{ rep.ventas.base|miles(2) }}</td><td class="px-3 text-right">{{ rep.ventas.igv|miles(2) }}</td><td class="px-3 text-right font-medium">{{ rep.ventas.total|miles(2) }}</td>
+          <td class="px-3 text-slate-600">{{ rep.ventas.externas }} exportaciones · {{ rep.ventas.anuladas }} anulada(s) (en cero)</td></tr>
+        <tr><td class="px-3 py-1.5 font-medium">DUAS · bloque D</td><td class="px-3 text-right">{{ rep.duas.n }}</td><td></td><td></td><td class="px-3 text-right font-medium">US$ {{ rep.duas.fob|miles(2) }}</td>
+          <td class="px-3 text-slate-600">FOB de las DUAs{% if rep.duas.excluidas %} · <span class="text-amber-700">{{ rep.duas.excluidas }} excluida(s) por embarque fuera del período</span>{% endif %}{% if rep.duas.sin_regularizar %} · <span class="text-amber-700">{{ rep.duas.sin_regularizar }} sin fecha de regularización</span>{% endif %}</td></tr>
+        <tr><td class="px-3 py-1.5 font-medium">DUAS · bloque E</td><td class="px-3 text-right">{{ rep.cdps.n }}</td><td></td><td></td><td class="px-3 text-right font-medium">US$ {{ rep.cdps.fob|miles(2) }}</td>
+          <td class="px-3 text-slate-600">FOB facturado{% if (rep.duas.fob - rep.cdps.fob)|abs > 0.05 %} · <span class="text-red-700">difiere del bloque D en US$ {{ (rep.duas.fob - rep.cdps.fob)|miles(2) }}</span>{% else %} · <span class="text-green-700">cuadra con el bloque D</span>{% endif %}</td></tr>
+        <tr><td class="px-3 py-1.5 font-medium">Tipo de cambio</td><td class="px-3 text-right">{{ rep.tc }}</td><td></td><td></td><td></td><td class="px-3 text-slate-600">Días del mes en el archivo .tc</td></tr>
+        {% for nombre, n in rep.otras.items() %}<tr><td class="px-3 py-1.5 font-medium">{{ nombre }}</td><td class="px-3 text-right">{{ n }}</td><td></td><td></td><td></td><td></td></tr>{% endfor %}
+      </tbody>
+    </table>
+    <p class="text-xs text-slate-500 mt-2">Las notas de crédito restan. El total de compras suma base, ISC, IGV y otros cargos. Los comprobantes anulados cuentan con importes en cero.</p>
+  </section>
+
+  <section class="bg-white rounded shadow p-5">
+    <h3 class="font-semibold mb-3">2. Archivos que se presentan</h3>
+    <table class="w-full text-sm">
+      <thead><tr class="bg-emerald-100 text-emerald-900 text-left"><th class="px-3 py-1.5">Archivo</th><th class="px-3">Contenido</th><th class="px-3 text-right">Líneas</th><th class="px-3 print:hidden"></th></tr></thead>
+      <tbody class="divide-y">
+      {% for nombre, lineas in archivos.items() %}
+        <tr><td class="px-3 py-1.5 font-mono text-xs">{{ nombre }}</td>
+          <td class="px-3">{{ 'Tipo de cambio' if nombre.endswith('.tc') else ('DUAs · bloque D' if nombre.endswith('.dua') else ('Facturas de exportación · bloque E' if nombre.endswith('.du1') else ('Compras' if nombre.startswith('C') else ('Forma de pago' if nombre.startswith('F') else ('Ventas' if nombre.startswith('V') else 'Otros'))))) }}</td>
+          <td class="px-3 text-right">{{ lineas|length }}</td>
+          <td class="px-3 print:hidden"><a class="text-blue-700 hover:underline" href="/declaraciones/{{ decl.id }}/archivos/{{ nombre }}">Descargar</a></td></tr>
+      {% else %}<tr><td colspan="4" class="px-3 py-4 text-center text-slate-400">Aún no hay datos para generar archivos.</td></tr>{% endfor %}
+      </tbody>
+    </table>
+    <p class="text-xs text-slate-500 mt-2">Orden de importación en el aplicativo de SUNAT: primero el <b>.dua</b> (bloque D) y después el <b>.du1</b> (bloque E).</p>
+  </section>
+
+  <section class="bg-white rounded shadow p-5">
+    <h3 class="font-semibold mb-2">3. Observaciones de la validación</h3>
+    {% for h in hallazgos %}
+      <p class="text-sm {{ 'text-red-700' if h.nivel == 'error' else 'text-amber-700' }}">{{ '✖' if h.nivel == 'error' else '▲' }}
+        {% if h.periodo %}<span class="font-mono text-xs rounded bg-slate-100 text-slate-700 px-1.5 py-0.5 mr-1">{{ h.periodo }}</span>{% endif %}{{ h.texto }}</p>
+    {% else %}<p class="text-sm text-green-700">✔ Sin observaciones.</p>{% endfor %}
+  </section>
+</div>
 {% else %}
   {% if subs %}
   <div class="mt-3 flex gap-1 border-b border-slate-300">

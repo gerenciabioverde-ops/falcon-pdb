@@ -189,6 +189,7 @@ def ver_declaracion(request: Request, decl_id: int, db: Db, usuario: User, hoja:
     if pestana["clave"] == "tc":
         bloques[0]["titulo"] = f"Tipo de cambio · {MESES[tc_sel[1]]} {tc_sel[0]}"
     archivos = arch.archivos(decl)
+    rep = svc.reporte(decl) if pestana["clave"] == "reporte" else None
     ruc, per = decl.empresa.ruc, decl.periodo
     nombre_de = {b: f"{p}{ruc}{per if cp else ''}{e}" for b, (p, e, cp) in ARCHIVO_BLOQUE.items()}
     nombre_de.update({"DUAS_D": f"{ruc}{per}.dua", "DUAS_E": f"{ruc}{per}.du1"})
@@ -196,7 +197,7 @@ def ver_declaracion(request: Request, decl_id: int, db: Db, usuario: User, hoja:
     return _render(request, "declaracion.html", usuario=usuario, decl=decl, msg=msg, pestana=pestana, archivo_de=archivo_de,
                    pestanas=PESTANAS, cuentas=cuentas, bloques=bloques, hallazgos=hallazgos,
                    n_errores=sum(h["nivel"] == "error" for h in hallazgos), archivos=archivos,
-                   archivo_bloque=ARCHIVO_BLOQUE, tc_sel=tc_sel, subs=subs, sub_sel=sub_sel,
+                   archivo_bloque=ARCHIVO_BLOQUE, tc_sel=tc_sel, rep=rep, subs=subs, sub_sel=sub_sel,
                    detracciones=detracciones, ligadas=ligadas, forms1662=forms1662, compras_1662=compras_1662, total_1662=total_1662, ver_todas=bool(todas),
                    tc_meses=svc.meses_tc(db) if pestana["clave"] == "tc" else [],
                    ayuda={c[0]: AYUDA[c[0]] for b in bloques for c in b["columnas"] if c[0] in AYUDA})

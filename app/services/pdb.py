@@ -602,6 +602,57 @@ def resumen_declaracion(decl: Declaracion) -> dict:
     }
 
 
+_NOTAS_CREDITO = {"7", "87", "97"}
+
+
+def reporte(decl: Declaracion) -> dict:
+    """Cifras de lo que se presenta a SUNAT en este PDB (para la pestaña REPORTE)."""
+    cero = Decimal("0")
+
+    def importe(c, i):
+        return _dec(c[i]) if len(c) > i else cero
+
+    def sumar(filas, es_nota):
+        t = {"base": cero, "igv": cero, "otros": cero}
+        for c in filas:
+            s = -1 if es_nota(c) else 1
+            t["base"] += s * importe(c, 16)
+            t["igv"] += s * importe(c, 18)
+            t["otros"] += s * (importe(c, 17) + importe(c, 19))
+        t["total"] = t["base"] + t["igv"] + t["otros"]
+        return t
+
+    compras = [f.celdas for f in decl.filas if f.hoja == "COMPRAS" and any(f.celdas)]
+    nota_c = lambda c: str(c[1]).strip().lstrip("0") in _NOTAS_CREDITO  # noqa: E731
+    con_igv = [c for c in compras if importe(c, 18) > 0]
+    pagos = [f.celdas for f in decl.filas if f.hoja == "COMPRAS_PAGO" and any(f.celdas)]
+    ventas_todas = [f.celdas for f in decl.filas if f.hoja == "VENTAS" and any(f.celdas)]
+    anuladas = [c for c in ventas_todas if es_anulado(c)]
+    validas = [c for c in ventas_todas if not es_anulado(c)]
+    externas = [c for c in validas if str(c[0]).strip().lstrip("0") == "2"]
+    nota_v = lambda c: str(c[1]).strip().lstrip("0") in {"7"}  # noqa: E731
+    fuera = {d.clave for d in decl.duas if d.fecha_embarque and (d.fecha_embarque.year, d.fecha_embarque.month) != (decl.anio, decl.mes)}
+    duas = [d for d in decl.duas if d.clave not in fuera]
+    cdps = [c for c in decl.cdps if c.dua_key not in fuera]
+    otras = {t: sum(1 for f in decl.filas if f.hoja == h and any(f.celdas))
+             for h, t in (("SWAP", "SWAP (tipo 06)"), ("SERVICIOS", "Servicios (tipo 07)"), ("HOSPEDAJE", "Hospedaje (tipo 08)"),
+                          ("SIN_DETALLE", "Sin detalle (tipos 09-11)"), ("EXP_DEF", "Exp. temporal a definitiva (tipo 12)"),
+                          ("TURISTAS", "Turistas (tipo 13)"))}
+    return {
+        "compras": {"n": len(compras), "con_igv": len(con_igv), "sin_igv": len(compras) - len(con_igv),
+                    "con_detraccion": sum(1 for c in compras if len(c) > 22 and str(c[20]).strip() == "1"),
+                    **sumar(compras, nota_c)},
+        "pagos": {"n": len(pagos), "monto": sum((importe(c, 11) for c in pagos), cero)},
+        "ventas": {"n": len(ventas_todas), "validas": len(validas), "anuladas": len(anuladas), "externas": len(externas),
+                   **sumar(validas, nota_v)},
+        "duas": {"n": len(duas), "excluidas": len(fuera), "fob": sum((d.fob_usd or cero for d in duas), cero),
+                 "sin_regularizar": sum(1 for d in duas if not d.fecha_regularizacion)},
+        "cdps": {"n": len(cdps), "fob": sum((c.fob_facturado or cero for c in cdps), cero)},
+        "tc": len(_tc_del_mes(object_session(decl), decl.anio, decl.mes)),
+        "otras": {k: v for k, v in otras.items() if v},
+    }
+
+
 def dam_de_ventas(db: Session, decl: Declaracion) -> list[dict]:
     """Para cada fila de VENTAS, la DAM que la sustenta (si la hay), buscando en todos los períodos de
     la empresa: la factura puede emitirse en un mes y embarcarse/regularizarse en otro. Solo para ver."""

@@ -42,6 +42,7 @@ PESTANAS = [
     {"clave": "sin_detalle", "nombre": "SIN DETALLE", "bloques": [("SIN_DETALLE", "Tipos 09, 10 y 11")]},
     {"clave": "exp_def", "nombre": "EXP. DEF.", "bloques": [("EXP_DEF", "Tipo 12 · Temporal a definitiva")]},
     {"clave": "turistas", "nombre": "TURISTAS", "bloques": [("TURISTAS", "Tipo 13 · Relación de turistas (TaxFree)")]},
+    {"clave": "reporte", "nombre": "REPORTE", "bloques": []},          # resumen de lo que se presenta a SUNAT
 ]
 PESTANA = {p["clave"]: p for p in PESTANAS}
 
