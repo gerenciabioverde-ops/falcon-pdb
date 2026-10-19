@@ -27,8 +27,7 @@ User = Annotated[Usuario, Depends(get_current_user)]
 
 
 def _render(request: Request, nombre: str, **ctx):
-    return templates.TemplateResponse(nombre, {"request": request, "meses": MESES,
-                                               "estados": ESTADOS, **ctx})
+    return templates.TemplateResponse(request, nombre, {"meses": MESES, "estados": ESTADOS, **ctx})
 
 
 def _decl(db: Session, decl_id: int) -> Declaracion:
