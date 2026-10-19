@@ -5,6 +5,10 @@ viven en las tablas Dua/Cdp) y sus columnas (código, título, formato).
 """
 from app.hojas_cols import COLUMNAS
 
+# VENTAS: «ESTADO» va al final de la fila y solo es de seguimiento (no entra en el archivo de SUNAT).
+# Vacío o «VÁLIDO» = comprobante vigente; «ANULADO» = se excluye del archivo y de las validaciones.
+COLUMNAS = {**COLUMNAS, "VENTAS": COLUMNAS["VENTAS"] + [("ESTADO", "ESTADO DEL COMPROBANTE (seguimiento)", "@")]}
+
 COLUMNAS_DUAS_D = [
     ("D1", "CÓDIGO ADUANA", "000"), ("D2", "AÑO DE LA DUA", "0000"), ("D3", "N° CORRELATIVO", "000000"),
     ("D4", "FECHA DE EMBARQUE", "FECHA"), ("D5", "FECHA DE REGULARIZACIÓN DE LA DUA", "FECHA"),

@@ -258,7 +258,16 @@ def filas_bloque(decl: Declaracion, bloque: str, mes: tuple[int, int] | None = N
         return [[c.periodo_cdp, c.tipo_comprobante, c.serie, c.numero, c.tipo_exportacion, c.dua_key,
                  f"{c.fob_facturado:.2f}", f"{c.fob_propietario:.2f}", f"{c.pct_participacion:.2f}",
                  c.ruc_operador] for c in decl.cdps]
+    if bloque == "VENTAS":                               # C32 «ESTADO»: vacío se muestra como VÁLIDO
+        filas = [(list(f.celdas) + [""] * 32)[:32] for f in decl.filas if f.hoja == bloque]
+        for c in filas:
+            c[31] = "ANULADO" if c[31].strip().upper() == "ANULADO" else "VÁLIDO"
+        return filas
     return [f.celdas for f in decl.filas if f.hoja == bloque]
+
+
+def es_anulado(celdas) -> bool:
+    return len(celdas) > 31 and str(celdas[31]).strip().upper() == "ANULADO"
 
 
 MARCA_SIN_FACTURA = "(sin factura)"
@@ -326,6 +335,7 @@ def guardar_grilla(db: Session, decl: Declaracion, bloque: str, filas: list[list
         for f in filas:
             if f[6] == "-":
                 f[7] = ""                        # sin documento → N° de documento en blanco
+            f[31] = "ANULADO" if f[31].strip().upper() in ("ANULADO", "ANULADA") else "VÁLIDO"
     if bloque == "TC":
         registros = _parsear_tc(filas)
         anio, m = mes or (decl.anio, decl.mes)
@@ -444,14 +454,16 @@ def validar(decl: Declaracion) -> list[dict]:
             err(f"DUA {d.clave}: regularización anterior al embarque.")
 
     clave = lambda serie, num: (str(serie).strip().upper(), str(num).strip().lstrip("0"))  # noqa: E731
-    ventas = {clave(f.celdas[3], f.celdas[4]): f.celdas for f in decl.filas if f.hoja == "VENTAS" and len(f.celdas) > 4}
+    ventas = {clave(f.celdas[3], f.celdas[4]): f.celdas for f in decl.filas
+              if f.hoja == "VENTAS" and len(f.celdas) > 4 and not es_anulado(f.celdas)}
     en_dam = {clave(c.serie, c.numero): c for c in decl.cdps if c.serie.strip() and c.numero.strip()}
     # La factura puede emitirse en un mes y embarcarse en otro: se busca también en los demás períodos.
     otras_ventas, otras_dam = set(), set()
     for d in decl.empresa.declaraciones:
         if d.id == decl.id:
             continue
-        otras_ventas |= {clave(f.celdas[3], f.celdas[4]) for f in d.filas if f.hoja == "VENTAS" and len(f.celdas) > 4}
+        otras_ventas |= {clave(f.celdas[3], f.celdas[4]) for f in d.filas
+                         if f.hoja == "VENTAS" and len(f.celdas) > 4 and not es_anulado(f.celdas)}
         otras_dam |= {clave(c.serie, c.numero) for c in d.cdps}
     if ventas or otras_ventas:
         for k, c in sorted(en_dam.items(), key=lambda kv: (kv[1].periodo_cdp or "", kv[0])):
@@ -568,6 +580,9 @@ def dam_de_ventas(db: Session, decl: Declaracion) -> list[dict]:
     salida = []
     for celdas in filas_bloque(decl, "VENTAS"):
         c = (list(celdas) + [""] * 31)[:31]
+        if es_anulado(celdas):
+            salida.append({"estado": "anu"})
+            continue
         if c[0].strip().lstrip("0") != "2":
             salida.append({"estado": "na"})                          # venta interna: no lleva DAM
             continue

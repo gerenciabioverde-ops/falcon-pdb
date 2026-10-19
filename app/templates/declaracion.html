@@ -53,6 +53,7 @@
     {% endif %}
   </div>
   {% endif %}
+  {% if b.clave == 'VENTAS' %}<datalist id="lst-estado"><option value="VÁLIDO"><option value="ANULADO"></datalist>{% endif %}
   <form method="post" action="/declaraciones/{{ decl.id }}/bloque/{{ b.clave }}" onsubmit="return enviarGrilla(this)">
     <input type="hidden" name="hoja" value="{{ pestana.clave }}">
     <input type="hidden" name="datos" value="">
@@ -121,14 +122,15 @@
   <td class="px-2 py-1 whitespace-nowrap bg-sky-50 text-xs select-text">
     {% if extra.estado == 'ok' %}<span class="text-green-700 font-medium" title="Embarcada el {{ extra.embarque.strftime('%d/%m/%Y') if extra.embarque }} · regularizada el {{ extra.regularizada.strftime('%d/%m/%Y') }} · PDB {{ extra.periodo }}">✔ {{ extra.dua }}</span>
     {% elif extra.estado == 'pend' %}<span class="text-amber-600 font-medium" title="Aún sin fecha de regularización · PDB {{ extra.periodo }}">⏳ {{ extra.dua }}</span>
+    {% elif extra.estado == 'anu' %}<span class="text-red-600 font-semibold">✖ ANULADO</span>
     {% elif extra.estado == 'sin' %}<span class="text-slate-400">Sin DAM</span>
     {% else %}<span class="text-slate-300">—</span>{% endif %}
   </td>
   {% endif %}
   {% for cod, tit, fmt in cols %}
   {% if cod == 'A21' and cols|length == 30 %}<td class="px-2 text-right bg-sky-50 font-medium select-text whitespace-nowrap" data-total></td>{% endif %}
-  <td class="p-0 border-l border-slate-100 {{ 'bg-slate-50' if cod == 'REF' else ('bg-sky-50' if cod == 'FAC') }}"><input readonly {{ 'data-calc' if cod == 'REF' }} data-cod="{{ cod }}" {% set v = fila[loop.index0] if fila and loop.index0 < fila|length else '' %}{% set dec = 2 if fmt in ('0.00', '0.00*') else (3 if fmt == '0.000' else 0) %}{% if dec %}data-dec="{{ dec }}" {% endif %}value="{{ v|miles(dec) if dec else v }}"
-      class="w-full min-w-[7rem] px-2 py-1 bg-transparent focus:bg-white focus:outline focus:outline-2 focus:outline-emerald-500 {{ 'text-right' if fmt in ('0.00','0.00*','0.000') else '' }}"></td>
+  <td class="p-0 border-l border-slate-100 {{ 'bg-slate-50' if cod == 'REF' else ('bg-sky-50' if cod == 'FAC') }}"><input readonly {{ 'data-calc' if cod == 'REF' }} {{ 'list=lst-estado' if cod == 'ESTADO' }} data-cod="{{ cod }}" {% set v = fila[loop.index0] if fila and loop.index0 < fila|length else '' %}{% set dec = 2 if fmt in ('0.00', '0.00*') else (3 if fmt == '0.000' else 0) %}{% if dec %}data-dec="{{ dec }}" {% endif %}value="{{ v|miles(dec) if dec else v }}"
+      class="w-full min-w-[7rem] px-2 py-1 bg-transparent {{ 'text-red-600 font-semibold' if v == 'ANULADO' }} focus:bg-white focus:outline focus:outline-2 focus:outline-emerald-500 {{ 'text-right' if fmt in ('0.00','0.00*','0.000') else '' }}"></td>
   {% endfor %}
   <td class="px-1"><button type="button" onclick="this.closest('tr').remove(); marcarCambio(this)" class="btn-quitar hidden text-slate-300 hover:text-red-600" title="Quitar fila">✕</button></td>
 </tr>
@@ -364,6 +366,10 @@ async function enviarXml(ev, form) {
   window.location = resp.url;
   return false;
 }
+document.addEventListener('input', e => {
+  if (e.target.dataset && e.target.dataset.cod === 'ESTADO')
+    e.target.classList.toggle('text-red-600', e.target.value.trim().toUpperCase().startsWith('ANULAD'));
+});
 function recalcularTotal(tr) {
   const t = tr.querySelector('[data-total]'); if (!t) return;
   let sum = 0;

@@ -104,7 +104,7 @@ def archivos(decl: Declaracion) -> dict[str, list[str]]:
         formatos = [c[2] for c in COLUMNAS[bloque]]
         if bloque == "VENTAS":
             formatos = formatos[:30]                 # C31 (tipo de exportación) no va en el archivo                       # cliente sin documento («-»): N° según el ajuste
-            todo[nombre] = [_linea(_con_doc(c), formatos) for c in _pdb.filas_bloque(decl, bloque) if any(c)]
+            todo[nombre] = [_linea(_con_doc(c), formatos) for c in _pdb.filas_bloque(decl, bloque) if any(c) and not _pdb.es_anulado(c)]
         else:
             todo[nombre] = _filas_hoja(decl, bloque, formatos)
     return {n: l for n, l in todo.items() if l}

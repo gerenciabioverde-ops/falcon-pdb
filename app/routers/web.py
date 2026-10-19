@@ -27,6 +27,8 @@ from app.services import pdb as svc
 AYUDA = json.loads((Path(__file__).resolve().parent.parent / "ayuda_sunat.json").read_text(encoding="utf-8"))
 AYUDA["REF"] = {"nombre": "N° de DUA (seguimiento)", "tipo": "Texto", "largo": "",
                 "texto": "Se arma solo con D1, D2 y D3 (aduana-año-régimen 40-correlativo). Solo para consulta; no va al archivo de SUNAT."}
+AYUDA["ESTADO"] = {"nombre": "Estado del comprobante", "tipo": "Texto", "largo": "",
+                    "texto": "VÁLIDO o ANULADO. Un comprobante ANULADO no va en el archivo V…txt, no se exige su DAM y se ve como «✖ ANULADO» en la columna REF.\nNo va al archivo de SUNAT como columna."}
 AYUDA["FAC"] = {"nombre": "Factura(s) de la DUA", "tipo": "Texto", "largo": "",
                 "texto": "Escriba SERIE-NÚMERO separadas por coma. Ej.: FFF1-651, FFF1-652.\nAl guardar se enlazan al bloque E de esta DUA:\n"
                          "· las nuevas se crean (si es una sola, con el FOB que falte para completar el de la DUA);\n"

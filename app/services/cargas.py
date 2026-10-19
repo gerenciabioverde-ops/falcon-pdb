@@ -271,6 +271,10 @@ def _cargar_xmls(db: Session, decl: Declaracion, archivos: list[tuple[str, bytes
         return 0, avisos
     existentes = {_clave_fila(f.celdas, 1, 3, 4): f.celdas for f in _filas(decl, hoja) if len(f.celdas) > 4}
     actualizados = sum(1 for k in nuevas if k in existentes)
+    if hoja == "VENTAS":                              # recargar un XML no pierde el estado (ANULADO) ya marcado
+        for k, f in nuevas.items():
+            if k in existentes and len(existentes[k]) > 31:
+                nuevas[k] = (list(f) + [""] * 31)[:31] + [existentes[k][31]]
     existentes.update(nuevas)
     ordenadas = sorted(existentes.values(), key=lambda r: (_sin_cero_fecha(r[2]), r[3], r[4]))
     _completar_referencias(ordenadas)
