@@ -483,7 +483,10 @@ def dam_a_filas(cab: dict, series: list[dict]) -> tuple[Dua, list[Cdp]]:
 
 
 def cargar_dam_pdf(db: Session, decl: Declaracion, archivos: list[tuple[str, bytes]]) -> tuple[int, list[str]]:
+    """Solo acepta DAM embarcadas dentro del período de la declaración (regla D4 del PDB: el año y
+    mes de la fecha de embarque deben ser los del período). Las demás se omiten con un aviso."""
     avisos: list[str] = []
+    fuera: list[str] = []
     n = 0
     for nombre, contenido in archivos:
         try:
@@ -494,6 +497,13 @@ def cargar_dam_pdf(db: Session, decl: Declaracion, archivos: list[tuple[str, byt
         except Exception as e:  # noqa: BLE001 - el PDF puede fallar de muchas formas
             avisos.append(f"{nombre}: {e}")
             continue
+        fe = dua.fecha_embarque
+        if not fe:
+            avisos.append(f"{nombre}: no se leyó la fecha de embarque; no se puede validar el período.")
+            continue
+        if (fe.year, fe.month) != (decl.anio, decl.mes):
+            fuera.append(f"{dua.codigo_aduana}-{dua.anio_dua}-{dua.correlativo} embarcada el {_f(fe)}")
+            continue
         for d in [d for d in decl.duas if d.clave == dua.clave]:
             decl.duas.remove(d)
         for c in [c for c in decl.cdps if c.dua_key == dua.clave]:
@@ -502,9 +512,7 @@ def cargar_dam_pdf(db: Session, decl: Declaracion, archivos: list[tuple[str, byt
         decl.duas.append(dua)
         decl.cdps.extend(cdps)
         n += 1
-        fr = dua.fecha_regularizacion
-        if fr and (fr.year, fr.month) != (decl.anio, decl.mes):
-            avisos.append(f"{nombre}: la regularización ({_f(fr)}) cae fuera del período {decl.periodo}.")
-        if not cab.get("fecha_embarque"):
-            avisos.append(f"{nombre}: no se leyó la fecha de embarque.")
+    if fuera:
+        avisos.insert(0, f"DAM omitidas por no estar embarcadas en {decl.periodo} ({len(fuera)}): "
+                         + "; ".join(fuera[:4]) + ("…" if len(fuera) > 4 else "") + ".")
     return n, avisos

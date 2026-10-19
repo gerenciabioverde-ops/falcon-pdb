@@ -9,6 +9,7 @@ COLUMNAS_DUAS_D = [
     ("D1", "CÓDIGO ADUANA", "000"), ("D2", "AÑO DE LA DUA", "0000"), ("D3", "N° CORRELATIVO", "000000"),
     ("D4", "FECHA DE EMBARQUE", "FECHA"), ("D5", "FECHA DE REGULARIZACIÓN DE LA DUA", "FECHA"),
     ("D6", "VALOR FOB EN US$", "0.00"),
+    ("REF", "N° DE DUA (seguimiento)", "@"), ("REF", "FACTURA(S) (seguimiento)", "@"),   # solo visualización
 ]
 COLUMNAS_DUAS_E = [
     ("E1", "PERIODO DEL CDP", "@"), ("E2", "TIPO DE COMPROBANTE", "00"),

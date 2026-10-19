@@ -239,8 +239,14 @@ def filas_bloque(decl: Declaracion, bloque: str, mes: tuple[int, int] | None = N
         anio, m = mes or (decl.anio, decl.mes)
         return _tc_a_filas(_tc_del_mes(object_session(decl), anio, m))
     if bloque == "DUAS_D":
+        facturas: dict[str, list[str]] = {}
+        for c in decl.cdps:
+            facturas.setdefault(c.dua_key, []).append(f"{c.serie}-{c.numero}")
         return [[d.codigo_aduana, d.anio_dua, d.correlativo, _txt_fecha(d.fecha_embarque),
-                 _txt_fecha(d.fecha_regularizacion), f"{d.fob_usd:.2f}"] for d in decl.duas]
+                 _txt_fecha(d.fecha_regularizacion), f"{d.fob_usd:.2f}",
+                 f"{d.codigo_aduana}-{d.anio_dua}-40-{d.correlativo}",       # N° de DUA (solo seguimiento)
+                 ", ".join(facturas.get(d.clave, []))]                       # facturas (solo seguimiento)
+                for d in decl.duas]
     if bloque == "DUAS_E":
         return [[c.periodo_cdp, c.tipo_comprobante, c.serie, c.numero, c.tipo_exportacion, c.dua_key,
                  f"{c.fob_facturado:.2f}", f"{c.fob_propietario:.2f}", f"{c.pct_participacion:.2f}",
@@ -348,6 +354,9 @@ def validar(decl: Declaracion) -> list[dict]:
             err(f"DUA {d.clave}: FOB {d.fob_usd} ≠ suma de facturas {fob_cdp[d.clave]}.")
         if not d.fecha_embarque:
             err(f"DUA {d.clave}: falta fecha de embarque.")
+        elif (d.fecha_embarque.year, d.fecha_embarque.month) != (decl.anio, decl.mes):
+            err(f"DUA {d.codigo_aduana}-{d.anio_dua}-{d.correlativo}: embarcada el {_ddmmyyyy(d.fecha_embarque)}, "
+                f"fuera del período {decl.periodo} (SUNAT exige que el mes de embarque sea el del período).")
         if not d.fecha_regularizacion:
             avi(f"DUA {d.clave}: sin fecha de regularización.")
         elif d.fecha_embarque and d.fecha_regularizacion < d.fecha_embarque:

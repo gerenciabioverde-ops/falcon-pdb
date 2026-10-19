@@ -105,7 +105,7 @@
 <tr class="border-t hover:bg-amber-50">
   <td class="px-2 text-slate-400 text-right select-none">{{ n if n else '' }}</td>
   {% for cod, tit, fmt in cols %}
-  <td class="p-0 border-l border-slate-100"><input readonly data-cod="{{ cod }}" value="{{ fila[loop.index0] if fila and loop.index0 < fila|length else '' }}"
+  <td class="p-0 border-l border-slate-100 {{ 'bg-slate-50' if cod == 'REF' }}"><input readonly {{ 'data-calc' if cod == 'REF' }} data-cod="{{ cod }}" value="{{ fila[loop.index0] if fila and loop.index0 < fila|length else '' }}"
       class="w-full min-w-[7rem] px-2 py-1 bg-transparent focus:bg-white focus:outline focus:outline-2 focus:outline-emerald-500 {{ 'text-right' if fmt in ('0.00','0.00*','0.000') else '' }}"></td>
   {% endfor %}
   <td class="px-1"><button type="button" onclick="this.closest('tr').remove(); marcarCambio(this)" class="btn-quitar hidden text-slate-300 hover:text-red-600" title="Quitar fila">✕</button></td>
@@ -226,7 +226,7 @@ async function enviarXml(ev, form) {
   return false;
 }
 function abrirEdicion(fila) {
-  fila.querySelectorAll('input').forEach(i => i.readOnly = false);
+  fila.querySelectorAll('input:not([data-calc])').forEach(i => i.readOnly = false);
   fila.querySelectorAll('.btn-quitar').forEach(b => b.classList.remove('hidden'));
 }
 function alternarEdicion(chk) {
