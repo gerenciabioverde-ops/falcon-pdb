@@ -457,6 +457,10 @@ def validar(decl: Declaracion) -> list[dict]:
             avi(f"Factura {id_cdp}: período CDP «{c.periodo_cdp}» no tiene formato AAAAMM.")
 
     for d in decl.duas:
+        if d.fecha_embarque and (d.fecha_embarque.year, d.fecha_embarque.month) != (decl.anio, decl.mes):
+            avi(f"DUA {d.codigo_aduana}-{d.anio_dua}-{d.correlativo}: embarcada el {_ddmmyyyy(d.fecha_embarque)}, fuera del período "
+                f"{decl.periodo}. No se incluye en el .dua (ni sus facturas en el .du1): va en el PDB de su mes de embarque.")
+            continue
         if d.codigo_aduana not in ADUANAS:
             err(f"DUA {d.codigo_aduana}-{d.anio_dua}-{d.correlativo}: el código de aduana «{d.codigo_aduana}» no está en la lista de SUNAT (ej.: 046 Paita, 118 Marítima del Callao).")
         if d.clave not in fob_cdp:

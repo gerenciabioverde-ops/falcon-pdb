@@ -75,15 +75,23 @@ def _filas_hoja(decl: Declaracion, hoja: str, formatos: list[str]) -> list[str]:
     return [_linea(c, formatos) for c in _pdb.filas_bloque(decl, hoja) if any(c)]
 
 
+def _fuera_de_periodo(decl: Declaracion) -> set[str]:
+    """Claves de las DUAs cuyo mes de embarque no es el del período: SUNAT las rechaza (D4 debe ser del período)."""
+    return {d.clave for d in decl.duas
+            if d.fecha_embarque and (d.fecha_embarque.year, d.fecha_embarque.month) != (decl.anio, decl.mes)}
+
+
 def lineas_duas(decl: Declaracion) -> list[str]:
     return [_linea([d.codigo_aduana, d.anio_dua, d.correlativo, d.fecha_embarque,
-                    d.fecha_regularizacion, d.fob_usd], FMT_DUA) for d in decl.duas]
+                    d.fecha_regularizacion, d.fob_usd], FMT_DUA) for d in decl.duas
+            if d.clave not in _fuera_de_periodo(decl)]
 
 
 def lineas_cdps(decl: Declaracion) -> list[str]:
     return [_linea([c.periodo_cdp, c.tipo_comprobante, c.serie, c.numero, c.tipo_exportacion,
                     c.dua_key, *((c.fob_facturado, c.fob_propietario, c.pct_participacion) if c.dua_key.strip() else ("", "", "")),
-                    c.ruc_operador], FMT_DU1) for c in decl.cdps]     # sin DUA: los FOB van vacíos (SUNAT)
+                    c.ruc_operador], FMT_DU1) for c in decl.cdps
+            if c.dua_key not in _fuera_de_periodo(decl)]     # sin DUA: los FOB van vacíos (SUNAT)
 
 
 def _con_doc(celdas: list[str]) -> list[str]:
