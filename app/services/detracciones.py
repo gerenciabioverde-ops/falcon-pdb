@@ -102,13 +102,14 @@ def enlazadas(db: Session, empresa: Empresa) -> dict[str, list[str]]:
 
 
 def de_la_declaracion(db: Session, decl: Declaracion) -> list[Detraccion]:
-    """Constancias de ESTE período. Las anteriores, sin vínculo, se asignan a la declaración de su período tributario."""
+    """Constancias de ESTE período. Las anteriores, sin vínculo, se asignan a la declaración del mes de su FECHA DE PAGO."""
     empresa = decl.empresa
     periodos = {d.periodo: d.id for d in empresa.declaraciones}
     vinculadas = set(db.scalars(select(DetraccionDecl.detraccion_id)))
     for d in db.scalars(select(Detraccion).where(Detraccion.empresa_id == empresa.id)):
-        if d.id not in vinculadas and d.periodo_tributario in periodos:
-            db.add(DetraccionDecl(detraccion_id=d.id, declaracion_id=periodos[d.periodo_tributario]))
+        pago = d.fecha_pago.strftime("%Y%m") if d.fecha_pago else d.periodo_tributario
+        if d.id not in vinculadas and pago in periodos:
+            db.add(DetraccionDecl(detraccion_id=d.id, declaracion_id=periodos[pago]))
     db.flush()
     return list(db.scalars(select(Detraccion).join(DetraccionDecl, DetraccionDecl.detraccion_id == Detraccion.id)
                            .where(DetraccionDecl.declaracion_id == decl.id)
