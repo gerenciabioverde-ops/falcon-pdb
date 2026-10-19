@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+{% block contenido %}
+<h1 class="text-2xl font-semibold mb-4">Declaraciones PDB Exportadores</h1>
+<div class="grid md:grid-cols-3 gap-6">
+  <div class="md:col-span-2 space-y-4">
+    {% for e in empresas %}
+    <section class="bg-white rounded shadow p-4">
+      <h2 class="font-semibold">{{ e.razon_social }} <span class="text-slate-500 font-normal text-sm">RUC {{ e.ruc }}</span></h2>
+      <table class="w-full text-sm mt-2">
+        {% for d in e.declaraciones|sort(attribute='periodo', reverse=true) %}
+        <tr class="border-t">
+          <td class="py-1"><a class="text-blue-700 hover:underline" href="/declaraciones/{{ d.id }}">{{ meses[d.mes] }} {{ d.anio }}</a></td>
+          <td>{{ estados[d.estado] }}</td>
+          <td class="text-slate-500">{{ d.nro_constancia or "" }}</td>
+        </tr>
+        {% else %}<tr><td class="text-slate-500 py-1">Sin declaraciones aún.</td></tr>{% endfor %}
+      </table>
+      <form method="post" action="/declaraciones" class="mt-3 flex gap-2 items-center text-sm">
+        <input type="hidden" name="empresa_id" value="{{ e.id }}">
+        <input name="anio" type="number" value="{{ anio }}" class="border rounded px-2 py-1 w-24">
+        <input name="mes" type="number" min="1" max="12" value="{{ mes }}" class="border rounded px-2 py-1 w-16">
+        <button class="bg-slate-900 text-white rounded px-3 py-1">Abrir / crear período</button>
+      </form>
+    </section>
+    {% else %}<p class="text-slate-500">Registre una empresa para empezar.</p>{% endfor %}
+  </div>
+  <form method="post" action="/empresas" class="bg-white rounded shadow p-4 space-y-2 h-fit">
+    <h2 class="font-semibold">Nueva empresa</h2>
+    <input name="ruc" placeholder="RUC (11 dígitos)" pattern="\d{11}" required class="w-full border rounded px-3 py-2">
+    <input name="razon_social" placeholder="Razón social" required class="w-full border rounded px-3 py-2">
+    <button class="bg-slate-900 text-white rounded px-3 py-2">Agregar</button>
+  </form>
+</div>
+{% endblock %}

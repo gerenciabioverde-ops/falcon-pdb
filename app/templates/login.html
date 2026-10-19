@@ -1,0 +1,10 @@
+{% extends "base.html" %}
+{% block contenido %}
+<form method="post" action="/login" class="max-w-sm mx-auto mt-16 bg-white p-6 rounded shadow space-y-4">
+  <h1 class="text-xl font-semibold">Falcon PDB</h1>
+  {% if error %}<p class="text-red-600 text-sm">{{ error }}</p>{% endif %}
+  <input name="username" placeholder="Usuario" required class="w-full border rounded px-3 py-2">
+  <input name="password" type="password" placeholder="Contraseña" required class="w-full border rounded px-3 py-2">
+  <button class="w-full bg-slate-900 text-white rounded py-2">Ingresar</button>
+</form>
+{% endblock %}
